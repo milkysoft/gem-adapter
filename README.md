@@ -11,7 +11,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.artipie/gem-adapter.svg)](https://maven-badges.herokuapp.com/maven-central/com.artipie/gem-adapter)
 [![PDD status](http://www.0pdd.com/svg?name=artipie/gem-adapter)](http://www.0pdd.com/p?name=artipie/gem-adapter)
 
-This is a simple storage, used in a few other projects.
+`gem-adapter` is a slice in Artpie, aimed to support gem packages.
 
 This is the dependency you need:
 
