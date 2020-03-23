@@ -26,6 +26,24 @@ This is the dependency you need:
 Read the [Javadoc](http://www.javadoc.io/doc/com.artipie/gem-adapter)
 for more technical details.
 
+## Useful links
+
+* [Make Your Own Gem](https://guides.rubygems.org/make-your-own-gem/) - How to create and publish
+a simple ruby gem into rubygems.org registry.
+
+* [rubygems.org API](https://guides.rubygems.org/rubygems-org-api/) - A page with rubygems.org 
+API specification 
+
+* [Gugelines at rubygems.org](https://guides.rubygems.org/) - Guidelines around the `gem` package 
+manager.
+
+## Similar solutions
+
+* [Artifactory RubyGems Repositories](https://www.jfrog.com/confluence/display/JFROG/RubyGems+Repositories)
+* [Gem in a Box](https://github.com/geminabox/geminabox)
+* [Gemfury](https://gemfury.com/l/gem-server)
+* `gem server` [command](https://guides.rubygems.org/run-your-own-gem-server/)   
+ 
 ## How to contribute
 
 Fork repository, make changes, send us a pull request. We will review
