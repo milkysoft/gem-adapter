@@ -28,6 +28,8 @@ for more technical details.
 
 ## Useful links
 
+* [RubyGem Index Internals](https://blog.packagecloud.io/eng/2015/12/15/rubygem-index-internals/) - File structure and gem format
+
 * [Make Your Own Gem](https://guides.rubygems.org/make-your-own-gem/) - How to create and publish
 a simple ruby gem into rubygems.org registry.
 
