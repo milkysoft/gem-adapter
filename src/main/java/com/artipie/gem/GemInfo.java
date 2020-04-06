@@ -24,50 +24,48 @@
 package com.artipie.gem;
 
 import com.artipie.asto.Storage;
+import com.artipie.http.Response;
 import com.artipie.http.Slice;
-import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.http.rs.RsWithStatus;
-import com.artipie.http.rt.RtRule;
-import com.artipie.http.rt.SliceRoute;
-import com.artipie.http.slice.SliceSimple;
+import io.reactivex.Flowable;
+import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Map;
+import org.reactivestreams.Publisher;
 
 /**
- * A slice, which servers gem packages.
+ * Returns some basic information about the given gem. GET - /api/v1/gems/[GEM NAME].(json|yaml)
+ * https://guides.rubygems.org/rubygems-org-api/
  *
- * @since 0.1
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @todo #32:120min Gem Information implementation.
+ *  The implementation must be able to response with either json or yaml format. An example response
+ *  can be obtained via {@code curl https://rubygems.org/api/v1/gems/rails.json}
+ * @since 0.2
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
-public final class GemSlice extends Slice.Wrap {
+public final class GemInfo implements Slice {
+
+    /**
+     * The storage.
+     */
+    private final Storage storage;
 
     /**
      * Ctor.
-     *
-     * @param storage The storage.
+     * @param storage The storage
      */
-    public GemSlice(final Storage storage) {
-        super(
-            new SliceRoute(
-                new SliceRoute.Path(
-                    new RtRule.Multiple(
-                        new RtRule.ByMethod(RqMethod.POST),
-                        new RtRule.ByPath("/api/v1/gems")
-                    ),
-                    new SubmitGem(storage)
-                ),
-                new SliceRoute.Path(
-                    new RtRule.Multiple(
-                        new RtRule.ByMethod(RqMethod.GET),
-                        new RtRule.ByPath("/api/v1/gems/([\\w]+).(json|yml)")
-                    ),
-                    new GemInfo(storage)
-                ),
-                new SliceRoute.Path(
-                    RtRule.FALLBACK,
-                    new SliceSimple(new RsWithStatus(RsStatus.NOT_FOUND))
-                )
-            )
+    public GemInfo(final Storage storage) {
+        this.storage = storage;
+    }
+
+    @Override
+    public Response response(final String line,
+        final Iterable<Map.Entry<String, String>> headers,
+        final Publisher<ByteBuffer> body) {
+        return connection -> connection.accept(
+            RsStatus.NOT_IMPLEMENTED,
+            new HashSet<>(),
+            Flowable.empty()
         );
     }
 }
