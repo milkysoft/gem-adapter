@@ -26,11 +26,14 @@ package com.artipie.gem;
 import com.artipie.asto.Storage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
+import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
-import io.reactivex.Flowable;
+import com.artipie.http.rs.RsWithStatus;
+import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
 
 /**
@@ -44,6 +47,11 @@ import org.reactivestreams.Publisher;
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class GemInfo implements Slice {
+
+    /**
+     * Endpoint path pattern.
+     */
+    public static final Pattern PATH_PATTERN = Pattern.compile("/api/v1/gems/([\\w]+).(json|yml)");
 
     /**
      * The storage.
@@ -62,10 +70,28 @@ public final class GemInfo implements Slice {
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
-        return connection -> connection.accept(
-            RsStatus.NOT_IMPLEMENTED,
-            new HashSet<>(),
-            Flowable.empty()
-        );
+        final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
+        final Response response;
+        if (matcher.find()) {
+            final String gem = matcher.group(1);
+            final String extension = matcher.group(2);
+            Logger.info(
+                GemInfo.class,
+                "Gem info for '%s' has been requested. Extension: '%s'",
+                gem,
+                extension
+            );
+            if (extension.equals("json")) {
+                response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
+            } else if (extension.equals("yml")) {
+                response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
+            } else {
+                throw new IllegalStateException("Not expected extension format has been matched");
+            }
+        } else {
+            throw new IllegalStateException("Not expected path has been matched");
+        }
+        return response;
     }
+
 }

@@ -59,7 +59,7 @@ public final class GemSlice extends Slice.Wrap {
                 new SliceRoute.Path(
                     new RtRule.Multiple(
                         new RtRule.ByMethod(RqMethod.GET),
-                        new RtRule.ByPath("/api/v1/gems/([\\w]+).(json|yml)")
+                        new RtRule.ByPath(GemInfo.PATH_PATTERN)
                     ),
                     new GemInfo(storage)
                 ),
