@@ -86,10 +86,10 @@ public final class GemInfo implements Slice {
             } else if (extension.equals("yml")) {
                 response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
             } else {
-                response = new RsWithStatus(RsStatus.INTERNAL_ERROR);
+                throw new IllegalStateException("Not expected extension format has been matched");
             }
         } else {
-            response =  new RsWithStatus(RsStatus.INTERNAL_ERROR);
+            throw new IllegalStateException("Not expected path has been matched");
         }
         return response;
     }
