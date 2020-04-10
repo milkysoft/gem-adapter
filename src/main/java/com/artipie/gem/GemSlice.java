@@ -103,13 +103,11 @@ public final class GemSlice extends Slice.Wrap {
                 StandardCharsets.UTF_8
             );
             evaler.eval(runtime, script);
-            Object rfj = evaler.eval(runtime, String.format("%s.new()", rclass));
-            rfj = JavaEmbedUtils.rubyToJava(
+            return (Slice) JavaEmbedUtils.rubyToJava(
                 runtime,
-                (org.jruby.runtime.builtin.IRubyObject) rfj,
+                evaler.eval(runtime, String.format("%s.new()", rclass)),
                 Slice.class
             );
-            return (Slice) rfj;
         } catch (final IOException exc) {
             throw new UncheckedIOException(exc);
         }
