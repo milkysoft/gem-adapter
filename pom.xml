@@ -85,6 +85,17 @@ SOFTWARE.
       <artifactId>http</artifactId>
       <version>0.7.1</version>
     </dependency>
+    <!-- JRuby -->
+    <dependency>
+      <groupId>org.jruby</groupId>
+      <artifactId>jruby-complete</artifactId>
+      <version>9.2.11.1</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.6</version>
+    </dependency>
     <dependency>
       <groupId>org.junit.vintage</groupId>
       <artifactId>junit-vintage-engine</artifactId>
@@ -92,4 +103,11 @@ SOFTWARE.
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/ruby</directory>
+      </resource>
+    </resources>
+  </build>
 </project>

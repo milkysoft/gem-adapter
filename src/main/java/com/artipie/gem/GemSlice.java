@@ -31,12 +31,20 @@ import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rt.RtRule;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceSimple;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import org.apache.commons.io.IOUtils;
+import org.jruby.Ruby;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * A slice, which servers gem packages.
  *
- * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @since 0.1
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class GemSlice extends Slice.Wrap {
@@ -47,6 +55,16 @@ public final class GemSlice extends Slice.Wrap {
      * @param storage The storage.
      */
     public GemSlice(final Storage storage) {
+        this(storage, JavaEmbedUtils.initialize(new ArrayList<>(0)));
+    }
+
+    /**
+     * Ctor.
+     *
+     * @param storage The storage.
+     * @param runtime The Jruby runtime.
+     */
+    public GemSlice(final Storage storage, final Ruby runtime) {
         super(
             new SliceRoute(
                 new SliceRoute.Path(
@@ -54,7 +72,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByMethod(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
-                    new SubmitGem(storage)
+                    GemSlice.rubyLookUp("SubmitGem", runtime)
                 ),
                 new SliceRoute.Path(
                     new RtRule.Multiple(
@@ -69,5 +87,31 @@ public final class GemSlice extends Slice.Wrap {
                 )
             )
         );
+    }
+
+    /**
+     * Lookup an instance of slice, implemented with JRuby.
+     * @param rclass The name of a slice class, implemented in JRuby.
+     * @param runtime The JRuby runtime.
+     * @return The Slice.
+     */
+    private static Slice rubyLookUp(final String rclass, final Ruby runtime) {
+        try {
+            final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
+            final String script = IOUtils.toString(
+                GemSlice.class.getResourceAsStream(String.format("/%s.rb", rclass)),
+                StandardCharsets.UTF_8
+            );
+            evaler.eval(runtime, script);
+            Object rfj = evaler.eval(runtime, String.format("%s.new()", rclass));
+            rfj = JavaEmbedUtils.rubyToJava(
+                runtime,
+                (org.jruby.runtime.builtin.IRubyObject) rfj,
+                Slice.class
+            );
+            return (Slice) rfj;
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
+        }
     }
 }
