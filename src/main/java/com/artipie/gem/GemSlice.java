@@ -43,6 +43,9 @@ import org.jruby.javasupport.JavaEmbedUtils;
 /**
  * A slice, which servers gem packages.
  *
+ * @todo #13:30min Initialize on first request.
+ *  Currently, Ruby runtime initialization and Slice evaluation is happening during the GemSlice construction.
+ *  Instead, the Ruby runtime initialization and Slice evaluation should happen on first request.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @since 0.1
  */
