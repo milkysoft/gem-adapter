@@ -3,8 +3,10 @@ require 'java'
 #  The implementation must receive the .gem file, unzip it, and update specs files. As a result,
 #  files become available for downloading.
 class SubmitGem
+  java_import com.artipie.http.rs.RsWithStatus
+  java_import com.artipie.http.rs.RsStatus
   include com.artipie.http.Slice
   def response(line, headers, body)
-    com.artipie.http.rs.RsWithStatus.new(com.artipie.http.rs.RsStatus::NOT_IMPLEMENTED)
+    RsWithStatus.new(RsStatus::NOT_IMPLEMENTED)
   end
 end
