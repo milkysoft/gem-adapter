@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
  *
  * @since 0.2
  */
-public class SubmitTest {
+public class SubmitGemITCase {
 
     @Test
     public void submitNotImplemented() throws IOException {
