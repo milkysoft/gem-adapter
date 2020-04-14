@@ -25,6 +25,6 @@
 /**
  * Gem adapter tests.
  *
- * @since 0.1
+ * @since 0.2
  */
 package com.artipie.gem;
