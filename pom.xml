@@ -118,13 +118,6 @@ SOFTWARE.
       <artifactId>vertx-rx-java2</artifactId>
       <version>${vertx.version}</version>
     </dependency>
-    <!-- Proper logging for tests -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
   <build>
     <resources>
