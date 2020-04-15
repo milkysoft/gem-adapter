@@ -5,8 +5,11 @@ require 'java'
 class SubmitGem
   java_import com.artipie.http.rs.RsWithStatus
   java_import com.artipie.http.rs.RsStatus
+  java_import org.slf4j.LoggerFactory
   include com.artipie.http.Slice
+  @@log = LoggerFactory::getLogger("com.artipie.gem.SubmitGem")
   def response(line, headers, body)
+    @@log.debug("Requested #{line}")
     RsWithStatus.new(RsStatus::NOT_IMPLEMENTED)
   end
 end
