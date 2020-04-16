@@ -8,6 +8,11 @@ class SubmitGem
   java_import org.slf4j.LoggerFactory
   include com.artipie.http.Slice
   @@log = LoggerFactory::getLogger("com.artipie.gem.SubmitGem")
+
+  def initialize(storage)
+    @storage = storage
+  end
+
   def response(line, headers, body)
     @@log.debug("Requested #{line}")
     RsWithStatus.new(RsStatus::NOT_IMPLEMENTED)
