@@ -118,6 +118,13 @@ SOFTWARE.
       <artifactId>vertx-rx-java2</artifactId>
       <version>${vertx.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.artipie</groupId>
+      <artifactId>extra-gems</artifactId>
+      <version>1.0</version>
+      <scope>system</scope>
+      <systemPath>${basedir}/lib/lib.jar</systemPath>
+    </dependency>
   </dependencies>
   <build>
     <resources>
