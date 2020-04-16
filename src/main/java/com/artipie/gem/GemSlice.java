@@ -76,7 +76,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByMethod(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
-                    GemSlice.rubyLookUp("SubmitGem", runtime)
+                    GemSlice.rubyLookUp("SubmitGem", storage, runtime)
                 ),
                 new SliceRoute.Path(
                     new RtRule.Multiple(
@@ -96,10 +96,13 @@ public final class GemSlice extends Slice.Wrap {
     /**
      * Lookup an instance of slice, implemented with JRuby.
      * @param rclass The name of a slice class, implemented in JRuby.
+     * @param storage The storage to pass directly to Ruby instance.
      * @param runtime The JRuby runtime.
      * @return The Slice.
      */
-    private static Slice rubyLookUp(final String rclass, final Ruby runtime) {
+    private static Slice rubyLookUp(final String rclass,
+        final Storage storage,
+        final Ruby runtime) {
         try {
             final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
             final String script = IOUtils.toString(
@@ -107,9 +110,11 @@ public final class GemSlice extends Slice.Wrap {
                 StandardCharsets.UTF_8
             );
             evaler.eval(runtime, script);
-            return (Slice) JavaEmbedUtils.rubyToJava(
+            return (Slice) JavaEmbedUtils.invokeMethod(
                 runtime,
-                evaler.eval(runtime, String.format("%s.new()", rclass)),
+                evaler.eval(runtime, rclass),
+                "new",
+                new Object[]{storage},
                 Slice.class
             );
         } catch (final IOException exc) {
