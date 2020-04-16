@@ -27,6 +27,7 @@ import com.artipie.asto.Remaining;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.reactivestreams.Publisher;
 
@@ -52,9 +53,10 @@ public final class ByteFlowIntoStringConversion {
 
     /**
      * A string representation.
+     * @param charset The charset to use for the string.
      * @return The single of string.
      */
-    public Single<String> string() {
+    public Single<String> string(final Charset charset) {
         return Flowable.fromPublisher(this.flow)
             .toList()
             .map(
@@ -67,8 +69,16 @@ public final class ByteFlowIntoStringConversion {
                     for (final ByteBuffer buf : bufs) {
                         bytes.put(new Remaining(buf).bytes());
                     }
-                    return new String(bytes.array(), StandardCharsets.UTF_8);
+                    return new String(bytes.array(), charset);
                 }
             );
+    }
+
+    /**
+     * A UTF-8 string representation.
+     * @return The single of string.
+     */
+    public Single<String> string() {
+        return this.string(StandardCharsets.UTF_8);
     }
 }
