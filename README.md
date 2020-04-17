@@ -26,6 +26,11 @@ This is the dependency you need:
 Read the [Javadoc](http://www.javadoc.io/doc/com.artipie/gem-adapter)
 for more technical details.
 
+## Extra gems
+
+`lib/` dir contains additional ruby gems, required by the project.
+The directory is generated at maven clean phase.
+
 ## Useful links
 
 * [RubyGem Index Internals](https://blog.packagecloud.io/eng/2015/12/15/rubygem-index-internals/) - File structure and gem format

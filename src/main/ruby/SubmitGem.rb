@@ -1,4 +1,5 @@
 require 'java'
+require 'builder'
 # @todo #32:120min Gem submission implementation.
 #  The implementation must receive the .gem file, unzip it, and update specs files. As a result,
 #  files become available for downloading.
