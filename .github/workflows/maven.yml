@@ -20,4 +20,4 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Build it with Maven
-        run: mvn -B verify -Pqulice
+        run: mvn -B clean verify -Pqulice
