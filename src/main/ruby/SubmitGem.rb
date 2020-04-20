@@ -18,7 +18,7 @@ class SubmitGem
     gems = File.join(idx, "gems")
     Dir.mkdir(idx) unless File.exists?(idx)
     Dir.mkdir(gems) unless File.exists?(gems)
-    Gem::Indexer.new(idx, { build_modern: true })
+    @indexer = Gem::Indexer.new(idx, { build_modern: true })
   end
 
   def response(line, headers, body)
