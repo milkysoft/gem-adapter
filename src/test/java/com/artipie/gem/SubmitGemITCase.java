@@ -31,6 +31,7 @@ import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import java.io.IOException;
 import java.net.ServerSocket;
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
@@ -48,18 +49,21 @@ public class SubmitGemITCase {
         final int port = this.randomPort();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
-            new GemSlice(new InMemoryStorage()),
+            new GemSlice(new InMemoryStorage(), vertx.fileSystem()),
             port
         );
         final WebClient web = WebClient.create(vertx);
         server.start();
+        final byte[] gem = IOUtils.toByteArray(
+            SubmitGemITCase.class.getResourceAsStream("/builder-3.2.4.gem")
+        );
         final int code = web.post(port, "localhost", "/api/v1/gems")
-            .rxSendBuffer(Buffer.buffer())
+            .rxSendBuffer(Buffer.buffer(gem))
             .blockingGet()
             .statusCode();
         MatcherAssert.assertThat(
             code,
-            new IsEqual<>(Integer.parseInt(RsStatus.NOT_IMPLEMENTED.code()))
+            new IsEqual<>(Integer.parseInt(RsStatus.OK.code()))
         );
         web.close();
         server.close();
