@@ -49,7 +49,7 @@ public class SubmitGemITCase {
         final int port = this.randomPort();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
-            new GemSlice(new InMemoryStorage(), vertx),
+            new GemSlice(new InMemoryStorage(), vertx.fileSystem()),
             port
         );
         final WebClient web = WebClient.create(vertx);

@@ -17,9 +17,9 @@ class SubmitGem
 
   @@log = LoggerFactory::getLogger("com.artipie.gem.SubmitGem")
 
-  def initialize(storage, vertx)
+  def initialize(storage, fs)
     @storage = storage
-    @vertx = vertx
+    @fs = fs
     @idx = "temp-gem-index"
     @gems = File.join(@idx, "gems")
     puts @gems.class
@@ -35,7 +35,7 @@ class SubmitGem
         # @todo #9:30min Random gem name generation.
         #  Currently, when gem is uploaded, it has a name 'upd.gem'. The approach does not
         #  allow us to upload concurrently. Names should chosen randomly.
-        RxFile.new(Paths::get(@gems, "upd.gem"), @vertx.fileSystem()).save(body).and_then(
+        RxFile.new(Paths::get(@gems, "upd.gem"), fs).save(body).and_then(
             Single::from_callable {
               # @todo #9:30min Sync generated indexes with Storage.
               #  For now, generated indexes are stored locally in temp-gem-index directory.

@@ -31,7 +31,7 @@ import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rt.RtRule;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceSimple;
-import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.file.FileSystem;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +50,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  *  on first request.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
+ * @checkstyle ParameterNameCheck (500 lines)
  * @since 0.1
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
@@ -59,10 +60,10 @@ public final class GemSlice extends Slice.Wrap {
      * Ctor.
      *
      * @param storage The storage.
-     * @param vertx The Vert.x instance.
+     * @param fs The file system.
      */
-    public GemSlice(final Storage storage, final Vertx vertx) {
-        this(storage, JavaEmbedUtils.initialize(new ArrayList<>(0)), vertx);
+    public GemSlice(final Storage storage, final FileSystem fs) {
+        this(storage, JavaEmbedUtils.initialize(new ArrayList<>(0)), fs);
     }
 
     /**
@@ -70,9 +71,9 @@ public final class GemSlice extends Slice.Wrap {
      *
      * @param storage The storage.
      * @param runtime The Jruby runtime.
-     * @param vertx The Vert.x instance.
+     * @param fs The file system.
      */
-    public GemSlice(final Storage storage, final Ruby runtime, final Vertx vertx) {
+    public GemSlice(final Storage storage, final Ruby runtime, final FileSystem fs) {
         super(
             new SliceRoute(
                 new SliceRoute.Path(
@@ -80,7 +81,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByMethod(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
-                    GemSlice.rubyLookUp("SubmitGem", storage, runtime, vertx)
+                    GemSlice.rubyLookUp("SubmitGem", storage, runtime, fs)
                 ),
                 new SliceRoute.Path(
                     new RtRule.Multiple(
@@ -102,13 +103,13 @@ public final class GemSlice extends Slice.Wrap {
      * @param rclass The name of a slice class, implemented in JRuby.
      * @param storage The storage to pass directly to Ruby instance.
      * @param runtime The JRuby runtime.
-     * @param vertx The Vert.x instance.
+     * @param fs The File System.
      * @return The Slice.
      */
     private static Slice rubyLookUp(final String rclass,
         final Storage storage,
         final Ruby runtime,
-        final Vertx vertx) {
+        final FileSystem fs) {
         try {
             final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
             final String script = IOUtils.toString(
@@ -120,7 +121,7 @@ public final class GemSlice extends Slice.Wrap {
                 runtime,
                 evaler.eval(runtime, rclass),
                 "new",
-                new Object[]{storage, vertx},
+                new Object[]{storage, fs},
                 Slice.class
             );
         } catch (final IOException exc) {
