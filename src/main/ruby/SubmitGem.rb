@@ -43,7 +43,7 @@ class SubmitGem
               @indexer.generate_index
               RsWithStatus.new(RsStatus::OK)
             }
-        ).to(SingleInterop::get())
+        )
     )
   end
 end
