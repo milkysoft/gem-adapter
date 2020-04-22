@@ -1,6 +1,7 @@
 require 'java'
 require 'builder'
 require 'rubygems/indexer.rb'
+require 'securerandom'
 # @todo #32:120min Gem submission implementation.
 #  The implementation must receive the .gem file, unzip it, and update specs files. As a result,
 #  files become available for downloading.
@@ -29,11 +30,12 @@ class SubmitGem
 
   def response(line, headers, body)
     @@log.debug("Requested #{line}")
+    local = SecureRandom.hex(32) + ".gem"
     AsyncResponse.new(
         # @todo #9:30min Random gem name generation.
         #  Currently, when gem is uploaded, it has a name 'upd.gem'. The approach does not
         #  allow us to upload concurrently. Names should chosen randomly.
-        RxFile.new(Paths::get(@gems, "upd.gem"), @fs).save(body).and_then(
+        RxFile.new(Paths::get(@gems, local), @fs).save(body).and_then(
             Single::from_callable {
               # @todo #9:30min Sync generated indexes with Storage.
               #  For now, generated indexes are stored locally in temp-gem-index directory.
