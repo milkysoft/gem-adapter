@@ -31,7 +31,8 @@ import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import java.io.IOException;
 import java.net.ServerSocket;
-import org.apache.commons.io.IOUtils;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
@@ -54,8 +55,8 @@ public class SubmitGemITCase {
         );
         final WebClient web = WebClient.create(vertx);
         server.start();
-        final byte[] gem = IOUtils.toByteArray(
-            SubmitGemITCase.class.getResourceAsStream("/builder-3.2.4.gem")
+        final byte[] gem = Files.readAllBytes(
+            Paths.get("./src/test/resources/builder-3.2.4.gem")
         );
         final int code = web.post(port, "localhost", "/api/v1/gems")
             .rxSendBuffer(Buffer.buffer(gem))
