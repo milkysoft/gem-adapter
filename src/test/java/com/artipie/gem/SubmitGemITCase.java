@@ -35,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -47,7 +46,6 @@ public class SubmitGemITCase {
 
     @Test
     public void submitNotImplemented() throws IOException {
-
         final Vertx vertx = Vertx.vertx();
         final int port = this.randomPort();
         final VertxSliceServer server = new VertxSliceServer(
