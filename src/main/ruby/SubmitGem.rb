@@ -32,9 +32,6 @@ class SubmitGem
     @@log.debug("Requested #{line}")
     local = SecureRandom.hex(32) + ".gem"
     AsyncResponse.new(
-        # @todo #9:30min Random gem name generation.
-        #  Currently, when gem is uploaded, it has a name 'upd.gem'. The approach does not
-        #  allow us to upload concurrently. Names should chosen randomly.
         RxFile.new(Paths::get(@gems, local), @fs).save(body).and_then(
             Single::from_callable {
               # @todo #9:30min Sync generated indexes with Storage.
