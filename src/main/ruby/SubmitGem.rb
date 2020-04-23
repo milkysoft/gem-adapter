@@ -10,7 +10,6 @@ class SubmitGem
   java_import com.artipie.http.rs.RsWithStatus
   java_import com.artipie.http.rs.RsStatus
   java_import com.artipie.asto.fs.RxFile
-  java_import Java::hu.akarnokd.rxjava2.interop.SingleInterop
   java_import Java::io.reactivex.Single
   java_import java.nio.file.Paths
   java_import org.slf4j.LoggerFactory
@@ -40,7 +39,7 @@ class SubmitGem
               @indexer.generate_index
               RsWithStatus.new(RsStatus::OK)
             }
-        ).to(SingleInterop::get())
+        )
     )
   end
 end
