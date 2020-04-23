@@ -75,6 +75,7 @@ SOFTWARE.
     </site>
   </distributionManagement>
   <dependencies>
+    <!-- Artipie -->
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
