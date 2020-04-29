@@ -25,6 +25,7 @@ package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.vertx.VertxSliceServer;
+import com.jcabi.log.Logger;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import org.hamcrest.MatcherAssert;
@@ -65,8 +66,8 @@ public class GemCliITCase {
             "-c",
             String.format("GEM_HOST_API_KEY=123 gem push builder-3.2.4.gem --host %s", host)
         );
-        System.out.println(push.getStdout());
-        System.err.println(push.getStderr());
+        Logger.info(GemCliITCase.class, push.getStdout());
+        Logger.error(GemCliITCase.class, push.getStderr());
         MatcherAssert.assertThat(
             String.format("'gem push builder-3.2.4.gem --host %s' failed with non-zero code", host),
             push.getExitCode(),
