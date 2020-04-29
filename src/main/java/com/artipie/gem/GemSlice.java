@@ -54,6 +54,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
  * @checkstyle ParameterNameCheck (500 lines)
+ * @checkstyle MethodBodyCommentsCheck (500 lines)
  * @since 0.1
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
