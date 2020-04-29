@@ -92,11 +92,9 @@ public class GemCliITCase {
         );
         Logger.info(GemCliITCase.class, exec.getStdout());
         Logger.error(GemCliITCase.class, exec.getStderr());
-        MatcherAssert.assertThat(
-            "An error occurred",
-            exec.getStderr(),
-            new IsEqual<>("")
-        );
+        if (exec.getStderr().equals("")) {
+            throw new IllegalStateException("An error occurred");
+        }
         return exec.getExitCode();
     }
 
