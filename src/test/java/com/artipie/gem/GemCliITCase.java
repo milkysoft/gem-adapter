@@ -30,7 +30,6 @@ import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.testcontainers.Testcontainers;
@@ -83,6 +82,14 @@ public class GemCliITCase {
         vertx.close();
     }
 
+    /**
+     * Executes a bash command in a ruby container.
+     * @param ruby The ruby container.
+     * @param command Bash command to execute.
+     * @return Exit code.
+     * @throws IOException If fails.
+     * @throws InterruptedException If fails.
+     */
     private int bash(final RubyContainer ruby, final String command)
         throws IOException, InterruptedException {
         final Container.ExecResult exec = ruby.execInContainer(
@@ -92,7 +99,7 @@ public class GemCliITCase {
         );
         Logger.info(GemCliITCase.class, exec.getStdout());
         Logger.error(GemCliITCase.class, exec.getStderr());
-        if (exec.getStderr().equals("")) {
+        if (!exec.getStderr().equals("")) {
             throw new IllegalStateException("An error occurred");
         }
         return exec.getExitCode();
