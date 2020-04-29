@@ -24,47 +24,68 @@
 package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
-import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
+import com.jcabi.log.Logger;
 import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.ext.web.client.WebClient;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.Container;
+import org.testcontainers.containers.GenericContainer;
 
 /**
- * A test for gem submit operation.
+ * A test which ensures {@code gem} console tool compatibility with the adapter.
  *
  * @since 0.2
+ * @checkstyle StringLiteralsConcatenationCheck (500 lines)
  */
-public class SubmitGemITCase {
+@SuppressWarnings("PMD.SystemPrintln")
+@DisabledIfSystemProperty(named = "os.name", matches = "Windows.*")
+public class GemCliITCase {
 
     @Test
-    public void submitNotImplemented() throws IOException {
+    public void gemPushWorks() throws IOException, InterruptedException {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new GemSlice(new InMemoryStorage(), vertx.fileSystem())
         );
-        final WebClient web = WebClient.create(vertx);
         final int port = server.start();
-        final byte[] gem = Files.readAllBytes(
-            Paths.get("./src/test/resources/builder-3.2.4.gem")
+        final String host = String.format("http://host.testcontainers.internal:%d", port);
+        Testcontainers.exposeHostPorts(port);
+        final RubyContainer ruby = new RubyContainer()
+            .withCommand("tail", "-f", "/dev/null")
+            .withWorkingDirectory("/home/")
+            .withFileSystemBind("./src/test/resources", "/home");
+        ruby.start();
+        final Container.ExecResult push = ruby.execInContainer(
+            "/bin/bash",
+            "-c",
+            String.format("GEM_HOST_API_KEY=123 gem push builder-3.2.4.gem --host %s", host)
         );
-        final int code = web.post(port, "localhost", "/api/v1/gems")
-            .rxSendBuffer(Buffer.buffer(gem))
-            .blockingGet()
-            .statusCode();
+        Logger.info(GemCliITCase.class, push.getStdout());
+        Logger.error(GemCliITCase.class, push.getStderr());
         MatcherAssert.assertThat(
-            code,
-            new IsEqual<>(Integer.parseInt(RsStatus.OK.code()))
+            String.format("'gem push builder-3.2.4.gem --host %s' failed with non-zero code", host),
+            push.getExitCode(),
+            Matchers.equalTo(0)
         );
-        web.close();
+        ruby.stop();
         server.close();
         vertx.close();
+    }
+
+    /**
+     * Inner subclass to instantiate Ruby container.
+     *
+     * @since 0.1
+     */
+    private static class RubyContainer extends GenericContainer<RubyContainer> {
+        RubyContainer() {
+            super("ruby:2.7");
+        }
     }
 }
