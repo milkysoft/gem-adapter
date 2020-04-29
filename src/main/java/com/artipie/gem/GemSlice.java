@@ -95,6 +95,10 @@ public final class GemSlice extends Slice.Wrap {
                 ),
                 new SliceRoute.Path(
                     new RtRule.ByMethod(RqMethod.GET),
+                    // @todo #25:30min Use underlying storage.
+                    //  Currency, local directory 'temp-gem-index' is used as a storage for serving
+                    //  metadata files. This approaches has a significant amount of drawbacks, that
+                    //  is why we should change it.
                     new SliceDownload(new FileStorage(Paths.get("temp-gem-index"), fs))
                 ),
                 new SliceRoute.Path(
