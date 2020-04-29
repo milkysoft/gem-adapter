@@ -47,7 +47,7 @@ import org.testcontainers.containers.GenericContainer;
 public class GemCliITCase {
 
     @Test
-    public void gemPushWorks() throws IOException, InterruptedException {
+    public void gemPushAndInstallWorks() throws IOException, InterruptedException {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
@@ -61,21 +61,48 @@ public class GemCliITCase {
             .withWorkingDirectory("/home/")
             .withFileSystemBind("./src/test/resources", "/home");
         ruby.start();
-        final Container.ExecResult push = ruby.execInContainer(
-            "/bin/bash",
-            "-c",
-            String.format("GEM_HOST_API_KEY=123 gem push builder-3.2.4.gem --host %s", host)
-        );
-        Logger.info(GemCliITCase.class, push.getStdout());
-        Logger.error(GemCliITCase.class, push.getStderr());
         MatcherAssert.assertThat(
-            String.format("'gem push builder-3.2.4.gem --host %s' failed with non-zero code", host),
-            push.getExitCode(),
+            String.format("'gem push failed with non-zero code", host),
+            this.bash(
+                ruby,
+                String.format("GEM_HOST_API_KEY=123 gem push builder-3.2.4.gem --host %s", host)
+            ),
+            Matchers.equalTo(0)
+        );
+        MatcherAssert.assertThat(
+            String.format("'gem install failed with non-zero code", host),
+            this.bash(
+                ruby,
+                String.format("GEM_HOST_API_KEY=123 gem install builder --source %s", host)
+            ),
             Matchers.equalTo(0)
         );
         ruby.stop();
         server.close();
         vertx.close();
+    }
+
+    /**
+     * Executes a bash command in a ruby container.
+     * @param ruby The ruby container.
+     * @param command Bash command to execute.
+     * @return Exit code.
+     * @throws IOException If fails.
+     * @throws InterruptedException If fails.
+     */
+    private int bash(final RubyContainer ruby, final String command)
+        throws IOException, InterruptedException {
+        final Container.ExecResult exec = ruby.execInContainer(
+            "/bin/bash",
+            "-c",
+            command
+        );
+        Logger.info(GemCliITCase.class, exec.getStdout());
+        Logger.error(GemCliITCase.class, exec.getStderr());
+        if (!exec.getStderr().equals("")) {
+            throw new IllegalStateException("An error occurred");
+        }
+        return exec.getExitCode();
     }
 
     /**
