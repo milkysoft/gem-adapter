@@ -24,17 +24,20 @@
 package com.artipie.gem;
 
 import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rt.RtRule;
 import com.artipie.http.rt.SliceRoute;
+import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
 import io.vertx.reactivex.core.file.FileSystem;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
@@ -89,6 +92,10 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByPath(GemInfo.PATH_PATTERN)
                     ),
                     new GemInfo(storage)
+                ),
+                new SliceRoute.Path(
+                    new RtRule.ByMethod(RqMethod.GET),
+                    new SliceDownload(new FileStorage(Paths.get("temp-gem-index"), fs))
                 ),
                 new SliceRoute.Path(
                     RtRule.FALLBACK,

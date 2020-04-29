@@ -30,6 +30,7 @@ import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.testcontainers.Testcontainers;
@@ -47,7 +48,7 @@ import org.testcontainers.containers.GenericContainer;
 public class GemCliITCase {
 
     @Test
-    public void gemPushWorks() throws IOException, InterruptedException {
+    public void gemPushAndInstallWorks() throws IOException, InterruptedException {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
@@ -61,21 +62,42 @@ public class GemCliITCase {
             .withWorkingDirectory("/home/")
             .withFileSystemBind("./src/test/resources", "/home");
         ruby.start();
-        final Container.ExecResult push = ruby.execInContainer(
-            "/bin/bash",
-            "-c",
-            String.format("GEM_HOST_API_KEY=123 gem push builder-3.2.4.gem --host %s", host)
-        );
-        Logger.info(GemCliITCase.class, push.getStdout());
-        Logger.error(GemCliITCase.class, push.getStderr());
         MatcherAssert.assertThat(
-            String.format("'gem push builder-3.2.4.gem --host %s' failed with non-zero code", host),
-            push.getExitCode(),
+            String.format("'gem push failed with non-zero code", host),
+            this.bash(
+                ruby,
+                String.format("GEM_HOST_API_KEY=123 gem push builder-3.2.4.gem --host %s", host)
+            ),
+            Matchers.equalTo(0)
+        );
+        MatcherAssert.assertThat(
+            String.format("'gem install failed with non-zero code", host),
+            this.bash(
+                ruby,
+                String.format("GEM_HOST_API_KEY=123 gem install builder --source %s", host)
+            ),
             Matchers.equalTo(0)
         );
         ruby.stop();
         server.close();
         vertx.close();
+    }
+
+    private int bash(final RubyContainer ruby, final String command)
+        throws IOException, InterruptedException {
+        final Container.ExecResult exec = ruby.execInContainer(
+            "/bin/bash",
+            "-c",
+            command
+        );
+        Logger.info(GemCliITCase.class, exec.getStdout());
+        Logger.error(GemCliITCase.class, exec.getStderr());
+        MatcherAssert.assertThat(
+            "An error occurred",
+            exec.getStderr(),
+            new IsEqual<>("")
+        );
+        return exec.getExitCode();
     }
 
     /**
