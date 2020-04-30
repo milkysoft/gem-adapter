@@ -20,7 +20,7 @@ deploy:
     exit 1
 release:
   script: |-
-    gem install rdoc
+    sudo gem install rdoc
     pdd -f /dev/null
     gpg --import /home/r/pubring.gpg
     gpg --allow-secret-key-import --no-tty --batch --import /home/r/secring.gpg
