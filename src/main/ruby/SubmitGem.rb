@@ -22,11 +22,12 @@ class SubmitGem
     @fs = fs
     @idx = "temp-gem-index"
     @gems = File.join(@idx, "gems")
-    idx_exited = File.exists?(@idx)
-    Dir.mkdir(@idx) unless idx_exited
+    # Was index created before?
+    idx_existed = File.exists?(@idx)
+    Dir.mkdir(@idx) unless idx_existed
     Dir.mkdir(@gems) unless File.exists?(@gems)
     @indexer = Gem::Indexer.new(@idx, { build_modern: true })
-    @indexer.generate_index unless idx_exited
+    @indexer.generate_index unless idx_existed
   end
 
   def response(line, headers, body)
