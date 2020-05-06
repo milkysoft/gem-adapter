@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test;
 public class SubmitGemITCase {
 
     @Test
-    public void submitNotImplemented() throws IOException {
+    public void submitResultsInOkResponse() throws IOException {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
