@@ -2,6 +2,7 @@ require 'java'
 require 'builder'
 require 'rubygems/indexer.rb'
 require 'securerandom'
+require 'AstoIndexer.rb'
 # @todo #32:120min Gem submission implementation.
 #  The implementation must receive the .gem file, unzip it, and update specs files. As a result,
 #  files become available for downloading.
@@ -26,7 +27,7 @@ class SubmitGem
     idx_existed = File.exists?(@idx)
     Dir.mkdir(@idx) unless idx_existed
     Dir.mkdir(@gems) unless File.exists?(@gems)
-    @indexer = Gem::Indexer.new(@idx, { build_modern: true })
+    @indexer = AstoIndexer.new(storage ,@idx, { build_modern: true })
     @indexer.generate_index unless idx_existed
   end
 
