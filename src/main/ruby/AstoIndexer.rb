@@ -19,9 +19,9 @@ end
 
 ##
 # Top level class for building the gem repository index.
-# @todo #9:30min Adapt AstoIndexer to use .
+# @todo #9:30min Adapt AstoIndexer to generate files in storage.
 #  For now, generated indexes are stored locally in temp-gem-index directory.
-#  Those should also be syncronized with storage.
+#  Files should be generated in storage instead.
 class AstoIndexer
 
   include Gem::UserInteraction
