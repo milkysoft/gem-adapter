@@ -53,7 +53,9 @@ class SubmitGem
             .and_then(Single::just(RsWithStatus.new(RsStatus::OK)))
     )
   end
-
+. #
+. # from - RxStorage to sync from
+  # to - RxStorage to sync with 
   def sync(from, to)
     # Specs files to copy if exists
     specs = from.list(Key::ROOT).flatMapPublisher { |keys|
