@@ -21,6 +21,7 @@ class SubmitGem
   java_import java.util.concurrent.TimeUnit
   java_import java.nio.file.Paths
   java_import java.util.ArrayList
+  java_import java.util.HashSet
   java_import org.slf4j.LoggerFactory
   include com.artipie.http.Slice
 
@@ -38,40 +39,54 @@ class SubmitGem
     @indexer = AstoIndexer.new(storage ,@idx, { build_modern: true })
     @indexer.generate_index unless idx_existed
     @rx_idx_local = RxStorageWrapper.new(FileStorage.new(Paths::get(@idx), @fs))
+    @rx_storage = RxStorageWrapper.new(@storage)
   end
 
   def response(line, headers, body)
     @@log.debug("Requested #{line}")
     local = SecureRandom.hex(32) + ".gem"
-    rx_storage = RxStorageWrapper.new(@storage)
     AsyncResponse.new(
         RxFile.new(Paths::get(@gems, local), @fs).save(body)
+            .and_then(self.sync(@rx_storage, @rx_idx_local))
             .and_then(Completable::from_action { @indexer.update_index })
-            .and_then(
-                files_to_sync.flatMapCompletable {
-                    |keys| RxCopy.new(@rx_idx_local, keys).copy(rx_storage)
-                }
-            )
+            .and_then(self.sync(@rx_idx_local, @rx_storage))
             .and_then(Single::just(RsWithStatus.new(RsStatus::OK)))
     )
   end
 
-  def files_to_sync()
-    @rx_idx_local.list(Key::From.new("quick"))
-        .flatMapPublisher { |keys| Flowable::from_iterable(keys) }
-        .mergeWith(
-            Flowable::fromIterable(
-                ArrayList.new(
-                    [
-                        Key::From.new("latest_specs.4.8"),
-                        Key::From.new("latest_specs.4.8.gz"),
-                        Key::From.new("prerelease_specs.4.8"),
-                        Key::From.new("prerelease_specs.4.8.gz"),
-                        Key::From.new("specs.4.8"),
-                        Key::From.new("specs.4.8.gz")
-                    ]
-                )
-            )
-        ).to_list
+  #
+  # from - RxStorage to sync from
+  # to - RxStorage to sync with
+  def sync(from, to)
+    # Specs files to copy if exists
+    specs = from.list(Key::ROOT).flatMapPublisher { |keys|
+      keys.retainAll(
+          HashSet.new(
+              [
+                  Key::From.new("latest_specs.4.8"),
+                  Key::From.new("latest_specs.4.8.gz"),
+                  Key::From.new("prerelease_specs.4.8"),
+                  Key::From.new("prerelease_specs.4.8.gz"),
+                  Key::From.new("specs.4.8"),
+                  Key::From.new("specs.4.8.gz")
+              ]
+          )
+      )
+      Flowable::from_iterable(keys)
+    }
+    # Non-specs files, copy if not exists
+    diff = from.list(Key::From.new("quick"))
+               .zipWith(
+                   to.list(Key::From.new("quick")),
+                   -> src, dest {
+                     src.removeAll(dest)
+                     src
+                   }
+               )
+               .flatMapPublisher { |keys| Flowable::from_iterable(keys) }
+    specs.mergeWith(diff).to_list.flatMapCompletable do |keys|
+      @@log.debug("Copy {}", keys)
+      RxCopy.new(from, keys).copy(to)
+    end
   end
 end
