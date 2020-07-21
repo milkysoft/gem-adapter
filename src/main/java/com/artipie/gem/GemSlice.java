@@ -29,6 +29,7 @@ import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rt.RtRule;
+import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
@@ -78,25 +79,25 @@ public final class GemSlice extends Slice.Wrap {
     public GemSlice(final Storage storage, final Ruby runtime, final FileSystem fs) {
         super(
             new SliceRoute(
-                new SliceRoute.Path(
-                    new RtRule.Multiple(
+                new RtRulePath(
+                    new RtRule.All(
                         new RtRule.ByMethod(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
                     GemSlice.rubyLookUp("SubmitGem", storage, runtime, fs)
                 ),
-                new SliceRoute.Path(
-                    new RtRule.Multiple(
+                new RtRulePath(
+                    new RtRule.All(
                         new RtRule.ByMethod(RqMethod.GET),
                         new RtRule.ByPath(GemInfo.PATH_PATTERN)
                     ),
                     new GemInfo(storage)
                 ),
-                new SliceRoute.Path(
+                new RtRulePath(
                     new RtRule.ByMethod(RqMethod.GET),
                     new SliceDownload(storage)
                 ),
-                new SliceRoute.Path(
+                new RtRulePath(
                     RtRule.FALLBACK,
                     new SliceSimple(new RsWithStatus(RsStatus.NOT_FOUND))
                 )
