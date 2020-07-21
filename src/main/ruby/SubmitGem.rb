@@ -46,7 +46,7 @@ class SubmitGem
     @@log.debug("Requested #{line}")
     local = SecureRandom.hex(32) + ".gem"
     AsyncResponse.new(
-        RxFile.new(Paths::get(@gems, local), @fs).save(body)
+        RxFile.new(Paths::get(@gems, local)).save(body)
             .and_then(self.sync(@rx_storage, @rx_idx_local))
             .and_then(Completable::from_action { @indexer.update_index })
             .and_then(self.sync(@rx_idx_local, @rx_storage))
