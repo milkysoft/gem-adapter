@@ -27,9 +27,8 @@ class SubmitGem
 
   @@log = LoggerFactory::getLogger("com.artipie.gem.SubmitGem")
 
-  def initialize(storage, fs)
+  def initialize(storage)
     @storage = storage
-    @fs = fs
     @idx = "temp-gem-index"
     @gems = File.join(@idx, "gems")
     # Was index created before?
@@ -38,7 +37,7 @@ class SubmitGem
     Dir.mkdir(@gems) unless File.exists?(@gems)
     @indexer = AstoIndexer.new(storage ,@idx, { build_modern: true })
     @indexer.generate_index unless idx_existed
-    @rx_idx_local = RxStorageWrapper.new(FileStorage.new(Paths::get(@idx), @fs))
+    @rx_idx_local = RxStorageWrapper.new(FileStorage.new(Paths::get(@idx)))
     @rx_storage = RxStorageWrapper.new(@storage)
   end
 
