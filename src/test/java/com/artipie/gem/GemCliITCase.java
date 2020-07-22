@@ -89,10 +89,18 @@ public class GemCliITCase {
         Files.delete(bgem);
         Files.delete(rgem);
         MatcherAssert.assertThat(
-            String.format("'gem install failed with non-zero code", host),
+            String.format("Unable to remove https://rubygems.org from the list of sources", host),
             this.bash(
                 ruby,
-                String.format("GEM_HOST_API_KEY=123 gem fetch builder --source %s", host)
+                String.format("gem sources -r https://rubygems.org/", host)
+            ),
+            Matchers.equalTo(0)
+        );
+        MatcherAssert.assertThat(
+            String.format("'gem fetch failed with non-zero code", host),
+            this.bash(
+                ruby,
+                String.format("GEM_HOST_API_KEY=123 gem fetch -V builder --source %s", host)
             ),
             Matchers.equalTo(0)
         );
