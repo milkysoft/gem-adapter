@@ -3,6 +3,7 @@ require 'builder'
 require 'rubygems/indexer.rb'
 require 'securerandom'
 require 'AstoIndexer.rb'
+require 'fileutils'
 # @todo #32:120min Gem submission implementation.
 #  The implementation must receive the .gem file, unzip it, and update specs files. As a result,
 #  files become available for downloading.
@@ -20,6 +21,7 @@ class SubmitGem
   java_import Java::io.reactivex.Completable
   java_import java.util.concurrent.TimeUnit
   java_import java.nio.file.Paths
+  java_import java.nio.file.Files
   java_import java.util.ArrayList
   java_import java.util.HashSet
   java_import org.slf4j.LoggerFactory
@@ -43,9 +45,16 @@ class SubmitGem
 
   def response(line, headers, body)
     @@log.debug("Requested #{line}")
-    local = SecureRandom.hex(32) + ".gem"
+    rnd_gem = SecureRandom.hex(32) + ".gem"
+    rnd_path = File.join(@gems, rnd_gem)
+    jrnd_path = Paths::get(@gems, rnd_gem)
     AsyncResponse.new(
-        RxFile.new(Paths::get(@gems, local)).save(body)
+        RxFile.new(jrnd_path).save(body)
+            .and_then(Completable::from_action{
+              spec = Gem::Package.new(rnd_path).spec
+              real_path = File.join(@gems, "#{spec.name}-#{spec.version}.gem")
+              FileUtils.mv(rnd_path, real_path)
+            })
             .and_then(self.sync(@rx_storage, @rx_idx_local))
             .and_then(Completable::from_action { @indexer.update_index })
             .and_then(self.sync(@rx_idx_local, @rx_storage))
