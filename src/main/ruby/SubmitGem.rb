@@ -74,18 +74,29 @@ class SubmitGem
       Flowable::from_iterable(keys)
     }
     # Non-specs files, copy if not exists
-    diff = from.list(Key::From.new("quick"))
-               .zipWith(
-                   to.list(Key::From.new("quick")),
-                   -> src, dest {
-                     src.removeAll(dest)
-                     src
-                   }
-               )
-               .flatMapPublisher { |keys| Flowable::from_iterable(keys) }
-    specs.mergeWith(diff).to_list.flatMapCompletable do |keys|
+    specs
+        .mergeWith(diff_keys("quick", from, to))
+        .mergeWith(diff_keys("gems", from, to))
+        .to_list
+        .flatMapCompletable do |keys|
       @@log.debug("Copy {}", keys)
       RxCopy.new(from, keys).copy(to)
     end
+  end
+
+  # Find the storage differences in a particular directory
+  # dir - the directory in which to find the difference
+  # from - RxStorage to sync from
+  # to - RxStorage to sync with
+  private def diff_keys(dir, from, to)
+    from.list(Key::From.new(dir))
+        .zipWith(
+            to.list(Key::From.new(dir)),
+            -> src, dest {
+              src.removeAll(dest)
+              src
+            }
+        )
+        .flatMapPublisher { |keys| Flowable::from_iterable(keys) }
   end
 end
