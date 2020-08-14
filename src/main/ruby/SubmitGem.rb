@@ -49,7 +49,7 @@ class SubmitGem
     rnd_path = File.join(@gems, rnd_gem)
     jrnd_path = Paths::get(@gems, rnd_gem)
     AsyncResponse.new(
-        RxFile.new(jrnd_path).save(body)
+        RxFile.new(jrnd_path).save(Flowable::fromPublisher(body))
             .and_then(Completable::from_action{
               spec = Gem::Package.new(rnd_path).spec
               real_path = File.join(@gems, "#{spec.name}-#{spec.version}.gem")
