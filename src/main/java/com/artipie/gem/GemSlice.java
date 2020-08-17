@@ -57,7 +57,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * @checkstyle MethodBodyCommentsCheck (500 lines)
  * @since 0.1
  */
-@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField", "PMD.UnusedFormalParameter"})
 public final class GemSlice extends Slice.Wrap {
 
     /**
@@ -77,11 +77,13 @@ public final class GemSlice extends Slice.Wrap {
      *
      * @param storage The storage.
      * @param runtime The Jruby runtime.
+     * @param perms The perms.
+     * @param users The users.
      */
     public GemSlice(final Storage storage,
-                    final Ruby runtime,
-                    final Permissions perms,
-                    final Identities users) {
+        final Ruby runtime,
+        final Permissions perms,
+        final Identities users) {
         super(
             new SliceRoute(
                 new RtRulePath(
@@ -96,7 +98,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByMethod(RqMethod.GET),
                         new RtRule.ByPath("/api/v1/api_key")
                     ),
-                    new ApiKeySlice(perms, users)
+                    new ApiKeySlice(users)
                 ),
                 new RtRulePath(
                     new RtRule.All(
