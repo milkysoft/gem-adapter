@@ -25,6 +25,8 @@ package com.artipie.gem;
 
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
+import com.artipie.http.auth.Identities;
+import com.artipie.http.auth.Permissions;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
@@ -64,7 +66,10 @@ public final class GemSlice extends Slice.Wrap {
      * @param storage The storage.
      */
     public GemSlice(final Storage storage) {
-        this(storage, JavaEmbedUtils.initialize(new ArrayList<>(0)));
+        this(storage,
+            JavaEmbedUtils.initialize(new ArrayList<>(0)),
+            Permissions.FREE,
+            Identities.ANONYMOUS);
     }
 
     /**
@@ -73,7 +78,10 @@ public final class GemSlice extends Slice.Wrap {
      * @param storage The storage.
      * @param runtime The Jruby runtime.
      */
-    public GemSlice(final Storage storage, final Ruby runtime) {
+    public GemSlice(final Storage storage,
+                    final Ruby runtime,
+                    final Permissions perms,
+                    final Identities users) {
         super(
             new SliceRoute(
                 new RtRulePath(
@@ -82,6 +90,13 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByPath("/api/v1/gems")
                     ),
                     GemSlice.rubyLookUp("SubmitGem", storage, runtime)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new RtRule.ByMethod(RqMethod.GET),
+                        new RtRule.ByPath("/api/v1/api_key")
+                    ),
+                    new ApiKeySlice(perms, users)
                 ),
                 new RtRulePath(
                     new RtRule.All(
