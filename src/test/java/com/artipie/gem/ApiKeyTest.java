@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
  *
  * @since 0.3
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class ApiKeyTest {
 
     @Test
@@ -61,7 +62,7 @@ public class ApiKeyTest {
     }
 
     @Test
-    public void secondBranch(){
+    public void secondBranch() {
         final String token = "aGVsbG86d29ybGQ=";
         final ArrayList<Map.Entry<String, String>> headers = new ArrayList<>(0);
         headers.add(new Authorization(String.format("Basic %s", token)));
