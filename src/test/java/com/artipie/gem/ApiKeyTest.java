@@ -24,14 +24,19 @@
 package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.hm.RsHasBody;
+import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
+import com.artipie.http.rs.RsStatus;
 import io.reactivex.Flowable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Optional;
 import org.hamcrest.MatcherAssert;
+import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -52,6 +57,25 @@ public class ApiKeyTest {
                 headers,
                 Flowable.empty()
             ), new RsHasBody(token.getBytes(StandardCharsets.UTF_8))
+        );
+    }
+
+    @Test
+    public void secondBranch(){
+        final String token = "aGVsbG86d29ybGQ=";
+        final ArrayList<Map.Entry<String, String>> headers = new ArrayList<>(0);
+        headers.add(new Authorization(String.format("Basic %s", token)));
+        MatcherAssert.assertThat(
+            new GemSlice(
+                new InMemoryStorage(),
+                JavaEmbedUtils.initialize(new ArrayList<>(0)),
+                Permissions.FREE,
+                (line, iterable) -> Optional.empty()
+            ).response(
+                new RequestLine("GET", "/api/v1/api_key").toString(),
+                headers,
+                Flowable.empty()
+            ), new RsHasStatus(RsStatus.UNAUTHORIZED)
         );
     }
 }
