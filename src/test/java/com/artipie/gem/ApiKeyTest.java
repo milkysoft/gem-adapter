@@ -23,7 +23,7 @@
  */
 package com.artipie.gem;
 
-import com.artipie.http.auth.Identities;
+import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.rq.RequestLine;
@@ -37,8 +37,7 @@ import org.junit.jupiter.api.Test;
 /**
  * A test for api key endpoint.
  *
- * @since 0.2
- * @checkstyle StringLiteralsConcatenationCheck (500 lines)
+ * @since 0.3
  */
 public class ApiKeyTest {
 
@@ -48,8 +47,8 @@ public class ApiKeyTest {
         final ArrayList<Map.Entry<String, String>> headers = new ArrayList<>(0);
         headers.add(new Authorization(String.format("Basic %s", token)));
         MatcherAssert.assertThat(
-            new ApiKeySlice(Identities.ANONYMOUS).response(
-                new RequestLine("GET", "/").toString(),
+            new GemSlice(new InMemoryStorage()).response(
+                new RequestLine("GET", "/api/v1/api_key").toString(),
                 headers,
                 Flowable.empty()
             ), new RsHasBody(token.getBytes(StandardCharsets.UTF_8))
