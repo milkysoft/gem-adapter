@@ -77,7 +77,7 @@ public final class ApiKeySlice implements Slice {
                 .get();
             response = new RsWithBody(key, StandardCharsets.UTF_8);
         } else {
-            response = new RsWithStatus(RsStatus.FORBIDDEN);
+            response = new RsWithStatus(RsStatus.UNAUTHORIZED);
         }
         return response;
     }
