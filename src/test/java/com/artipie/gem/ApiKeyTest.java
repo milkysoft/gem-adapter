@@ -24,6 +24,7 @@
 package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.http.Headers;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.hm.RsHasBody;
@@ -50,8 +51,7 @@ public class ApiKeyTest {
     @Test
     public void keyIsReturned() {
         final String token = "aGVsbG86d29ybGQ=";
-        final ArrayList<Map.Entry<String, String>> headers = new ArrayList<>(0);
-        headers.add(new Authorization(String.format("Basic %s", token)));
+        final Headers headers = new Headers.From(new Authorization(String.format("Basic %s", token)));
         MatcherAssert.assertThat(
             new GemSlice(new InMemoryStorage()).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
@@ -63,9 +63,6 @@ public class ApiKeyTest {
 
     @Test
     public void secondBranch() {
-        final String token = "aGVsbG86d29ybGQ=";
-        final ArrayList<Map.Entry<String, String>> headers = new ArrayList<>(0);
-        headers.add(new Authorization(String.format("Basic %s", token)));
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
@@ -74,7 +71,7 @@ public class ApiKeyTest {
                 (line, iterable) -> Optional.empty()
             ).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
-                headers,
+                new Headers.From(),
                 Flowable.empty()
             ), new RsHasStatus(RsStatus.UNAUTHORIZED)
         );
