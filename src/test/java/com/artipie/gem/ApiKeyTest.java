@@ -62,7 +62,7 @@ public class ApiKeyTest {
     }
 
     @Test
-    public void secondBranch() {
+    public void unauthorizedWhenNoIdentity() {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
