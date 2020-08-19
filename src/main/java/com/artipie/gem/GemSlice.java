@@ -26,7 +26,6 @@ package com.artipie.gem;
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Identities;
-import com.artipie.http.auth.Permissions;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
@@ -68,7 +67,6 @@ public final class GemSlice extends Slice.Wrap {
     public GemSlice(final Storage storage) {
         this(storage,
             JavaEmbedUtils.initialize(new ArrayList<>(0)),
-            Permissions.FREE,
             Identities.ANONYMOUS);
     }
 
@@ -82,7 +80,6 @@ public final class GemSlice extends Slice.Wrap {
      */
     public GemSlice(final Storage storage,
         final Ruby runtime,
-        final Permissions perms,
         final Identities users) {
         super(
             new SliceRoute(
