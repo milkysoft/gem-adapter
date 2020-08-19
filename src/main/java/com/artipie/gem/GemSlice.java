@@ -56,7 +56,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * @checkstyle MethodBodyCommentsCheck (500 lines)
  * @since 0.1
  */
-@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField", "PMD.UnusedFormalParameter"})
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class GemSlice extends Slice.Wrap {
 
     /**
