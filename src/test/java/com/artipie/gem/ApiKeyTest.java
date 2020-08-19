@@ -34,7 +34,6 @@ import com.artipie.http.rs.RsStatus;
 import io.reactivex.Flowable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Optional;
 import org.hamcrest.MatcherAssert;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -51,7 +50,9 @@ public class ApiKeyTest {
     @Test
     public void keyIsReturned() {
         final String token = "aGVsbG86d29ybGQ=";
-        final Headers headers = new Headers.From(new Authorization(String.format("Basic %s", token)));
+        final Headers headers = new Headers.From(
+            new Authorization(String.format("Basic %s", token))
+        );
         MatcherAssert.assertThat(
             new GemSlice(new InMemoryStorage()).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
