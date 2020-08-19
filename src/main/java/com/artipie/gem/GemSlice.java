@@ -75,7 +75,6 @@ public final class GemSlice extends Slice.Wrap {
      *
      * @param storage The storage.
      * @param runtime The Jruby runtime.
-     * @param perms The perms.
      * @param users The users.
      */
     public GemSlice(final Storage storage,
