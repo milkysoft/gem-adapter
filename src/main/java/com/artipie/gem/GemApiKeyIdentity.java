@@ -23,63 +23,40 @@
  */
 package com.artipie.gem;
 
-import com.artipie.http.Response;
-import com.artipie.http.Slice;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.BasicIdentities;
+import com.artipie.http.auth.Identities;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.rq.RqHeaders;
-import com.artipie.http.rs.RsStatus;
-import com.artipie.http.rs.RsWithBody;
-import com.artipie.http.rs.RsWithStatus;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
-import org.reactivestreams.Publisher;
+import org.cactoos.text.Base64Decoded;
 
 /**
- * Responses on api key requests.
- *
- * @since 0.3
+ * {@link Identities} implementation fo gem api key decoding.
+ * @since 0.4
  */
-public final class ApiKeySlice implements Slice {
+public final class GemApiKeyIdentity implements Identities {
 
     /**
-     * Basic authentication prefix.
-     */
-    private static final String PREFIX = "Basic ";
-
-    /**
-     * The users.
+     * Concrete implementation for User Identification.
      */
     private final Authentication auth;
 
     /**
-     * The Ctor.
-     * @param auth Auth.
+     * Ctor.
+     * @param auth Concrete implementation for User Identification.
      */
-    public ApiKeySlice(final Authentication auth) {
+    public GemApiKeyIdentity(final Authentication auth) {
         this.auth = auth;
     }
 
     @Override
-    public Response response(
-        final String line,
-        final Iterable<Map.Entry<String, String>> headers,
-        final Publisher<ByteBuffer> body) {
-        final Response response;
-        final Optional<String> user = new BasicIdentities(this.auth).user(line, headers);
-        if (user.isPresent()) {
-            final String key = new RqHeaders(headers, Authorization.NAME).stream()
-                .findFirst()
-                .filter(hdr -> hdr.startsWith(ApiKeySlice.PREFIX))
-                .map(hdr -> hdr.substring(ApiKeySlice.PREFIX.length()))
-                .get();
-            response = new RsWithBody(key, StandardCharsets.UTF_8);
-        } else {
-            response = new RsWithStatus(RsStatus.UNAUTHORIZED);
-        }
-        return response;
+    public Optional<String> user(final String line,
+        final Iterable<Map.Entry<String, String>> headers) {
+        return new RqHeaders(headers, Authorization.NAME).stream()
+            .findFirst()
+            .map(Base64Decoded::new)
+            .map(dec -> dec.toString().split(":"))
+            .flatMap(cred -> this.auth.user(cred[0].trim(), cred[1].trim()));
     }
 }

@@ -25,6 +25,7 @@ package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.Headers;
+import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.RsHasStatus;
@@ -67,7 +68,8 @@ public class ApiKeyTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                (line, iterable) -> Optional.empty()
+                Permissions.FREE,
+                (log, pwd) -> Optional.empty()
             ).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
                 new Headers.From(),

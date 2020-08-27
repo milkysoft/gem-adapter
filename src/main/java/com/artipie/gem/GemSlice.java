@@ -25,7 +25,10 @@ package com.artipie.gem;
 
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
-import com.artipie.http.auth.Identities;
+import com.artipie.http.auth.Authentication;
+import com.artipie.http.auth.Permission;
+import com.artipie.http.auth.Permissions;
+import com.artipie.http.auth.SliceAuth;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
@@ -38,6 +41,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Optional;
 import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
@@ -60,6 +64,16 @@ import org.jruby.javasupport.JavaEmbedUtils;
 public final class GemSlice extends Slice.Wrap {
 
     /**
+     * Push.
+     */
+    private static final String PUSH = "push";
+
+    /**
+     * Install.
+     */
+    private static final String INSTALL = "install";
+
+    /**
      * Ctor.
      *
      * @param storage The storage.
@@ -67,7 +81,9 @@ public final class GemSlice extends Slice.Wrap {
     public GemSlice(final Storage storage) {
         this(storage,
             JavaEmbedUtils.initialize(new ArrayList<>(0)),
-            Identities.ANONYMOUS);
+            Permissions.FREE,
+            (login, pwd) -> Optional.of("anonymous")
+        );
     }
 
     /**
@@ -75,11 +91,13 @@ public final class GemSlice extends Slice.Wrap {
      *
      * @param storage The storage.
      * @param runtime The Jruby runtime.
-     * @param users The users.
+     * @param permissions The permissions.
+     * @param auth The auth.
      */
     public GemSlice(final Storage storage,
         final Ruby runtime,
-        final Identities users) {
+        final Permissions permissions,
+        final Authentication auth) {
         super(
             new SliceRoute(
                 new RtRulePath(
@@ -87,14 +105,18 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByMethod(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
-                    GemSlice.rubyLookUp("SubmitGem", storage, runtime)
+                    new SliceAuth(
+                        GemSlice.rubyLookUp("SubmitGem", storage, runtime),
+                        new Permission.ByName(GemSlice.PUSH, permissions),
+                        new GemApiKeyIdentity(auth)
+                    )
                 ),
                 new RtRulePath(
                     new RtRule.All(
                         new RtRule.ByMethod(RqMethod.GET),
                         new RtRule.ByPath("/api/v1/api_key")
                     ),
-                    new ApiKeySlice(users)
+                    new ApiKeySlice(auth)
                 ),
                 new RtRulePath(
                     new RtRule.All(
@@ -105,7 +127,11 @@ public final class GemSlice extends Slice.Wrap {
                 ),
                 new RtRulePath(
                     new RtRule.ByMethod(RqMethod.GET),
-                    new SliceDownload(storage)
+                    new SliceAuth(
+                        new SliceDownload(storage),
+                        new Permission.ByName(GemSlice.INSTALL, permissions),
+                        new GemApiKeyIdentity(auth)
+                    )
                 ),
                 new RtRulePath(
                     RtRule.FALLBACK,
