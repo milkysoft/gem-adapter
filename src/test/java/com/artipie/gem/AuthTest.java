@@ -32,9 +32,11 @@ import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rs.RsStatus;
 import io.reactivex.Flowable;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Optional;
+import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
@@ -45,7 +47,7 @@ import org.junit.jupiter.api.Test;
  * @since 0.3
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public class ApiKeyTest {
+public class AuthTest {
 
     @Test
     public void keyIsReturned() {
@@ -75,6 +77,31 @@ public class ApiKeyTest {
                 new Headers.From(),
                 Flowable.empty()
             ), new RsHasStatus(RsStatus.UNAUTHORIZED)
+        );
+    }
+
+    @Test
+    public void notAllowedUsersAreRejected() throws IOException {
+        final String log = "usr";
+        final String pwd = "pwd";
+        final String token = new Base64Encoded(String.format("%s:%s", log, pwd)).asString();
+        MatcherAssert.assertThat(
+            new GemSlice(
+                new InMemoryStorage(),
+                JavaEmbedUtils.initialize(new ArrayList<>(0)),
+                (name, action) -> !name.equals(log),
+                (username, password) -> {
+                    if (username.equals(log) && password.equals(pwd)) {
+                        return Optional.of(log);
+                    } else {
+                        return Optional.empty();
+                    }
+                }
+            ).response(
+                new RequestLine("POST", "/api/v1/gems").toString(),
+                new Headers.From(new Authorization(token)),
+                Flowable.empty()
+            ), new RsHasStatus(RsStatus.FORBIDDEN)
         );
     }
 }
