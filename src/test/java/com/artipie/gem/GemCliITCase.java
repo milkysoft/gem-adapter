@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ import org.testcontainers.containers.GenericContainer;
  *
  * @since 0.2
  * @checkstyle StringLiteralsConcatenationCheck (500 lines)
+ * @checkstyle ExecutableStatementCountCheck (500 lines)
  */
 @SuppressWarnings("PMD.SystemPrintln")
 @DisabledIfSystemProperty(named = "os.name", matches = "Windows.*")
@@ -53,6 +55,7 @@ public class GemCliITCase {
     @Test
     public void gemPushAndInstallWorks(@TempDir final Path temp, @TempDir final Path mount)
         throws IOException, InterruptedException {
+        final String key = new Base64Encoded("usr:pwd").asString();
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
@@ -74,7 +77,7 @@ public class GemCliITCase {
             String.format("'gem push builder-3.2.4.gem failed with non-zero code", host),
             this.bash(
                 ruby,
-                String.format("GEM_HOST_API_KEY=123 gem push builder-3.2.4.gem --host %s", host)
+                String.format("GEM_HOST_API_KEY=%s gem push builder-3.2.4.gem --host %s", key, host)
             ),
             Matchers.equalTo(0)
         );
@@ -82,7 +85,7 @@ public class GemCliITCase {
             String.format("'gem push rails-6.0.2.2.gem failed with non-zero code", host),
             this.bash(
                 ruby,
-                String.format("GEM_HOST_API_KEY=123 gem push rails-6.0.2.2.gem --host %s", host)
+                String.format("GEM_HOST_API_KEY=%s gem push rails-6.0.2.2.gem --host %s", key, host)
             ),
             Matchers.equalTo(0)
         );
@@ -100,7 +103,7 @@ public class GemCliITCase {
             String.format("'gem fetch failed with non-zero code", host),
             this.bash(
                 ruby,
-                String.format("GEM_HOST_API_KEY=123 gem fetch -V builder --source %s", host)
+                String.format("GEM_HOST_API_KEY=%s gem fetch -V builder --source %s", key, host)
             ),
             Matchers.equalTo(0)
         );

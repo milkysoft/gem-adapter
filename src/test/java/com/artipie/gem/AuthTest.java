@@ -25,15 +25,18 @@ package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.Headers;
+import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rs.RsStatus;
 import io.reactivex.Flowable;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Optional;
+import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
@@ -42,9 +45,11 @@ import org.junit.jupiter.api.Test;
  * A test for api key endpoint.
  *
  * @since 0.3
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle ReturnCountCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public class ApiKeyTest {
+public class AuthTest {
 
     @Test
     public void keyIsReturned() {
@@ -67,12 +72,63 @@ public class ApiKeyTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                (line, iterable) -> Optional.empty()
+                Permissions.FREE,
+                (lgn, pwd) -> Optional.empty()
             ).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
                 new Headers.From(),
                 Flowable.empty()
             ), new RsHasStatus(RsStatus.UNAUTHORIZED)
+        );
+    }
+
+    @Test
+    public void notAllowedToPushUsersAreRejected() throws IOException {
+        final String lgn = "usr";
+        final String pwd = "pwd";
+        final String token = new Base64Encoded(String.format("%s:%s", lgn, pwd)).asString();
+        MatcherAssert.assertThat(
+            new GemSlice(
+                new InMemoryStorage(),
+                JavaEmbedUtils.initialize(new ArrayList<>(0)),
+                (name, action) -> !name.equals(lgn),
+                (username, password) -> {
+                    if (username.equals(lgn) && password.equals(pwd)) {
+                        return Optional.of(lgn);
+                    } else {
+                        return Optional.empty();
+                    }
+                }
+            ).response(
+                new RequestLine("POST", "/api/v1/gems").toString(),
+                new Headers.From(new Authorization(token)),
+                Flowable.empty()
+            ), new RsHasStatus(RsStatus.FORBIDDEN)
+        );
+    }
+
+    @Test
+    public void notAllowedToInstallsUsersAreRejected() throws IOException {
+        final String lgn = "usr";
+        final String pwd = "pwd";
+        final String token = new Base64Encoded(String.format("%s:%s", lgn, pwd)).asString();
+        MatcherAssert.assertThat(
+            new GemSlice(
+                new InMemoryStorage(),
+                JavaEmbedUtils.initialize(new ArrayList<>(0)),
+                (name, action) -> !name.equals(lgn),
+                (username, password) -> {
+                    if (username.equals(lgn) && password.equals(pwd)) {
+                        return Optional.of(lgn);
+                    } else {
+                        return Optional.empty();
+                    }
+                }
+            ).response(
+                new RequestLine("GET", "specs.4.8").toString(),
+                new Headers.From(new Authorization(token)),
+                Flowable.empty()
+            ), new RsHasStatus(RsStatus.FORBIDDEN)
         );
     }
 }
