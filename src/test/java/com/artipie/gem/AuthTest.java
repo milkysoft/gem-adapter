@@ -71,7 +71,7 @@ public class AuthTest {
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 Permissions.FREE,
-                (log, pwd) -> Optional.empty()
+                (lgn, pwd) -> Optional.empty()
             ).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
                 new Headers.From(),
@@ -81,24 +81,49 @@ public class AuthTest {
     }
 
     @Test
-    public void notAllowedUsersAreRejected() throws IOException {
-        final String log = "usr";
+    public void notAllowedToPushUsersAreRejected() throws IOException {
+        final String lgn = "usr";
         final String pwd = "pwd";
-        final String token = new Base64Encoded(String.format("%s:%s", log, pwd)).asString();
+        final String token = new Base64Encoded(String.format("%s:%s", lgn, pwd)).asString();
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                (name, action) -> !name.equals(log),
+                (name, action) -> !name.equals(lgn),
                 (username, password) -> {
-                    if (username.equals(log) && password.equals(pwd)) {
-                        return Optional.of(log);
+                    if (username.equals(lgn) && password.equals(pwd)) {
+                        return Optional.of(lgn);
                     } else {
                         return Optional.empty();
                     }
                 }
             ).response(
                 new RequestLine("POST", "/api/v1/gems").toString(),
+                new Headers.From(new Authorization(token)),
+                Flowable.empty()
+            ), new RsHasStatus(RsStatus.FORBIDDEN)
+        );
+    }
+
+    @Test
+    public void notAllowedToInstallsUsersAreRejected() throws IOException {
+        final String lgn = "usr";
+        final String pwd = "pwd";
+        final String token = new Base64Encoded(String.format("%s:%s", lgn, pwd)).asString();
+        MatcherAssert.assertThat(
+            new GemSlice(
+                new InMemoryStorage(),
+                JavaEmbedUtils.initialize(new ArrayList<>(0)),
+                (name, action) -> !name.equals(lgn),
+                (username, password) -> {
+                    if (username.equals(lgn) && password.equals(pwd)) {
+                        return Optional.of(lgn);
+                    } else {
+                        return Optional.empty();
+                    }
+                }
+            ).response(
+                new RequestLine("GET", "specs.4.8").toString(),
                 new Headers.From(new Authorization(token)),
                 Flowable.empty()
             ), new RsHasStatus(RsStatus.FORBIDDEN)
