@@ -108,7 +108,7 @@ public final class GemSlice extends Slice.Wrap {
                     new SliceAuth(
                         GemSlice.rubyLookUp("SubmitGem", storage, runtime),
                         new Permission.ByName(GemSlice.PUSH, permissions),
-                        new GemApiKeyIdentity(auth)
+                        new GemApiKeyIdentities(auth)
                     )
                 ),
                 new RtRulePath(
@@ -130,7 +130,7 @@ public final class GemSlice extends Slice.Wrap {
                     new SliceAuth(
                         new SliceDownload(storage),
                         new Permission.ByName(GemSlice.INSTALL, permissions),
-                        new GemApiKeyIdentity(auth)
+                        new GemApiKeyIdentities(auth)
                     )
                 ),
                 new RtRulePath(

@@ -32,10 +32,10 @@ import java.util.Optional;
 import org.cactoos.text.Base64Decoded;
 
 /**
- * {@link Identities} implementation fo gem api key decoding.
+ * {@link Identities} implementation for gem api key decoding.
  * @since 0.4
  */
-public final class GemApiKeyIdentity implements Identities {
+public final class GemApiKeyIdentities implements Identities {
 
     /**
      * Concrete implementation for User Identification.
@@ -46,7 +46,7 @@ public final class GemApiKeyIdentity implements Identities {
      * Ctor.
      * @param auth Concrete implementation for User Identification.
      */
-    public GemApiKeyIdentity(final Authentication auth) {
+    public GemApiKeyIdentities(final Authentication auth) {
         this.auth = auth;
     }
 
