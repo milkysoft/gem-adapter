@@ -57,6 +57,9 @@ public final class GemApiKeyIdentities implements Identities {
             .findFirst()
             .map(Base64Decoded::new)
             .map(dec -> dec.toString().split(":"))
-            .flatMap(cred -> this.auth.user(cred[0].trim(), cred[1].trim()));
+            .flatMap(
+                cred -> this.auth.user(cred[0].trim(), cred[1].trim())
+                    .map(Authentication.User::name)
+            );
     }
 }
