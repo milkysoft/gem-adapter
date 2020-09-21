@@ -25,6 +25,7 @@ package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.Headers;
+import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.hm.RsHasBody;
@@ -94,7 +95,7 @@ public class AuthTest {
                 (name, action) -> !name.equals(lgn),
                 (username, password) -> {
                     if (username.equals(lgn) && password.equals(pwd)) {
-                        return Optional.of(lgn);
+                        return Optional.of(new Authentication.User(lgn));
                     } else {
                         return Optional.empty();
                     }
@@ -119,7 +120,7 @@ public class AuthTest {
                 (name, action) -> !name.equals(lgn),
                 (username, password) -> {
                     if (username.equals(lgn) && password.equals(pwd)) {
-                        return Optional.of(lgn);
+                        return Optional.of(new Authentication.User(lgn));
                     } else {
                         return Optional.empty();
                     }

@@ -25,6 +25,7 @@ package com.artipie.gem;
 
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
+import com.artipie.http.auth.Action;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
@@ -32,6 +33,7 @@ import com.artipie.http.auth.SliceAuth;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
+import com.artipie.http.rt.ByMethodsRule;
 import com.artipie.http.rt.RtRule;
 import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
@@ -64,16 +66,6 @@ import org.jruby.javasupport.JavaEmbedUtils;
 public final class GemSlice extends Slice.Wrap {
 
     /**
-     * Push.
-     */
-    private static final String PUSH = "push";
-
-    /**
-     * Install.
-     */
-    private static final String INSTALL = "install";
-
-    /**
      * Ctor.
      *
      * @param storage The storage.
@@ -82,7 +74,7 @@ public final class GemSlice extends Slice.Wrap {
         this(storage,
             JavaEmbedUtils.initialize(new ArrayList<>(0)),
             Permissions.FREE,
-            (login, pwd) -> Optional.of("anonymous")
+            (login, pwd) -> Optional.of(new Authentication.User("anonymous"))
         );
     }
 
@@ -102,34 +94,34 @@ public final class GemSlice extends Slice.Wrap {
             new SliceRoute(
                 new RtRulePath(
                     new RtRule.All(
-                        new RtRule.ByMethod(RqMethod.POST),
+                        new ByMethodsRule(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
                     new SliceAuth(
                         GemSlice.rubyLookUp("SubmitGem", storage, runtime),
-                        new Permission.ByName(GemSlice.PUSH, permissions),
+                        new Permission.ByName(permissions, Action.Standard.WRITE),
                         new GemApiKeyIdentities(auth)
                     )
                 ),
                 new RtRulePath(
                     new RtRule.All(
-                        new RtRule.ByMethod(RqMethod.GET),
+                        new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/api/v1/api_key")
                     ),
                     new ApiKeySlice(auth)
                 ),
                 new RtRulePath(
                     new RtRule.All(
-                        new RtRule.ByMethod(RqMethod.GET),
+                        new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath(GemInfo.PATH_PATTERN)
                     ),
                     new GemInfo(storage)
                 ),
                 new RtRulePath(
-                    new RtRule.ByMethod(RqMethod.GET),
+                    new ByMethodsRule(RqMethod.GET),
                     new SliceAuth(
                         new SliceDownload(storage),
-                        new Permission.ByName(GemSlice.INSTALL, permissions),
+                        new Permission.ByName(permissions, Action.Standard.READ),
                         new GemApiKeyIdentities(auth)
                     )
                 ),
