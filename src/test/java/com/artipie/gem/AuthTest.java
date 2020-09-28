@@ -92,7 +92,7 @@ public class AuthTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                (name, action) -> !name.equals(lgn),
+                (name, action) -> !name.name().equals(lgn),
                 (username, password) -> {
                     if (username.equals(lgn) && password.equals(pwd)) {
                         return Optional.of(new Authentication.User(lgn));
@@ -117,7 +117,7 @@ public class AuthTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                (name, action) -> !name.equals(lgn),
+                (name, action) -> !name.name().equals(lgn),
                 (username, password) -> {
                     if (username.equals(lgn) && password.equals(pwd)) {
                         return Optional.of(new Authentication.User(lgn));

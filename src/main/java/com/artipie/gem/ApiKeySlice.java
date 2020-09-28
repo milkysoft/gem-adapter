@@ -69,7 +69,8 @@ public final class ApiKeySlice implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Response response;
-        final Optional<String> user = new BasicIdentities(this.auth).user(line, headers);
+        final Optional<Authentication.User> user =
+            new BasicIdentities(this.auth).user(line, headers);
         if (user.isPresent()) {
             final String key = new RqHeaders(headers, Authorization.NAME).stream()
                 .findFirst()
