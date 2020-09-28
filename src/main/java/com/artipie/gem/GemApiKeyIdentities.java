@@ -51,7 +51,7 @@ public final class GemApiKeyIdentities implements Identities {
     }
 
     @Override
-    public Optional<String> user(final String line,
+    public Optional<Authentication.User> user(final String line,
         final Iterable<Map.Entry<String, String>> headers) {
         return new RqHeaders(headers, Authorization.NAME).stream()
             .findFirst()
@@ -59,7 +59,6 @@ public final class GemApiKeyIdentities implements Identities {
             .map(dec -> dec.toString().split(":"))
             .flatMap(
                 cred -> this.auth.user(cred[0].trim(), cred[1].trim())
-                    .map(Authentication.User::name)
             );
     }
 }
