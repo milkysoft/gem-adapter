@@ -55,16 +55,18 @@ public final class GemApiKeyIdentities implements Identities {
         final Iterable<Map.Entry<String, String>> headers) {
         return new RqHeaders(headers, Authorization.NAME).stream()
             .findFirst()
-            .map(str -> {
-                final String res;
-                final String basic = "Basic ";
-                if (str.startsWith(basic)) {
-                    res = str.substring(basic.length());
-                } else {
-                    res = str;
+            .map(
+                str -> {
+                    final String res;
+                    final String basic = "Basic ";
+                    if (str.startsWith(basic)) {
+                        res = str.substring(basic.length());
+                    } else {
+                        res = str;
+                    }
+                    return res;
                 }
-                return res;
-            })
+            )
             .map(Base64Decoded::new)
             .map(dec -> dec.toString().split(":"))
             .flatMap(
