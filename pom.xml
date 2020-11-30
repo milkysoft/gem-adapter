@@ -30,7 +30,7 @@ SOFTWARE.
     <version>0.4.1</version>
   </parent>
   <artifactId>gem-adapter</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.5.3</version>
   <name>gem-adapter</name>
   <description>An Artipie adapter for gem packages</description>
   <url>https://github.com/artipie/gem-adapter</url>
