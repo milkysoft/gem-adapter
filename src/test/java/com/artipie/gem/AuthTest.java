@@ -143,7 +143,7 @@ public class AuthTest {
     @Test
     public void returnsUnauthorizedIfUnableToAuthenticate() throws IOException {
         MatcherAssert.assertThat(
-            AuthTest.post(false),
+            AuthTest.postWithBasicAuth(false),
             new AllOf<>(
                 Arrays.asList(
                     new RsHasStatus(RsStatus.UNAUTHORIZED),
@@ -154,14 +154,14 @@ public class AuthTest {
     }
 
     @Test
-    public void returnsOk() throws IOException {
+    public void returnsOkWhenBasicAuthTokenCorrect() throws IOException {
         MatcherAssert.assertThat(
-            AuthTest.post(true),
+            AuthTest.postWithBasicAuth(true),
             new RsHasStatus(RsStatus.OK)
         );
     }
 
-    private static Response post(final boolean authorized) throws IOException {
+    private static Response postWithBasicAuth(final boolean authorized) throws IOException {
         final String user = "alice";
         final String pswd = "123";
         final String token;

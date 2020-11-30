@@ -24,7 +24,7 @@
 package com.artipie.gem;
 
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.Identities;
+import com.artipie.http.auth.BasicAuthScheme;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.rq.RqHeaders;
 import java.util.Map;
@@ -32,10 +32,16 @@ import java.util.Optional;
 import org.cactoos.text.Base64Decoded;
 
 /**
- * {@link Identities} implementation for gem api key decoding.
+ * {@link com.artipie.http.auth.Identities} implementation for gem api key decoding.
+ * @todo #81:60min Remove deprecated methods.
+ *  Now in this class, `ApiKeySlice`, `GemSlice` suppress warnings
+ *  annotation is used for deprecation because com.artipie.http
+ *  module was update from 0.16.2 to 0.17.1. So, these annotations
+ *  should be removed.
  * @since 0.4
  */
-public final class GemApiKeyIdentities implements Identities {
+@SuppressWarnings("deprecation")
+public final class GemApiKeyIdentities implements com.artipie.http.auth.Identities {
 
     /**
      * Concrete implementation for User Identification.
@@ -58,9 +64,8 @@ public final class GemApiKeyIdentities implements Identities {
             .map(
                 str -> {
                     final String res;
-                    final String basic = "Basic ";
-                    if (str.startsWith(basic)) {
-                        res = str.substring(basic.length());
+                    if (str.startsWith(BasicAuthScheme.NAME)) {
+                        res = new Authorization(str).credentials();
                     } else {
                         res = str;
                     }

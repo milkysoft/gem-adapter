@@ -26,7 +26,6 @@ package com.artipie.gem;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.BasicIdentities;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.rq.RqHeaders;
 import com.artipie.http.rs.RsStatus;
@@ -43,6 +42,7 @@ import org.reactivestreams.Publisher;
  *
  * @since 0.3
  */
+@SuppressWarnings("deprecation")
 public final class ApiKeySlice implements Slice {
 
     /**
@@ -70,7 +70,7 @@ public final class ApiKeySlice implements Slice {
         final Publisher<ByteBuffer> body) {
         final Response response;
         final Optional<Authentication.User> user =
-            new BasicIdentities(this.auth).user(line, headers);
+            new com.artipie.http.auth.BasicIdentities(this.auth).user(line, headers);
         if (user.isPresent()) {
             final String key = new RqHeaders(headers, Authorization.NAME).stream()
                 .findFirst()
