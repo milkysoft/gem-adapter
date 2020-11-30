@@ -24,21 +24,28 @@
 package com.artipie.gem;
 
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.asto.test.TestResource;
 import com.artipie.http.Headers;
+import com.artipie.http.Response;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
+import com.artipie.http.headers.Header;
 import com.artipie.http.hm.RsHasBody;
+import com.artipie.http.hm.RsHasHeaders;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rs.RsStatus;
 import io.reactivex.Flowable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
 import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.AllOf;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +137,52 @@ public class AuthTest {
                 new Headers.From(new Authorization(token)),
                 Flowable.empty()
             ), new RsHasStatus(RsStatus.FORBIDDEN)
+        );
+    }
+
+    @Test
+    public void returnsUnauthorizedIfUnableToAuthenticate() throws IOException {
+        MatcherAssert.assertThat(
+            AuthTest.postWithBasicAuth(false),
+            new AllOf<>(
+                Arrays.asList(
+                    new RsHasStatus(RsStatus.UNAUTHORIZED),
+                    new RsHasHeaders(new Header("WWW-Authenticate", "Basic"))
+                )
+            )
+        );
+    }
+
+    @Test
+    public void returnsOkWhenBasicAuthTokenCorrect() throws IOException {
+        MatcherAssert.assertThat(
+            AuthTest.postWithBasicAuth(true),
+            new RsHasStatus(RsStatus.OK)
+        );
+    }
+
+    private static Response postWithBasicAuth(final boolean authorized) throws IOException {
+        final String user = "alice";
+        final String pswd = "123";
+        final String token;
+        if (authorized) {
+            token = new Base64Encoded(String.format("%s:%s", user, pswd)).asString();
+        } else {
+            token = new Base64Encoded(String.format("%s:wrong%s", user, pswd)).asString();
+        }
+        return new GemSlice(
+            new InMemoryStorage(),
+            JavaEmbedUtils.initialize(new ArrayList<>(0)),
+            (identity, perm) -> user.equals(identity.name()) && "upload".equals(perm),
+            new Authentication.Single(user, pswd)
+        ).response(
+            new RequestLine("POST", "/api/v1/gems").toString(),
+            new Headers.From(
+                new Authorization(String.format("Basic %s", token))
+            ),
+            Flowable.just(
+                ByteBuffer.wrap(new TestResource("rails-6.0.2.2.gem").asBytes())
+            )
         );
     }
 }

@@ -29,7 +29,6 @@ import com.artipie.http.auth.Action;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
-import com.artipie.http.auth.SliceAuth;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
@@ -62,7 +61,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * @checkstyle MethodBodyCommentsCheck (500 lines)
  * @since 0.1
  */
-@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField", "deprecation"})
 public final class GemSlice extends Slice.Wrap {
 
     /**
@@ -97,7 +96,7 @@ public final class GemSlice extends Slice.Wrap {
                         new ByMethodsRule(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
-                    new SliceAuth(
+                    new com.artipie.http.auth.SliceAuth(
                         GemSlice.rubyLookUp("SubmitGem", storage, runtime),
                         new Permission.ByName(permissions, Action.Standard.WRITE),
                         new GemApiKeyIdentities(auth)
@@ -119,7 +118,7 @@ public final class GemSlice extends Slice.Wrap {
                 ),
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.GET),
-                    new SliceAuth(
+                    new com.artipie.http.auth.SliceAuth(
                         new SliceDownload(storage),
                         new Permission.ByName(permissions, Action.Standard.READ),
                         new GemApiKeyIdentities(auth)
