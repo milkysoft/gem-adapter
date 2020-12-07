@@ -36,7 +36,7 @@ import org.cactoos.text.Base64Decoded;
 
 /**
  * {@link AuthScheme} implementation for gem api key decoding.
- * @since 0.4
+ * @since 0.6
  */
 public final class GemApiKeyAuth implements AuthScheme {
 
@@ -70,8 +70,8 @@ public final class GemApiKeyAuth implements AuthScheme {
                                 .flatMap(
                                     cred -> this.auth.user(cred[0].trim(), cred[1].trim())
                                 )
-                                .<Result>map(SuccessByToken::new)
-                                .orElseGet(FailureByToken::new)
+                                .<Result>map(Success::new)
+                                .orElseGet(Failure::new)
                         );
                     }
                     return res;
@@ -85,7 +85,7 @@ public final class GemApiKeyAuth implements AuthScheme {
      *
      * @since 0.5.4
      */
-    private static class SuccessByToken implements AuthScheme.Result {
+    private static class Success implements AuthScheme.Result {
 
         /**
          * Authenticated user.
@@ -97,7 +97,7 @@ public final class GemApiKeyAuth implements AuthScheme {
          *
          * @param user Authenticated user.
          */
-        SuccessByToken(final Authentication.User user) {
+        Success(final Authentication.User user) {
             this.usr = user;
         }
 
@@ -117,7 +117,7 @@ public final class GemApiKeyAuth implements AuthScheme {
      *
      * @since 0.5.4
      */
-    private static class FailureByToken implements AuthScheme.Result {
+    private static class Failure implements AuthScheme.Result {
 
         @Override
         public Optional<Authentication.User> user() {
