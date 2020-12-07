@@ -28,7 +28,6 @@ import com.artipie.asto.test.TestResource;
 import com.artipie.http.Headers;
 import com.artipie.http.Response;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.JoinedPermissions;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.headers.Header;
@@ -98,9 +97,7 @@ public class AuthTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                new JoinedPermissions(
-                    new Permissions.Single(lgn, "download")
-                ),
+                new Permissions.Single(lgn, "download"),
                 new Authentication.Single(lgn, pwd)
             ).response(
                 new RequestLine("POST", "/api/v1/gems").toString(),
@@ -119,9 +116,7 @@ public class AuthTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                new JoinedPermissions(
-                    new Permissions.Single(String.format("another %s", lgn), "download")
-                ),
+                new Permissions.Single(String.format("another %s", lgn), "download"),
                 new Authentication.Single(lgn, pwd)
             ).response(
                 new RequestLine("GET", "specs.4.8").toString(),
@@ -164,7 +159,7 @@ public class AuthTest {
         return new GemSlice(
             new InMemoryStorage(),
             JavaEmbedUtils.initialize(new ArrayList<>(0)),
-            (identity, perm) -> user.equals(identity.name()) && "upload".equals(perm),
+            new Permissions.Single(user, "upload"),
             new Authentication.Single(user, pswd)
         ).response(
             new RequestLine("POST", "/api/v1/gems").toString(),
