@@ -26,6 +26,7 @@ package com.artipie.gem;
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;
+import com.artipie.http.auth.AuthSlice;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
@@ -57,11 +58,9 @@ import org.jruby.javasupport.JavaEmbedUtils;
  *  on first request.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
- * @checkstyle ParameterNameCheck (500 lines)
- * @checkstyle MethodBodyCommentsCheck (500 lines)
  * @since 0.1
  */
-@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField", "deprecation"})
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class GemSlice extends Slice.Wrap {
 
     /**
@@ -96,10 +95,10 @@ public final class GemSlice extends Slice.Wrap {
                         new ByMethodsRule(RqMethod.POST),
                         new RtRule.ByPath("/api/v1/gems")
                     ),
-                    new com.artipie.http.auth.SliceAuth(
+                    new AuthSlice(
                         GemSlice.rubyLookUp("SubmitGem", storage, runtime),
-                        new Permission.ByName(permissions, Action.Standard.WRITE),
-                        new GemApiKeyIdentities(auth)
+                        new GemApiKeyAuth(auth),
+                        new Permission.ByName(permissions, Action.Standard.WRITE)
                     )
                 ),
                 new RtRulePath(
@@ -118,10 +117,10 @@ public final class GemSlice extends Slice.Wrap {
                 ),
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.GET),
-                    new com.artipie.http.auth.SliceAuth(
+                    new AuthSlice(
                         new SliceDownload(storage),
-                        new Permission.ByName(permissions, Action.Standard.READ),
-                        new GemApiKeyIdentities(auth)
+                        new GemApiKeyAuth(auth),
+                        new Permission.ByName(permissions, Action.Standard.READ)
                     )
                 ),
                 new RtRulePath(

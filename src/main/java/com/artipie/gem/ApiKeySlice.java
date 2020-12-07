@@ -25,7 +25,10 @@ package com.artipie.gem;
 
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
+import com.artipie.http.async.AsyncResponse;
+import com.artipie.http.auth.AuthScheme;
 import com.artipie.http.auth.Authentication;
+import com.artipie.http.auth.BasicAuthScheme;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.rq.RqHeaders;
 import com.artipie.http.rs.RsStatus;
@@ -34,7 +37,6 @@ import com.artipie.http.rs.RsWithStatus;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
 import org.reactivestreams.Publisher;
 
 /**
@@ -42,13 +44,7 @@ import org.reactivestreams.Publisher;
  *
  * @since 0.3
  */
-@SuppressWarnings("deprecation")
 public final class ApiKeySlice implements Slice {
-
-    /**
-     * Basic authentication prefix.
-     */
-    private static final String PREFIX = "Basic ";
 
     /**
      * The users.
@@ -68,19 +64,27 @@ public final class ApiKeySlice implements Slice {
         final String line,
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
-        final Response response;
-        final Optional<Authentication.User> user =
-            new com.artipie.http.auth.BasicIdentities(this.auth).user(line, headers);
-        if (user.isPresent()) {
-            final String key = new RqHeaders(headers, Authorization.NAME).stream()
-                .findFirst()
-                .filter(hdr -> hdr.startsWith(ApiKeySlice.PREFIX))
-                .map(hdr -> hdr.substring(ApiKeySlice.PREFIX.length()))
-                .get();
-            response = new RsWithBody(key, StandardCharsets.UTF_8);
-        } else {
-            response = new RsWithStatus(RsStatus.UNAUTHORIZED);
-        }
-        return response;
+        return new AsyncResponse(
+            new BasicAuthScheme(this.auth)
+                .authenticate(headers)
+                .thenApply(AuthScheme.Result::user)
+                .thenApply(
+                    usr -> {
+                        final Response response;
+                        if (usr.isPresent()) {
+                            final String key = new RqHeaders(headers, Authorization.NAME).stream()
+                                .findFirst()
+                                .filter(hdr -> hdr.startsWith(BasicAuthScheme.NAME))
+                                .map(hdr -> hdr.substring(BasicAuthScheme.NAME.length() + 1))
+                                .get();
+                            response = new RsWithBody(key, StandardCharsets.UTF_8);
+                        } else {
+                            response = new RsWithStatus(RsStatus.UNAUTHORIZED);
+                        }
+                        return response;
+                    }
+                )
+        );
     }
+
 }
