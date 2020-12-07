@@ -28,6 +28,7 @@ import com.artipie.asto.test.TestResource;
 import com.artipie.http.Headers;
 import com.artipie.http.Response;
 import com.artipie.http.auth.Authentication;
+import com.artipie.http.auth.JoinedPermissions;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.headers.Authorization;
 import com.artipie.http.headers.Header;
@@ -42,7 +43,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Optional;
 import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.AllOf;
@@ -54,7 +54,6 @@ import org.junit.jupiter.api.Test;
  *
  * @since 0.3
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
- * @checkstyle ReturnCountCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class AuthTest {
@@ -81,7 +80,7 @@ public class AuthTest {
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 Permissions.FREE,
-                (lgn, pwd) -> Optional.empty()
+                Authentication.ANONYMOUS
             ).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
                 new Headers.From(),
@@ -99,14 +98,10 @@ public class AuthTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                (name, action) -> !name.name().equals(lgn),
-                (username, password) -> {
-                    if (username.equals(lgn) && password.equals(pwd)) {
-                        return Optional.of(new Authentication.User(lgn));
-                    } else {
-                        return Optional.empty();
-                    }
-                }
+                new JoinedPermissions(
+                    new Permissions.Single(lgn, "download")
+                ),
+                new Authentication.Single(lgn, pwd)
             ).response(
                 new RequestLine("POST", "/api/v1/gems").toString(),
                 new Headers.From(new Authorization(token)),
@@ -124,14 +119,10 @@ public class AuthTest {
             new GemSlice(
                 new InMemoryStorage(),
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
-                (name, action) -> !name.name().equals(lgn),
-                (username, password) -> {
-                    if (username.equals(lgn) && password.equals(pwd)) {
-                        return Optional.of(new Authentication.User(lgn));
-                    } else {
-                        return Optional.empty();
-                    }
-                }
+                new JoinedPermissions(
+                    new Permissions.Single(String.format("another %s", lgn), "download")
+                ),
+                new Authentication.Single(lgn, pwd)
             ).response(
                 new RequestLine("GET", "specs.4.8").toString(),
                 new Headers.From(new Authorization(token)),
