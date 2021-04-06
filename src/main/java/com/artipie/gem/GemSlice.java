@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import java.io.UncheckedIOException;
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;
@@ -161,15 +162,24 @@ public final class GemSlice extends Slice.Wrap {
      * @return The Slice.
      */
     private static Slice rubyLookUp(final String rclass,
-        final Storage storage,
-        final String repoPath,
-        final Ruby runtime) {
+                                    final Storage storage, final String repoPath,
+                                    final Ruby runtime) {
+        try {
+            final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
+            final String script = IOUtils.toString(
+                GemSlice.class.getResourceAsStream(String.format("/%s.rb", rclass)),
+                StandardCharsets.UTF_8
+            );
+            evaler.eval(runtime, script);
             return (Slice) JavaEmbedUtils.invokeMethod(
                 runtime,
-                getEvaler(runtime).eval(runtime, rclass),
+                evaler.eval(runtime, rclass),
                 "new",
                 new Object[]{storage,repoPath},
                 Slice.class
             );
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
+        }
     }
 }

@@ -75,6 +75,24 @@ SOFTWARE.
     </site>
   </distributionManagement>
   <dependencies>
+    <!-- Runtime, com.sun.xml.bind module -->
+    <dependency>
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>2.3.2</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/jakarta.xml.bind/jakarta.xml.bind-api -->
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api -->
+    <dependency>
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.3.1</version>
+    </dependency>
     <!-- Artipie -->
     <dependency>
       <groupId>com.artipie</groupId>
@@ -152,6 +170,16 @@ SOFTWARE.
       </testResource>
     </testResources>
     <plugins>
+      <plugin>
+        <groupId>com.jcabi</groupId>
+        <artifactId>jcabi-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>jcabi-versionalize-packages</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.6.0</version>
