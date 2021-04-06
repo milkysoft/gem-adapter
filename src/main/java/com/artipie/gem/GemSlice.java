@@ -71,7 +71,7 @@ public final class GemSlice extends Slice.Wrap {
                     try {
                         evaler = JavaEmbedUtils.newRuntimeAdapter();
                         String script = IOUtils.toString(
-                            GemSlice.class.getResourceAsStream("SubmitGem.rb"),
+                            GemSlice.class.getResourceAsStream("/SubmitGem.rb"),
                             StandardCharsets.UTF_8
                         );
                         evaler.eval(runtime, script);
