@@ -26,12 +26,13 @@ class SubmitGem
   java_import java.util.HashSet
   java_import org.slf4j.LoggerFactory
   include com.artipie.http.Slice
+  include com.artipie.gem.GemsMerger
 
   @@log = LoggerFactory::getLogger("com.artipie.gem.SubmitGem")
 
-  def initialize(storage)
+  def initialize(storage,repo)
     @storage = storage
-    @idx = "temp-gem-index"
+    @idx = repo
     @gems = File.join(@idx, "gems")
     # Was index created before?
     idx_existed = File.exists?(@idx)
@@ -107,5 +108,11 @@ class SubmitGem
             }
         )
         .flatMapPublisher { |keys| Flowable::from_iterable(keys) }
+  end
+
+  def merge(metadata, name)
+    index = File.join(@idx, name)
+    @indexer.merge_specs_index(index, metadata, name)
+
   end
 end

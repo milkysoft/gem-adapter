@@ -59,7 +59,7 @@ public class GemCliITCase {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
-            new GemSlice(new FileStorage(temp))
+            new GemSlice(new FileStorage(temp),"temp-repo-path")
         );
         final int port = server.start();
         final String host = String.format("http://host.testcontainers.internal:%d", port);

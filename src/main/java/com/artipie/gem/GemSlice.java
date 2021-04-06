@@ -40,7 +40,6 @@ import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -62,14 +61,34 @@ import org.jruby.javasupport.JavaEmbedUtils;
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class GemSlice extends Slice.Wrap {
+    private volatile static RubyRuntimeAdapter evaler;
 
+    public static RubyRuntimeAdapter getEvaler(Ruby runtime) {
+        if (evaler == null) {
+            synchronized (GemSlice.class) {
+                if (evaler == null) {
+                    try {
+                        evaler = JavaEmbedUtils.newRuntimeAdapter();
+                        String script = IOUtils.toString(
+                            GemSlice.class.getResourceAsStream("SubmitGem.rb"),
+                            StandardCharsets.UTF_8
+                        );
+                        evaler.eval(runtime, script);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return evaler;
+    }
     /**
      * Ctor.
      *
      * @param storage The storage.
      */
-    public GemSlice(final Storage storage) {
-        this(storage,
+    public GemSlice(final Storage storage, final String repoPath) {
+        this(storage, repoPath,
             JavaEmbedUtils.initialize(new ArrayList<>(0)),
             Permissions.FREE,
             (login, pwd) -> Optional.of(new Authentication.User("anonymous"))
@@ -80,11 +99,13 @@ public final class GemSlice extends Slice.Wrap {
      * Ctor.
      *
      * @param storage The storage.
+     * @param repoPath The repoPath.
      * @param runtime The Jruby runtime.
      * @param permissions The permissions.
      * @param auth The auth.
      */
     public GemSlice(final Storage storage,
+        final String repoPath,
         final Ruby runtime,
         final Permissions permissions,
         final Authentication auth) {
@@ -96,7 +117,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByPath("/api/v1/gems")
                     ),
                     new AuthSlice(
-                        GemSlice.rubyLookUp("SubmitGem", storage, runtime),
+                        GemSlice.rubyLookUp("SubmitGem", storage, repoPath, runtime),
                         new GemApiKeyAuth(auth),
                         new Permission.ByName(permissions, Action.Standard.WRITE)
                     )
@@ -135,28 +156,20 @@ public final class GemSlice extends Slice.Wrap {
      * Lookup an instance of slice, implemented with JRuby.
      * @param rclass The name of a slice class, implemented in JRuby.
      * @param storage The storage to pass directly to Ruby instance.
+     * @param repoPath The temp repo path.
      * @param runtime The JRuby runtime.
      * @return The Slice.
      */
     private static Slice rubyLookUp(final String rclass,
         final Storage storage,
+        final String repoPath,
         final Ruby runtime) {
-        try {
-            final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
-            final String script = IOUtils.toString(
-                GemSlice.class.getResourceAsStream(String.format("/%s.rb", rclass)),
-                StandardCharsets.UTF_8
-            );
-            evaler.eval(runtime, script);
             return (Slice) JavaEmbedUtils.invokeMethod(
                 runtime,
-                evaler.eval(runtime, rclass),
+                getEvaler(runtime).eval(runtime, rclass),
                 "new",
-                new Object[]{storage},
+                new Object[]{storage,repoPath},
                 Slice.class
             );
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
     }
 }

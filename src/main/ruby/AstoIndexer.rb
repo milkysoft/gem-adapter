@@ -20,7 +20,7 @@ end
 ##
 # Top level class for building the gem repository index.
 # @todo #9:30min Adapt AstoIndexer to generate files in storage.
-#  For now, generated indexes are stored locally in temp-gem-index directory.
+#  For now, generated indexes are stored locally in repo directory.
 #  Files should be generated in storage instead.
 class AstoIndexer
 
@@ -445,5 +445,34 @@ class AstoIndexer
       Marshal.dump specs_index, io
     end
   end
-end
 
+  def merge_specs_index(master_meta, metadata, name)
+    target_index = Marshal.load Gem.read_binary(master_meta)
+    source_index = Marshal.load Gem.read_binary(metadata)
+
+    source_index.map do |(name, version, platform)|
+     target_index << [name, version, platform]
+    end
+
+    target_index = compact_specs target_index.uniq.sort
+
+    tmp_path = File.join @directory, name
+
+    FileUtils.rm_rf @directory, :verbose => verbose
+    FileUtils.mkdir_p @directory, :mode => 0700
+    FileUtils.touch tmp_path, :verbose => verbose
+
+    File.open tmp_path, 'wb' do |io|
+      Marshal.dump target_index, io
+    end
+
+    Zlib::GzipWriter.open "#{tmp_path}.gz" do |io|
+      io.write Gem.read_binary(tmp_path)
+    end
+
+    FileUtils.mv "#{tmp_path}.gz", "#{master_meta}.gz", :verbose => verbose, :force => true
+
+    FileUtils.mv "#{tmp_path}", "#{master_meta}", :verbose => verbose, :force => true
+
+  end
+end
