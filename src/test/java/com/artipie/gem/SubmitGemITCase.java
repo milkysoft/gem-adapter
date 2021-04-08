@@ -49,8 +49,8 @@ public class SubmitGemITCase {
     @Test
     public void testUpdater() {
         final String repo = "Artipie";
-        final Gem theGem = new Gem(new FileStorage(Paths.get(repo)));
-        theGem.batchUpdate(new Key.From(repo));
+        final Gem gem = new Gem(new FileStorage(Paths.get(repo)));
+        gem.batchUpdate(new Key.From(repo));
     }
 
     @Test

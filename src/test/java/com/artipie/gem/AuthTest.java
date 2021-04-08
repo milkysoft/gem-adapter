@@ -64,7 +64,7 @@ public class AuthTest {
             new Authorization(String.format("Basic %s", token))
         );
         MatcherAssert.assertThat(
-            new GemSlice(new InMemoryStorage(),"temp-repo-path").response(
+            new GemSlice(new InMemoryStorage(), "temp-repo-path").response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
                 headers,
                 Flowable.empty()

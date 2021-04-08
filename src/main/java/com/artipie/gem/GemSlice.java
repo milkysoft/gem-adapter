@@ -23,16 +23,6 @@
  */
 package com.artipie.gem;
 
-import com.jcabi.log.Logger;
-import java.io.UncheckedIOException;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Optional;
-import org.apache.commons.io.IOUtils;
-import org.jruby.Ruby;
-import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;
@@ -49,6 +39,15 @@ import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Optional;
+import org.apache.commons.io.IOUtils;
+import org.jruby.Ruby;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * A slice, which servers gem packages.
@@ -149,7 +148,9 @@ public final class GemSlice extends Slice.Wrap {
     private static Slice rubyLookUp(final String rclass, final Storage storage, final String repo,
         final Ruby runtime) {
         try {
-            final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
+            if (GemSlice.evaler == null) {
+                GemSlice.evaler = JavaEmbedUtils.newRuntimeAdapter();
+            }
             final String script = IOUtils.toString(
                 GemSlice.class.getResourceAsStream(String.format("/%s.rb", rclass)),
                 StandardCharsets.UTF_8
@@ -165,30 +166,5 @@ public final class GemSlice extends Slice.Wrap {
         } catch (final IOException exc) {
             throw new UncheckedIOException(exc);
         }
-    }
-
-    /**
-     * Batch update Ruby gems for repository.
-     * @param runtime Ruby runtime
-     * @return RubyRuntimeAdapter adapter
-     */
-    private static RubyRuntimeAdapter getEvaler(final Ruby runtime) {
-        if (evaler == null) {
-            synchronized (GemSlice.class) {
-                if (evaler == null) {
-                    try {
-                        evaler = JavaEmbedUtils.newRuntimeAdapter();
-                        final String script = IOUtils.toString(
-                            GemSlice.class.getResourceAsStream("/SubmitGem.rb"),
-                            StandardCharsets.UTF_8
-                        );
-                        evaler.eval(runtime, script);
-                    } catch (final IOException exception) {
-                        Logger.error(exception.toString());
-                    }
-                }
-            }
-        }
-        return evaler;
     }
 }
