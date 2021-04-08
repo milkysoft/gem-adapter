@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
@@ -46,11 +47,18 @@ import org.junit.jupiter.api.io.TempDir;
 public class SubmitGemITCase {
 
     @Test
+    public void testUpdater() {
+        final String repo = "Artipie";
+        final Gem theGem = new Gem(new FileStorage(Paths.get(repo)));
+        theGem.batchUpdate(new Key.From(repo));
+    }
+
+    @Test
     public void submitResultsInOkResponse(@TempDir final Path temp) throws IOException {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
-            new GemSlice(new FileStorage(temp),"temp-repo-path")
+            new GemSlice(new FileStorage(temp), "temp-repo-path")
         );
         final WebClient web = WebClient.create(vertx);
         final int port = server.start();
