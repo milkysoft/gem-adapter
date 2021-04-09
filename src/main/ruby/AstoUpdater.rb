@@ -63,16 +63,17 @@ class AstoUpdater
   ##
   # Create an indexer that will index the gems in +directory+.
 
-  def initialize(asto = 'gem_generate_index', directory = 'gem_generate_index', options = { build_modern: true })
+  def initialize(asto, directory, options = { build_modern: true })
     require 'fileutils'
     require 'tmpdir'
     require 'zlib'
-    puts "8768768768asd"
+
     unless defined?(Builder::XChar)
       raise "AstoUpdater requires that the XML Builder library be installed:" +
                 "\n\tgem install builder"
     end
-
+    puts(asto)
+    puts(directory)
     options = { :build_modern => true }.merge options
 
     @build_modern = options[:build_modern]
@@ -106,7 +107,6 @@ class AstoUpdater
         File.join(@dest_directory, "prerelease_specs.#{Gem.marshal_version}")
 
     @files = []
-    puts "asd"
     # Was index created before?
     idx_existed = File.exists?(directory)
     Dir.mkdir(directory) unless idx_existed
@@ -483,4 +483,4 @@ class AstoUpdater
 
   end
 end
-AstoUpdater.new()
+# AstoUpdater.new()

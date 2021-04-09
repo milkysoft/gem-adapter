@@ -25,6 +25,7 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
+import java.util.concurrent.CompletableFuture;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
@@ -50,7 +51,8 @@ public class SubmitGemITCase {
     public void testUpdater() {
         final String repo = "Artipie";
         final Gem gem = new Gem(new FileStorage(Paths.get(repo)));
-        gem.batchUpdate(new Key.From(repo));
+        CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate(new Key.From(repo));
+        res.join();
     }
 
     @Test

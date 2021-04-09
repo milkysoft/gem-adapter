@@ -25,6 +25,7 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Slice;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -107,14 +108,20 @@ public class Gem {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final CompletableFuture<Void> res = CompletableFuture.runAsync(
-            () -> rubyUpdater(
-                "AstoUpdater", this.storage, tmpdir.toString(),
-                JavaEmbedUtils.initialize(new ArrayList<>(0))
-            )
+        return CompletableFuture.runAsync(
+            () -> {
+                rubyUpdater(
+                    "AstoUpdater", this.storage, tmpdir.toString(),
+                    JavaEmbedUtils.initialize(new ArrayList<>(0))
+                );
+                new RxStorageWrapper(this.storage)
+                    .value(prefix)
+                    .flatMapCompletable(
+                        content -> new RxStorageWrapper(this.storage)
+                            .save(prefix, content)
+                    );
+            }
         );
-        res.join();
-        return res;
     }
 
     /**
@@ -146,4 +153,3 @@ public class Gem {
         }
     }
 }
-
