@@ -25,9 +25,6 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.rx.RxStorageWrapper;
-import com.artipie.http.Slice;
-import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -83,7 +80,7 @@ public class Gem {
                 runtime, recvr,
                 "new",
                 null,
-                Slice.class
+                GemIndexer.class
             );
         } catch (final IOException exc) {
             throw new UncheckedIOException(exc);
@@ -131,19 +128,19 @@ public class Gem {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        CompletableFuture<Void> res = CompletableFuture.runAsync(
+        return CompletableFuture.runAsync(
             () -> {
                 rubyUpdater(
-                    "AstoUpdater", this.storage, tmpdir.toString());
+                    "GemIndexer", this.storage, tmpdir.toString());
             }
         );
-        res.join();
-        return new RxStorageWrapper(this.storage)
-            .value(prefix)
-            .flatMapCompletable(
-                content -> new RxStorageWrapper(this.storage)
-                    .save(prefix, content)
-            ).to(CompletableInterop.await());
+//        res.join();
+//        return new RxStorageWrapper(this.storage)
+//            .value(prefix)
+//            .flatMapCompletable(
+//                content -> new RxStorageWrapper(this.storage)
+//                    .save(prefix, content)
+//            ).to(CompletableInterop.await());
     }
 
     /**
@@ -153,12 +150,12 @@ public class Gem {
      * @param repo The temp repo path.
      * @return The Slice.
      */
-    static Slice rubyUpdater(final String rclass, final Storage storage, final String repo) {
-            return (Slice) JavaEmbedUtils.invokeMethod(
+    static GemIndexer rubyUpdater(final String rclass, final Storage storage, final String repo) {
+            return (GemIndexer) JavaEmbedUtils.invokeMethod(
                 runtime, recvr,
-                "generate_index2",
+                "index",
                 new Object[]{repo},
-                Slice.class
+                GemIndexer.class
             );
     }
 }

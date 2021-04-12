@@ -25,6 +25,9 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
+import io.reactivex.Completable;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
@@ -35,6 +38,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.CompletionStage;
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
@@ -47,13 +52,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public class SubmitGemITCase {
 
-    @Test
-    public void testUpdater() {
-        final String repo = "Artipie";
-        final Gem gem = new Gem(new FileStorage(Paths.get(repo)));
-        CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate(new Key.From(repo));
-        res.join();
-    }
+
 
     @Test
     public void submitResultsInOkResponse(@TempDir final Path temp) throws IOException {
