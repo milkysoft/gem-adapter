@@ -27,6 +27,7 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Slice;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +41,7 @@ import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.runtime.builtin.IRubyObject;
 
 /**
  * An SDK, which servers gem packages.
@@ -57,14 +59,35 @@ public class Gem {
      * Primary storage.
      */
     private final Storage storage;
-
-    /**
-     * Ctor.
-     *
-     * @param storage The storage.
-     */
+    final static RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();;
+    final static Ruby runtime = JavaEmbedUtils.initialize(new ArrayList<>(0));
+    static IRubyObject recvr = null;
+        /**
+         * Ctor.
+         *
+         * @param storage The storage.
+         */
     Gem(final Storage storage) {
         this.storage = storage;
+        final String script;
+        try {
+            script = IOUtils.toString(
+                Gem.class.getResourceAsStream("/AstoUpdater.rb"),
+                StandardCharsets.UTF_8
+            );
+            evaler.eval(runtime, script);
+            if(recvr == null) {
+                recvr = evaler.eval(runtime, "AstoUpdater");
+            }
+            JavaEmbedUtils.invokeMethod(
+                runtime, recvr,
+                "new",
+                null,
+                Slice.class
+            );
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
+        }
     }
 
     /**
@@ -108,20 +131,19 @@ public class Gem {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        return CompletableFuture.runAsync(
+        CompletableFuture<Void> res = CompletableFuture.runAsync(
             () -> {
                 rubyUpdater(
-                    "AstoUpdater", this.storage, tmpdir.toString(),
-                    JavaEmbedUtils.initialize(new ArrayList<>(0))
-                );
-                new RxStorageWrapper(this.storage)
-                    .value(prefix)
-                    .flatMapCompletable(
-                        content -> new RxStorageWrapper(this.storage)
-                            .save(prefix, content)
-                    );
+                    "AstoUpdater", this.storage, tmpdir.toString());
             }
         );
+        res.join();
+        return new RxStorageWrapper(this.storage)
+            .value(prefix)
+            .flatMapCompletable(
+                content -> new RxStorageWrapper(this.storage)
+                    .save(prefix, content)
+            ).to(CompletableInterop.await());
     }
 
     /**
@@ -129,27 +151,15 @@ public class Gem {
      * @param rclass The name of a slice class, implemented in JRuby.
      * @param storage The storage to pass directly to Ruby instance.
      * @param repo The temp repo path.
-     * @param runtime The JRuby runtime.
      * @return The Slice.
      */
-    static Slice rubyUpdater(final String rclass, final Storage storage, final String repo,
-        final Ruby runtime) {
-        try {
-            final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
-            final String script = IOUtils.toString(
-                Gem.class.getResourceAsStream(String.format("/%s.rb", rclass)),
-                StandardCharsets.UTF_8
-            );
-            evaler.eval(runtime, script);
+    static Slice rubyUpdater(final String rclass, final Storage storage, final String repo) {
             return (Slice) JavaEmbedUtils.invokeMethod(
-                runtime,
-                evaler.eval(runtime, rclass),
-                "new",
-                new Object[]{storage, repo},
+                runtime, recvr,
+                "generate_index2",
+                new Object[]{repo},
                 Slice.class
             );
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
     }
 }
+

@@ -5,6 +5,7 @@ require 'time'
 require 'tmpdir'
 
 rescue_exceptions = [LoadError]
+@@updater = 0
 begin
   require 'bundler/errors'
 rescue LoadError # this rubygems + old ruby
@@ -15,6 +16,15 @@ begin
   gem 'builder'
   require 'builder/xchar'
 rescue *rescue_exceptions
+end
+
+def generate_index2 (directory)
+  puts(directory)
+  # Was index created before?
+  idx_existed = File.exists?(directory)
+  Dir.mkdir(directory) unless idx_existed
+  puts("Inside generate index!!!!")
+  @@updater.generate_index(directory)
 end
 
 ##
@@ -63,7 +73,7 @@ class AstoUpdater
   ##
   # Create an indexer that will index the gems in +directory+.
 
-  def initialize(asto, directory, options = { build_modern: true })
+  def initialize(options = { build_modern: true })
     require 'fileutils'
     require 'tmpdir'
     require 'zlib'
@@ -72,14 +82,10 @@ class AstoUpdater
       raise "AstoUpdater requires that the XML Builder library be installed:" +
                 "\n\tgem install builder"
     end
-    puts(asto)
-    puts(directory)
     options = { :build_modern => true }.merge options
 
     @build_modern = options[:build_modern]
 
-    @asto = asto
-    @dest_directory = directory
     @directory = Dir.mktmpdir 'gem_generate_index'
 
     marshal_name = "Marshal.#{Gem.marshal_version}"
@@ -99,26 +105,22 @@ class AstoUpdater
         File.join(@directory, "latest_specs.#{Gem.marshal_version}")
     @prerelease_specs_index =
         File.join(@directory, "prerelease_specs.#{Gem.marshal_version}")
-    @dest_specs_index =
-        File.join(@dest_directory, "specs.#{Gem.marshal_version}")
-    @dest_latest_specs_index =
-        File.join(@dest_directory, "latest_specs.#{Gem.marshal_version}")
-    @dest_prerelease_specs_index =
-        File.join(@dest_directory, "prerelease_specs.#{Gem.marshal_version}")
 
     @files = []
-    # Was index created before?
-    idx_existed = File.exists?(directory)
-    Dir.mkdir(directory) unless idx_existed
-    generate_index unless idx_existed
-
+    #generate_index # unless idx_existed
+    puts("666666666666")
     #update_index
+    @@updater = self
+    puts("11111111")
+    puts(@updater)
+    puts("ooooooo")
   end
 
   ##
   # Build various indices
 
   def build_indices
+    puts("Build Indices")
     specs = map_gems_to_specs gem_file_list
     Gem::Specification._resort! specs
     build_marshal_gemspecs specs
@@ -298,7 +300,18 @@ class AstoUpdater
   ##
   # Builds and installs indices.
 
-  def generate_index
+  def generate_index(directory)
+    @dest_directory = directory
+    puts("generate index")
+    puts(@dest_directory)
+    @dest_specs_index =
+        File.join(@dest_directory, "specs.#{Gem.marshal_version}")
+    @dest_latest_specs_index =
+        File.join(@dest_directory, "latest_specs.#{Gem.marshal_version}")
+    @dest_prerelease_specs_index =
+        File.join(@dest_directory, "prerelease_specs.#{Gem.marshal_version}")
+
+
     make_temp_directories
     build_indices
     install_indices
@@ -484,3 +497,4 @@ class AstoUpdater
   end
 end
 # AstoUpdater.new()
+
