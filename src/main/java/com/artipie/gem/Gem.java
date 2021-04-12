@@ -25,21 +25,32 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.http.Slice;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.runtime.builtin.IRubyObject;
 
 /**
  * An SDK, which servers gem packages.
@@ -102,7 +113,9 @@ public class Gem {
      * @return Completable action
      */
     public CompletionStage<Void> batchUpdate(final Key prefix) {
+        final Storage local = new FileStorage(Paths.get("D:\\Data\\Artipie\\gem-adapter\\ggg"));
         final Path tmpdir;
+        Paths.get("jjjj");
         try {
             tmpdir = Files.createTempDirectory(prefix.string());
         } catch (final IOException err) {
@@ -110,18 +123,43 @@ public class Gem {
         }
         return CompletableFuture.runAsync(
             () -> {
+                try {
+                    Collection<Key> j = local.list(new Key.From("Artipie"))
+                        .get();
+                    System.out.println(j.size());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+
+
                 rubyUpdater(
                     "AstoUpdater", this.storage, tmpdir.toString(),
                     JavaEmbedUtils.initialize(new ArrayList<>(0))
                 );
-                new RxStorageWrapper(this.storage)
-                    .value(prefix)
-                    .flatMapCompletable(
-                        content -> new RxStorageWrapper(this.storage)
-                            .save(prefix, content)
-                    );
+                //final Storage local = new FileStorage(tmpdir);
             }
         );
+        //return SingleInterop.fromFuture(local.list(prefix))
+        //    .flatMapPublisher(Flowable::fromIterable)
+        //    .flatMapCompletable(
+        //        key -> new RxStorageWrapper(local)
+         //          .value(key)
+       //             .flatMapCompletable(
+        //                content -> new RxStorageWrapper(this.storage)
+        //                    .save(new Key.From("Artipie"), content)
+        //            )
+        //    ).to(CompletableInterop.await());
+//        return new RxStorageWrapper(local)
+//            .value(new Key.From("Artipie"))
+//            .flatMapCompletable(
+//                content -> {
+//                    System.out.println(content);
+//                    return new RxStorageWrapper(this.storage)
+//                        .save(prefix, content);
+//                }
+//            );
     }
 
     /**
@@ -141,11 +179,19 @@ public class Gem {
                 StandardCharsets.UTF_8
             );
             evaler.eval(runtime, script);
-            return (Slice) JavaEmbedUtils.invokeMethod(
+            IRubyObject recvr = evaler.eval(runtime, rclass);
+            JavaEmbedUtils.invokeMethod(
                 runtime,
-                evaler.eval(runtime, rclass),
+                recvr,
                 "new",
                 new Object[]{storage, repo},
+                Slice.class
+            );
+            return (Slice) JavaEmbedUtils.invokeMethod(
+                runtime,
+                recvr,
+                "generate_index2",
+                null,
                 Slice.class
             );
         } catch (final IOException exc) {
@@ -153,3 +199,4 @@ public class Gem {
         }
     }
 }
+

@@ -5,6 +5,7 @@ require 'time'
 require 'tmpdir'
 
 rescue_exceptions = [LoadError]
+@@updater = 0
 begin
   require 'bundler/errors'
 rescue LoadError # this rubygems + old ruby
@@ -15,6 +16,11 @@ begin
   gem 'builder'
   require 'builder/xchar'
 rescue *rescue_exceptions
+end
+
+def generate_index2
+  puts("Inside generate index!!!!")
+  @@updater.generate_index
 end
 
 ##
@@ -106,19 +112,25 @@ class AstoUpdater
     @dest_prerelease_specs_index =
         File.join(@dest_directory, "prerelease_specs.#{Gem.marshal_version}")
 
+    puts("11111111111111")
     @files = []
     # Was index created before?
     idx_existed = File.exists?(directory)
     Dir.mkdir(directory) unless idx_existed
-    generate_index unless idx_existed
-
+    #generate_index # unless idx_existed
+    puts("666666666666")
     #update_index
+    @@updater = self
+    puts("11111111")
+    puts(@updater)
+    puts("ooooooo")
   end
 
   ##
   # Build various indices
 
   def build_indices
+    puts("Build Indices")
     specs = map_gems_to_specs gem_file_list
     Gem::Specification._resort! specs
     build_marshal_gemspecs specs
@@ -299,6 +311,7 @@ class AstoUpdater
   # Builds and installs indices.
 
   def generate_index
+    puts("generate index")
     make_temp_directories
     build_indices
     install_indices
