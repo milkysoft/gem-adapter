@@ -35,7 +35,7 @@ end
 class AstoUpdater
 
   include Gem::UserInteraction
-
+  include com.artipie.gem.GemIndexer
   ##
   # Build indexes for RubyGems 1.2.0 and newer when true
 
@@ -300,7 +300,7 @@ class AstoUpdater
   ##
   # Builds and installs indices.
 
-  def generate_index(directory)
+  def index(directory)
     @dest_directory = directory
     puts("generate index")
     puts(@dest_directory)

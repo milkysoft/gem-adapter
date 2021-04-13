@@ -26,6 +26,6 @@ class RubyIndexerTest {
         }
         // Paths.get("/mnt/disk2/projects/gem-adapter/" + repo)
         RubyIndexer rubyIndexer = new RubyIndexer(JavaEmbedUtils.initialize(new ArrayList<>(0)));
-        rubyIndexer.index(target.toString());
+        rubyIndexer.index(tmp.toString());
     }
 }
