@@ -23,6 +23,11 @@
  */
 package com.artipie.gem;
 
+/**
+ * A test for gem submit operation.
+ *
+ * @since 0.2
+ */
 public interface GemIndexer {
     void index(String repo);
 }

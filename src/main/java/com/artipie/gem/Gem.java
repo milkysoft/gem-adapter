@@ -26,10 +26,6 @@ package com.artipie.gem;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.asto.rx.RxCopy;
-import com.artipie.asto.rx.RxStorage;
-import com.artipie.asto.rx.RxStorageWrapper;
-import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -37,9 +33,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.apache.commons.io.IOUtils;
@@ -65,9 +59,15 @@ public class Gem {
      * Primary storage.
      */
     private final Storage storage;
-    final static RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();;
-    final static Ruby runtime = JavaEmbedUtils.initialize(new ArrayList<>(0));
-    static IRubyObject recvr = null;
+    /**
+     * Primary storage.
+     */
+    final static RubyRuntimeAdapter EVALER = JavaEmbedUtils.newRuntimeAdapter();
+    /**
+     * Primary storage.
+     */
+    final static Ruby RUNTIME = JavaEmbedUtils.initialize(new ArrayList<>(0));
+    static IRubyObject recvr;
     static GemIndexer gemIndexer;
 
     /**
@@ -77,26 +77,6 @@ public class Gem {
      */
     Gem(final Storage storage) {
         this.storage = storage;
-
-        final String script;
-        try {
-            script = IOUtils.toString(
-                Gem.class.getResourceAsStream("/AstoUpdater.rb"),
-                StandardCharsets.UTF_8
-            );
-            evaler.eval(runtime, script);
-            if(recvr == null) {
-                recvr = evaler.eval(runtime, "AstoUpdater");
-            }
-            gemIndexer = (GemIndexer) JavaEmbedUtils.invokeMethod(
-                runtime, recvr,
-                "new",
-                null,
-                GemIndexer.class
-            );
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
     }
 
     /**
@@ -116,46 +96,62 @@ public class Gem {
      * @return The Slice.
      */
     public CompletionStage<Void> update(final Key key) {
-        return this.batchUpdate(key.parent().isPresent() ? key.parent().get() : key);
+        return this.batchUpdate();
     }
 
     /**
      * Batch update Ruby gems for repository.
      *
-     * @param prefix Repository key prefix
      * @return Completable action
      */
-    public CompletionStage<Void> batchUpdate(final Key prefix) {
-        CompletableFuture<Void> res = CompletableFuture.supplyAsync(
+    public CompletionStage<Void> batchUpdate() {
+        final String script;
+        try {
+            if (Gem.recvr == null) {
+                script = IOUtils.toString(
+                    Gem.class.getResourceAsStream("/AstoUpdater.rb"),
+                    StandardCharsets.UTF_8
+                );
+                Gem.EVALER.eval(Gem.RUNTIME, script);
+                Gem.recvr = Gem.EVALER.eval(Gem.RUNTIME, "AstoUpdater");
+                Gem.gemIndexer = (GemIndexer) JavaEmbedUtils.invokeMethod(
+                    Gem.RUNTIME, Gem.recvr,
+                    "new",
+                    null,
+                    GemIndexer.class
+                );
+            }
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
+        }
+        return CompletableFuture.supplyAsync(
             () -> {
                 try {
-                    Path tmpdir = Files.createTempDirectory("gem");
-                    return tmpdir;
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    return Files.createTempDirectory("gem");
+                } catch (final IOException exc) {
+                    throw new UncheckedIOException(exc);
                 }
-                return null;
             }).thenCompose(
-            (tmpdir) -> {
-                final FileStorage remote = new FileStorage(tmpdir);
-                return Single.fromFuture(this.storage.list(Key.ROOT))
-                    .flatMapObservable(Observable::fromIterable)
-                    .flatMapSingle(
-                        key -> Single.fromFuture(
-                            this.storage.value(key)
+                tmpdir -> {
+                    final FileStorage remote = new FileStorage(tmpdir);
+                    return Single.fromFuture(this.storage.list(Key.ROOT))
+                        .flatMapObservable(Observable::fromIterable)
+                        .flatMapSingle(
+                            key -> Single.fromFuture(
+                                this.storage.value(key)
                                 .thenCompose(content -> remote.save(key, content))
                                 .thenApply(none -> true)
-                        )
-                    ).toList().map(ignore -> true).to(SingleInterop.get()).thenApply(ignore -> tmpdir);
-            })
+                            )
+                        ).toList().map(ignore -> true).to(SingleInterop.get())
+                        .thenApply(ignore -> tmpdir);
+                })
             .thenCompose(
-                (tmpdir) -> {
-                    return CompletableFuture.runAsync(
-                        () -> {rubyUpdater(tmpdir.toString());}).thenApply(ignore -> tmpdir);
-                }
+                tmpdir -> CompletableFuture.runAsync(
+                    () -> rubyUpdater(tmpdir.toString())).thenApply(ignore -> tmpdir)
             )
             .thenCompose(
-                (tmpdir) -> {final FileStorage remote = new FileStorage(tmpdir);
+                tmpdir -> {
+                    final FileStorage remote = new FileStorage(tmpdir);
                     return Single.fromFuture(remote.list(Key.ROOT))
                         .flatMapObservable(Observable::fromIterable)
                         .flatMapSingle(
@@ -164,22 +160,9 @@ public class Gem {
                                     .thenCompose(content -> this.storage.save(key, content))
                                     .thenApply(none -> true)
                             )
-                        ).toList().map(ignore -> true).to(SingleInterop.get()).thenApply(ignore -> (Void) null);}
+                        ).toList().map(ignore -> true).to(SingleInterop.get())
+                        .thenApply(ignore -> (Void) null); }
             );
-//        try {
-//            final Path src = Files.createTempDirectory("src");
-//            final Path dst = Files.createTempDirectory("src");
-//            Files.write(src.resolve("foo/1.txt"), "1".getBytes());
-//            Files.write(src.resolve("2.txt"), "2".getBytes());
-//            final FileStorage local = new FileStorage(src);
-//            final FileStorage remote = new FileStorage(dst);
-//            Single.fromFuture(local.list(Key.ROOT)).flatMapObservable(Observable::fromIterable)
-//                .flatMapSingle(key -> Single.fromFuture(local.value(key).thenCompose(content -> remote.save(key, content))))
-//                .toList().map(ignore -> (Void) null).to(SingleInterop.get());
-//        } catch (IOException exc) {
-//            throw new UncheckedIOException(exc);
-//        }
-        return res;
     }
 
     /**

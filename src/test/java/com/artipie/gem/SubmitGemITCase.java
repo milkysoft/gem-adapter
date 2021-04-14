@@ -23,24 +23,17 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
-import io.reactivex.Completable;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import com.artipie.http.rs.RsStatus;
-import com.artipie.vertx.VertxSliceServer;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.ext.web.client.WebClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
@@ -48,6 +41,11 @@ import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import com.artipie.http.rs.RsStatus;
+import com.artipie.vertx.VertxSliceServer;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.buffer.Buffer;
+import io.vertx.reactivex.ext.web.client.WebClient;
 
 /**
  * A test for gem submit operation.
@@ -57,37 +55,50 @@ import org.junit.jupiter.api.io.TempDir;
 public class SubmitGemITCase {
 
     @Test
-    public void testGem(@TempDir Path tmp) throws IOException {
-        //Path repo = tmp.resolve("repo");
-        Path repo = Paths.get("/mnt/disk2/projects/gem-adapter/Artipie");
-        Path path = repo.resolve("gems");
+    public void testGem(final @TempDir Path tmp) throws IOException {
+        final Path repo = Paths.get(tmp.toString(), "Artipie");
+        final Path path = repo.resolve("gems");
         try {
             Files.createDirectories(path);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
         }
-        Path target = path.resolve("builder-3.2.4.gem");
+        final Path target = path.resolve("builder-3.2.4.gem");
         try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
              OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(repo));
-        CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate(Key.ROOT);
+        final CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate();
         res.join();
-        List<String> files = new ArrayList<>();
+        final List<String> files = new ArrayList<>();
         try (Stream<Path> paths = Files.walk(repo)) {
             paths.filter(Files::isRegularFile)
                 .forEach(filename -> files.add(filename.toString()));
-            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/prerelease_specs.4.8.gz"));
-            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/quick/Marshal.4.8/builder-3.2.4.gemspec.rz"));
-            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/latest_specs.4.8"));
-            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/gems/builder-3.2.4.gem"));
-            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/specs.4.8.gz"));
-            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/latest_specs.4.8.gz"));
-
+            MatcherAssert.assertThat(
+                files,
+                Matchers.hasItem("".concat(repo.toString()).concat("/prerelease_specs.4.8.gz"))
+            );
+            MatcherAssert.assertThat(
+                files,
+                Matchers.hasItem("".concat(repo.toString())
+                    .concat("/quick/Marshal.4.8/builder-3.2.4.gemspec.rz"))
+            );
+            MatcherAssert.assertThat(
+                files, Matchers.hasItem("".concat(repo.toString()).concat("/latest_specs.4.8"))
+            );
+            MatcherAssert.assertThat(
+                files,
+                Matchers.hasItem("".concat(repo.toString()).concat("/gems/builder-3.2.4.gem"))
+            );
+            MatcherAssert.assertThat(
+                files, Matchers.hasItem("".concat(repo.toString()).concat("/specs.4.8.gz"))
+            );
+            MatcherAssert.assertThat(
+                files, Matchers.hasItem("".concat(repo.toString()).concat("/latest_specs.4.8.gz"))
+            );
         }
     }
-
 
     @Test
     public void submitResultsInOkResponse(@TempDir final Path temp) throws IOException {
