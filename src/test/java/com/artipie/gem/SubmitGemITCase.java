@@ -28,6 +28,8 @@ import com.artipie.asto.fs.FileStorage;
 import io.reactivex.Completable;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
@@ -39,8 +41,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Stream;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -53,10 +57,10 @@ import org.junit.jupiter.api.io.TempDir;
 public class SubmitGemITCase {
 
     @Test
-    public void testGem() throws IOException {
-        final String repo = "Artipie";
-
-        Path path = Paths.get(repo, "/gems");
+    public void testGem(@TempDir Path tmp) throws IOException {
+        //Path repo = tmp.resolve("repo");
+        Path repo = Paths.get("/mnt/disk2/projects/gem-adapter/Artipie");
+        Path path = repo.resolve("gems");
         try {
             Files.createDirectories(path);
         } catch (IOException e) {
@@ -67,10 +71,23 @@ public class SubmitGemITCase {
              OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
-        final Gem gem = new Gem(new FileStorage(Paths.get(repo)));
-        CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate(new Key.From(repo));
+        final Gem gem = new Gem(new FileStorage(repo));
+        CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate(Key.ROOT);
         res.join();
+        List<String> files = new ArrayList<>();
+        try (Stream<Path> paths = Files.walk(repo)) {
+            paths.filter(Files::isRegularFile)
+                .forEach(filename -> files.add(filename.toString()));
+            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/prerelease_specs.4.8.gz"));
+            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/quick/Marshal.4.8/builder-3.2.4.gemspec.rz"));
+            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/latest_specs.4.8"));
+            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/gems/builder-3.2.4.gem"));
+            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/specs.4.8.gz"));
+            MatcherAssert.assertThat(files, Matchers.hasItem(repo + "/latest_specs.4.8.gz"));
+
+        }
     }
+
 
     @Test
     public void submitResultsInOkResponse(@TempDir final Path temp) throws IOException {

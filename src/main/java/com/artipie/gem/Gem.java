@@ -30,6 +30,9 @@ import com.artipie.asto.rx.RxCopy;
 import com.artipie.asto.rx.RxStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -47,14 +50,15 @@ import org.jruby.runtime.builtin.IRubyObject;
 
 /**
  * An SDK, which servers gem packages.
- *
+ * <p>
  * Initialize on first request.
- *  Currently, Ruby runtime initialization and Slice evaluation is happening during the GemSlice
- *  construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
- *  on first request.
- * @since 0.1
+ * Currently, Ruby runtime initialization and Slice evaluation is happening during the GemSlice
+ * construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
+ * on first request.
+ *
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
+ * @since 0.1
  */
 public class Gem {
     /**
@@ -65,11 +69,12 @@ public class Gem {
     final static Ruby runtime = JavaEmbedUtils.initialize(new ArrayList<>(0));
     static IRubyObject recvr = null;
     static GemIndexer gemIndexer;
-        /**
-         * Ctor.
-         *
-         * @param storage The storage.
-         */
+
+    /**
+     * Ctor.
+     *
+     * @param storage The storage.
+     */
     Gem(final Storage storage) {
         this.storage = storage;
 
@@ -96,6 +101,7 @@ public class Gem {
 
     /**
      * Lookup an instance of slice, implemented with JRuby.
+     *
      * @param key The name of a slice class, implemented in JRuby.
      * @return The Slice.
      */
@@ -105,6 +111,7 @@ public class Gem {
 
     /**
      * Lookup an instance of slice, implemented with JRuby.
+     *
      * @param key The name of a slice class, implemented in JRuby.
      * @return The Slice.
      */
@@ -114,36 +121,75 @@ public class Gem {
 
     /**
      * Batch update Ruby gems for repository.
+     *
      * @param prefix Repository key prefix
      * @return Completable action
      */
     public CompletionStage<Void> batchUpdate(final Key prefix) {
-        final Path tmpdir;
-        try {
-            tmpdir = Files.createTempDirectory(prefix.string());
-        } catch (final IOException err) {
-            throw new IllegalStateException("Failed to create temp dir", err);
-        }
-        CompletableFuture<Void> res = CompletableFuture.runAsync(
+        CompletableFuture<Void> res = CompletableFuture.supplyAsync(
             () -> {
-                rubyUpdater(tmpdir.toString());
-            }
-        );
-        res.join();
-        List<Key> keys = new ArrayList<>();
-        keys.add(prefix);
-        return new RxCopy(new RxStorageWrapper(new FileStorage(tmpdir)), keys)
-            .copy(new RxStorageWrapper(this.storage))
-            .to(CompletableInterop.await());
+                try {
+                    Path tmpdir = Files.createTempDirectory("gem");
+                    return tmpdir;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }).thenCompose(
+            (tmpdir) -> {
+                final FileStorage remote = new FileStorage(tmpdir);
+                return Single.fromFuture(this.storage.list(Key.ROOT))
+                    .flatMapObservable(Observable::fromIterable)
+                    .flatMapSingle(
+                        key -> Single.fromFuture(
+                            this.storage.value(key)
+                                .thenCompose(content -> remote.save(key, content))
+                                .thenApply(none -> true)
+                        )
+                    ).toList().map(ignore -> true).to(SingleInterop.get()).thenApply(ignore -> tmpdir);
+            })
+            .thenCompose(
+                (tmpdir) -> {
+                    return CompletableFuture.runAsync(
+                        () -> {rubyUpdater(tmpdir.toString());}).thenApply(ignore -> tmpdir);
+                }
+            )
+            .thenCompose(
+                (tmpdir) -> {final FileStorage remote = new FileStorage(tmpdir);
+                    return Single.fromFuture(remote.list(Key.ROOT))
+                        .flatMapObservable(Observable::fromIterable)
+                        .flatMapSingle(
+                            key -> Single.fromFuture(
+                                remote.value(key)
+                                    .thenCompose(content -> this.storage.save(key, content))
+                                    .thenApply(none -> true)
+                            )
+                        ).toList().map(ignore -> true).to(SingleInterop.get()).thenApply(ignore -> (Void) null);}
+            );
+//        try {
+//            final Path src = Files.createTempDirectory("src");
+//            final Path dst = Files.createTempDirectory("src");
+//            Files.write(src.resolve("foo/1.txt"), "1".getBytes());
+//            Files.write(src.resolve("2.txt"), "2".getBytes());
+//            final FileStorage local = new FileStorage(src);
+//            final FileStorage remote = new FileStorage(dst);
+//            Single.fromFuture(local.list(Key.ROOT)).flatMapObservable(Observable::fromIterable)
+//                .flatMapSingle(key -> Single.fromFuture(local.value(key).thenCompose(content -> remote.save(key, content))))
+//                .toList().map(ignore -> (Void) null).to(SingleInterop.get());
+//        } catch (IOException exc) {
+//            throw new UncheckedIOException(exc);
+//        }
+        return res;
     }
 
     /**
      * Lookup an instance of slice, implemented with JRuby.
+     *
      * @param repo The temp repo path.
      * @return The Slice.
      */
-    static void rubyUpdater(final String repo) {
-            gemIndexer.index(repo);
+    static String rubyUpdater(final String repo) {
+        gemIndexer.index(repo);
+        return repo;
     }
 }
-
