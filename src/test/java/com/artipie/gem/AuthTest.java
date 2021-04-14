@@ -64,7 +64,7 @@ public class AuthTest {
             new Authorization(String.format("Basic %s", token))
         );
         MatcherAssert.assertThat(
-            new GemSlice(new InMemoryStorage(), "temp-repo-path").response(
+            new GemSlice(new InMemoryStorage()).response(
                 new RequestLine("GET", "/api/v1/api_key").toString(),
                 headers,
                 Flowable.empty()
@@ -77,7 +77,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                "temp-repo-path",
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 Permissions.FREE,
                 Authentication.ANONYMOUS
@@ -97,7 +96,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                "temp-repo-path",
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 new Permissions.Single(lgn, "download"),
                 new Authentication.Single(lgn, pwd)
@@ -117,7 +115,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                "temp-repo-path",
                 JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 new Permissions.Single(String.format("another %s", lgn), "download"),
                 new Authentication.Single(lgn, pwd)
@@ -161,7 +158,6 @@ public class AuthTest {
         }
         return new GemSlice(
             new InMemoryStorage(),
-            "temp-repo-path",
             JavaEmbedUtils.initialize(new ArrayList<>(0)),
             new Permissions.Single(user, "upload"),
             new Authentication.Single(user, pswd)
