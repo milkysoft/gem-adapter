@@ -26,7 +26,7 @@ public class RubyIndexer implements GemIndexer {
         try {
             final  RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();;
             String script = IOUtils.toString(
-                Gem.class.getResourceAsStream("/AstoUpdater.rb"),
+                Thread.currentThread().getContextClassLoader().getResourceAsStream("/AstoUpdater.rb"),
                 StandardCharsets.UTF_8
             );
             evaler.eval(runtime, script);

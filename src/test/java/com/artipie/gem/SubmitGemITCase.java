@@ -52,7 +52,25 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public class SubmitGemITCase {
 
+    @Test
+    public void testGem() throws IOException {
+        final String repo = "Artipie";
 
+        Path path = Paths.get(repo, "/gems");
+        try {
+            Files.createDirectories(path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Path target = path.resolve("builder-3.2.4.gem");
+        try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
+             OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        final Gem gem = new Gem(new FileStorage(Paths.get(repo)));
+        CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate(new Key.From(repo));
+        res.join();
+    }
 
     @Test
     public void submitResultsInOkResponse(@TempDir final Path temp) throws IOException {

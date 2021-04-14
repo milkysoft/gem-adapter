@@ -25,13 +25,18 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
+import com.artipie.asto.rx.RxCopy;
+import com.artipie.asto.rx.RxStorage;
+import com.artipie.asto.rx.RxStorageWrapper;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.apache.commons.io.IOUtils;
@@ -59,6 +64,7 @@ public class Gem {
     final static RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();;
     final static Ruby runtime = JavaEmbedUtils.initialize(new ArrayList<>(0));
     static IRubyObject recvr = null;
+    static GemIndexer gemIndexer;
         /**
          * Ctor.
          *
@@ -66,6 +72,7 @@ public class Gem {
          */
     Gem(final Storage storage) {
         this.storage = storage;
+
         final String script;
         try {
             script = IOUtils.toString(
@@ -76,7 +83,7 @@ public class Gem {
             if(recvr == null) {
                 recvr = evaler.eval(runtime, "AstoUpdater");
             }
-            JavaEmbedUtils.invokeMethod(
+            gemIndexer = (GemIndexer) JavaEmbedUtils.invokeMethod(
                 runtime, recvr,
                 "new",
                 null,
@@ -102,18 +109,7 @@ public class Gem {
      * @return The Slice.
      */
     public CompletionStage<Void> update(final Key key) {
-        final String[] parts = key.string().split("/");
-        final Key folder;
-        if (parts.length == 1) {
-            folder = Key.ROOT;
-        } else {
-            folder = new Key.From(
-                Arrays.stream(parts)
-                    .limit(parts.length - 1)
-                    .toArray(String[]::new)
-            );
-        }
-        return this.batchUpdate(folder);
+        return this.batchUpdate(key.parent().isPresent() ? key.parent().get() : key);
     }
 
     /**
@@ -128,35 +124,26 @@ public class Gem {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        return CompletableFuture.runAsync(
+        CompletableFuture<Void> res = CompletableFuture.runAsync(
             () -> {
-                rubyUpdater(
-                    "GemIndexer", this.storage, tmpdir.toString());
+                rubyUpdater(tmpdir.toString());
             }
         );
-//        res.join();
-//        return new RxStorageWrapper(this.storage)
-//            .value(prefix)
-//            .flatMapCompletable(
-//                content -> new RxStorageWrapper(this.storage)
-//                    .save(prefix, content)
-//            ).to(CompletableInterop.await());
+        res.join();
+        List<Key> keys = new ArrayList<>();
+        keys.add(prefix);
+        return new RxCopy(new RxStorageWrapper(new FileStorage(tmpdir)), keys)
+            .copy(new RxStorageWrapper(this.storage))
+            .to(CompletableInterop.await());
     }
 
     /**
      * Lookup an instance of slice, implemented with JRuby.
-     * @param rclass The name of a slice class, implemented in JRuby.
-     * @param storage The storage to pass directly to Ruby instance.
      * @param repo The temp repo path.
      * @return The Slice.
      */
-    static GemIndexer rubyUpdater(final String rclass, final Storage storage, final String repo) {
-            return (GemIndexer) JavaEmbedUtils.invokeMethod(
-                runtime, recvr,
-                "index",
-                new Object[]{repo},
-                GemIndexer.class
-            );
+    static void rubyUpdater(final String repo) {
+            gemIndexer.index(repo);
     }
 }
 
