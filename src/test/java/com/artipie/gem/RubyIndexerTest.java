@@ -34,19 +34,30 @@ import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+/**
+ * An SDK, which servers gem packages.
+ * <p>
+ * Initialize on first request.
+ * Currently, Ruby runtime initialization and Slice evaluation is happening during the GemSlice
+ * construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
+ * on first request.
+ *
+ * @since 0.1
+ */
 class RubyIndexerTest {
 
     @Test
-    public void testUpdater (final @TempDir Path tmp) throws Exception{
+    public void testUpdater(final @TempDir Path tmp) throws Exception {
         final Path path = Paths.get(tmp.toFile().getAbsolutePath(), "/gems");
         Files.createDirectories(path);
         final Path target = path.resolve("builder-3.2.4.gem");
         try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
             OutputStream os = Files.newOutputStream(target)) {
-                IOUtils.copy(is, os);
-            }
+            IOUtils.copy(is, os);
+        }
         final RubyIndexer rubyindexer = new RubyIndexer(
-            JavaEmbedUtils.initialize(new ArrayList<>(0)));
+            JavaEmbedUtils.initialize(new ArrayList<>(0))
+        );
         rubyindexer.index(tmp.toString());
     }
 }

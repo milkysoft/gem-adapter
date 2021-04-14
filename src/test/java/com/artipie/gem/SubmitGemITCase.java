@@ -24,16 +24,21 @@
 package com.artipie.gem;
 
 import com.artipie.asto.fs.FileStorage;
+import com.artipie.http.rs.RsStatus;
+import com.artipie.vertx.VertxSliceServer;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.buffer.Buffer;
+import io.vertx.reactivex.ext.web.client.WebClient;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
@@ -41,11 +46,6 @@ import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import com.artipie.http.rs.RsStatus;
-import com.artipie.vertx.VertxSliceServer;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.ext.web.client.WebClient;
 
 /**
  * A test for gem submit operation.
@@ -65,13 +65,13 @@ public class SubmitGemITCase {
         }
         final Path target = path.resolve("builder-3.2.4.gem");
         try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
-             OutputStream os = Files.newOutputStream(target)) {
+            OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(repo));
         final CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate();
         res.join();
-        final List<String> files = new ArrayList<>();
+        final List<String> files = new ArrayList<>(0);
         try (Stream<Path> paths = Files.walk(repo)) {
             paths.filter(Files::isRegularFile)
                 .forEach(filename -> files.add(filename.toString()));
@@ -82,7 +82,8 @@ public class SubmitGemITCase {
             MatcherAssert.assertThat(
                 files,
                 Matchers.hasItem("".concat(repo.toString())
-                    .concat("/quick/Marshal.4.8/builder-3.2.4.gemspec.rz"))
+                    .concat("/quick/Marshal.4.8/builder-3.2.4.gemspec.rz")
+                )
             );
             MatcherAssert.assertThat(
                 files, Matchers.hasItem("".concat(repo.toString()).concat("/latest_specs.4.8"))

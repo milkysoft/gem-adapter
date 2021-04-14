@@ -50,25 +50,35 @@ import org.jruby.runtime.builtin.IRubyObject;
  * construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
  * on first request.
  *
+ * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
- * @since 0.1
  */
 public class Gem {
     /**
      * Primary storage.
      */
+    static final RubyRuntimeAdapter EVALER = JavaEmbedUtils.newRuntimeAdapter();
+
+    /**
+     * Primary storage.
+     */
+    static final Ruby RUNTIME = JavaEmbedUtils.initialize(new ArrayList<>(0));
+
+    /**
+     * Primary storage.
+     */
+    private static IRubyObject recvr;
+
+    /**
+     * Primary storage.
+     */
+    private static GemIndexer gemIndexer;
+
+    /**
+     * Primary storage.
+     */
     private final Storage storage;
-    /**
-     * Primary storage.
-     */
-    final static RubyRuntimeAdapter EVALER = JavaEmbedUtils.newRuntimeAdapter();
-    /**
-     * Primary storage.
-     */
-    final static Ruby RUNTIME = JavaEmbedUtils.initialize(new ArrayList<>(0));
-    static IRubyObject recvr;
-    static GemIndexer gemIndexer;
 
     /**
      * Ctor.
@@ -147,7 +157,8 @@ public class Gem {
                 })
             .thenCompose(
                 tmpdir -> CompletableFuture.runAsync(
-                    () -> rubyUpdater(tmpdir.toString())).thenApply(ignore -> tmpdir)
+                    () -> rubyUpdater(tmpdir.toString())
+                ).thenApply(ignore -> tmpdir)
             )
             .thenCompose(
                 tmpdir -> {
@@ -172,7 +183,7 @@ public class Gem {
      * @return The Slice.
      */
     static String rubyUpdater(final String repo) {
-        gemIndexer.index(repo);
+        Gem.gemIndexer.index(repo);
         return repo;
     }
 }

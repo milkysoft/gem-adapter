@@ -29,5 +29,10 @@ package com.artipie.gem;
  * @since 0.2
  */
 public interface GemIndexer {
+    /**
+     * Primary storage.
+     *
+     * @param repo Is good
+     */
     void index(String repo);
 }
