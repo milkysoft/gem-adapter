@@ -62,18 +62,14 @@ import org.jruby.javasupport.JavaEmbedUtils;
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class GemSlice extends Slice.Wrap {
-    /**
-     * Primary evaluator.
-     */
-    private static volatile RubyRuntimeAdapter evaler;
 
     /**
      * Ctor.
+     *
      * @param storage The storage.
-     * @param repo Temporarily folder
      */
-    public GemSlice(final Storage storage, final String repo) {
-        this(storage, repo,
+    public GemSlice(final Storage storage) {
+        this(storage,
             JavaEmbedUtils.initialize(new ArrayList<>(0)),
             Permissions.FREE,
             (login, pwd) -> Optional.of(new Authentication.User("anonymous"))
@@ -84,13 +80,11 @@ public final class GemSlice extends Slice.Wrap {
      * Ctor.
      *
      * @param storage The storage.
-     * @param repo The repo.
      * @param runtime The Jruby runtime.
      * @param permissions The permissions.
      * @param auth The auth.
      */
     public GemSlice(final Storage storage,
-        final String repo,
         final Ruby runtime,
         final Permissions permissions,
         final Authentication auth) {
@@ -102,7 +96,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByPath("/api/v1/gems")
                     ),
                     new AuthSlice(
-                        GemSlice.rubyLookUp("SubmitGem", storage, repo, runtime),
+                        GemSlice.rubyLookUp("SubmitGem", storage, runtime),
                         new GemApiKeyAuth(auth),
                         new Permission.ByName(permissions, Action.Standard.WRITE)
                     )
@@ -141,16 +135,14 @@ public final class GemSlice extends Slice.Wrap {
      * Lookup an instance of slice, implemented with JRuby.
      * @param rclass The name of a slice class, implemented in JRuby.
      * @param storage The storage to pass directly to Ruby instance.
-     * @param repo The temp repo path.
      * @param runtime The JRuby runtime.
      * @return The Slice.
      */
-    private static Slice rubyLookUp(final String rclass, final Storage storage, final String repo,
+    private static Slice rubyLookUp(final String rclass,
+        final Storage storage,
         final Ruby runtime) {
         try {
-            if (GemSlice.evaler == null) {
-                GemSlice.evaler = JavaEmbedUtils.newRuntimeAdapter();
-            }
+            final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
             final String script = IOUtils.toString(
                 GemSlice.class.getResourceAsStream(String.format("/%s.rb", rclass)),
                 StandardCharsets.UTF_8
@@ -160,7 +152,7 @@ public final class GemSlice extends Slice.Wrap {
                 runtime,
                 evaler.eval(runtime, rclass),
                 "new",
-                new Object[]{storage, repo},
+                new Object[]{storage},
                 Slice.class
             );
         } catch (final IOException exc) {
