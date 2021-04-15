@@ -48,16 +48,14 @@ class RubyIndexerTest {
 
     @Test
     public void testUpdater(final @TempDir Path tmp) throws Exception {
-        final Path path = Paths.get(tmp.toFile().getAbsolutePath(), "/gems");
+        final Path path = Paths.get(tmp.toString(), "/gems");
         Files.createDirectories(path);
         final Path target = path.resolve("builder-3.2.4.gem");
         try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
-        final RubyIndexer rubyindexer = new RubyIndexer(
-            JavaEmbedUtils.initialize(new ArrayList<>(0))
-        );
+        final RubyIndexer rubyindexer = new RubyIndexer();
         rubyindexer.index(tmp.toString());
     }
 }
