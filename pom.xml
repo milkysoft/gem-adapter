@@ -153,6 +153,16 @@ SOFTWARE.
     </testResources>
     <plugins>
       <plugin>
+        <groupId>com.jcabi</groupId>
+        <artifactId>jcabi-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>jcabi-versionalize-packages</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.6.0</version>
         <groupId>org.codehaus.mojo</groupId>
