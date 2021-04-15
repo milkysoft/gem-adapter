@@ -32,17 +32,14 @@ import io.reactivex.Single;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
-import org.jruby.runtime.builtin.IRubyObject;
 
 /**
  * An SDK, which servers gem packages.
@@ -66,16 +63,6 @@ public class Gem {
      * Primary storage.
      */
     static final Ruby RUNTIME = JavaEmbedUtils.initialize(new ArrayList<>(0));
-
-    /**
-     * Primary storage.
-     */
-    private static IRubyObject recvr;
-
-    /**
-     * Primary storage.
-     */
-    private static GemIndexer gemIndexer;
 
     /**
      * Primary storage.
@@ -117,25 +104,6 @@ public class Gem {
      * @return Completable action
      */
     public CompletionStage<Void> batchUpdate() {
-        final String script;
-        try {
-            if (Gem.recvr == null) {
-                script = IOUtils.toString(
-                    Gem.class.getResourceAsStream("/AstoUpdater.rb"),
-                    StandardCharsets.UTF_8
-                );
-                Gem.EVALER.eval(Gem.RUNTIME, script);
-                Gem.recvr = Gem.EVALER.eval(Gem.RUNTIME, "AstoUpdater");
-                Gem.gemIndexer = (GemIndexer) JavaEmbedUtils.invokeMethod(
-                    Gem.RUNTIME, Gem.recvr,
-                    "new",
-                    null,
-                    GemIndexer.class
-                );
-            }
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -196,7 +164,10 @@ public class Gem {
      * @return The Slice.
      */
     static String rubyUpdater(final String repo) {
-        Gem.gemIndexer.index(repo);
+        final String script = "require 'rubygems/indexer.rb'\n Gem::Indexer.new(\""
+            .concat(repo).concat("\",{ build_modern:true }).generate_index");
+        Gem.EVALER.eval(Gem.RUNTIME, script);
         return repo;
     }
 }
+
