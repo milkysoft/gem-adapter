@@ -29,6 +29,7 @@ import com.artipie.asto.fs.FileStorage;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +37,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
@@ -172,7 +174,18 @@ public class Gem {
                                     .thenApply(none -> true)
                             )
                         ).toList().map(ignore -> true).to(SingleInterop.get())
-                        .thenApply(ignore -> (Void) null); }
+                        .thenApply(ignore -> tmpdir); }
+            )
+            .thenCompose(
+                tmpdir -> CompletableFuture.runAsync(
+                    () -> {
+                        try {
+                            FileUtils.deleteDirectory(new File(tmpdir.toString()));
+                        } catch (final IOException exc) {
+                            throw new UncheckedIOException(exc);
+                        }
+                    }
+                ).thenApply(ignore -> null)
             );
     }
 
