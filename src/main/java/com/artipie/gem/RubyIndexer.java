@@ -42,7 +42,7 @@ public final class RubyIndexer implements GemIndexer {
     @Override
     public void index(final String repo) {
         final  RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
-        final String script = "require 'rubygems/indexer.rb'\nGem::Indexer.new(\""
+        final String script = "require 'rubygems/indexer.rb'\n Gem::Indexer.new(\""
             .concat(repo).concat("\",{ build_modern:true }).generate_index");
         evaler.eval(Gem.RUNTIME, script);
     }
