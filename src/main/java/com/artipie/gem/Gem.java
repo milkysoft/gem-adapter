@@ -25,7 +25,9 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.SubStorage;
 import com.artipie.asto.fs.FileStorage;
+import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -33,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -49,18 +52,18 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
  * on first request.
  *
- * @since 0.1
+ * @since 1.0
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
  */
 public class Gem {
     /**
-     * Primary storage.
+     * Primary evaler.
      */
     static final RubyRuntimeAdapter EVALER = JavaEmbedUtils.newRuntimeAdapter();
 
     /**
-     * Primary storage.
+     * Primary runtime.
      */
     static final Ruby RUNTIME = JavaEmbedUtils.initialize(new ArrayList<>(0));
 
@@ -79,47 +82,29 @@ public class Gem {
     }
 
     /**
-     * Lookup an instance of slice, implemented with JRuby.
-     *
-     * @param key The name of a slice class, implemented in JRuby.
-     * @return The Slice.
-     */
-    public CompletionStage<Void> update(final String key) {
-        return this.update(new Key.From(key));
-    }
-
-    /**
-     * Lookup an instance of slice, implemented with JRuby.
-     *
-     * @param key The name of a slice class, implemented in JRuby.
-     * @return The Slice.
-     */
-    public CompletionStage<Void> update(final Key key) {
-        return this.batchUpdate();
-    }
-
-    /**
      * Batch update Ruby gems for repository.
      *
+     * @param prefix Key used Substorage
      * @return Completable action
      */
-    public CompletionStage<Void> batchUpdate() {
+    public CompletionStage<Void> batchUpdate(final Key prefix) {
+        final Storage remote = new SubStorage(prefix, this.storage);
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
-                    return Files.createTempDirectory("gem");
+                    return Files.createTempDirectory(prefix.string());
                 } catch (final IOException exc) {
                     throw new UncheckedIOException(exc);
                 }
             }).thenCompose(
                 tmpdir -> {
-                    final FileStorage remote = new FileStorage(tmpdir);
-                    return Single.fromFuture(this.storage.list(Key.ROOT))
+                    final FileStorage local = new FileStorage(tmpdir);
+                    return Single.fromFuture(remote.list(Key.ROOT))
                         .flatMapObservable(Observable::fromIterable)
                         .flatMapSingle(
                             key -> Single.fromFuture(
-                                this.storage.value(key)
-                                .thenCompose(content -> remote.save(key, content))
+                                remote.value(key)
+                                .thenCompose(content -> local.save(key, content))
                                 .thenApply(none -> true)
                             )
                         ).toList().map(ignore -> true).to(SingleInterop.get())
@@ -132,42 +117,49 @@ public class Gem {
             )
             .thenCompose(
                 tmpdir -> {
-                    final FileStorage remote = new FileStorage(tmpdir);
-                    return Single.fromFuture(remote.list(Key.ROOT))
+                    final FileStorage local = new FileStorage(tmpdir);
+                    return Single.fromFuture(local.list(Key.ROOT))
                         .flatMapObservable(Observable::fromIterable)
                         .flatMapSingle(
                             key -> Single.fromFuture(
-                                remote.value(key)
-                                    .thenCompose(content -> this.storage.save(key, content))
+                                local.value(key)
+                                    .thenCompose(content -> remote.save(key, content))
                                     .thenApply(none -> true)
                             )
                         ).toList().map(ignore -> true).to(SingleInterop.get())
                         .thenApply(ignore -> tmpdir); }
             )
-            .thenCompose(
-                tmpdir -> CompletableFuture.runAsync(
-                    () -> {
-                        try {
-                            FileUtils.deleteDirectory(new File(tmpdir.toString()));
-                        } catch (final IOException exc) {
-                            throw new UncheckedIOException(exc);
-                        }
-                    }
-                ).thenApply(ignore -> null)
-            );
+            .handle(Gem::removeTempDir);
     }
 
     /**
-     * Lookup an instance of slice, implemented with JRuby.
+     * Create indexes for given gem in target folder.
      *
      * @param repo The temp repo path.
-     * @return The Slice.
      */
-    static String rubyUpdater(final String repo) {
+    static void rubyUpdater(final String repo) {
         final String script = "require 'rubygems/indexer.rb'\n Gem::Indexer.new(\""
             .concat(repo).concat("\",{ build_modern:true }).generate_index");
         Gem.EVALER.eval(Gem.RUNTIME, script);
-        return repo;
+    }
+
+    /**
+     * Handle async result.
+     * @param tmpdir Path directory to remove
+     * @param err Error
+     * @return Nothing
+     */
+    private static Void removeTempDir(final Path tmpdir, final Throwable err) {
+        try {
+            FileUtils.deleteDirectory(new File(tmpdir.toString()));
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
+        }
+        if (err != null) {
+            Logger.warn(
+                Gem.class, "Failed to update gem indexes: %[exception]s", err
+            );
+        }
+        return null;
     }
 }
-

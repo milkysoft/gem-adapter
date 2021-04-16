@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
@@ -57,7 +58,8 @@ public class SubmitGemITCase {
     @Test
     public void testGem(final @TempDir Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString(), "Artipie");
-        final Path path = repo.resolve("gems");
+        final String prefix = "builder";
+        final Path path = repo.resolve(prefix).resolve("gems");
         try {
             Files.createDirectories(path);
         } catch (final IOException exc) {
@@ -69,7 +71,8 @@ public class SubmitGemITCase {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(repo));
-        final CompletableFuture<Void> res = (CompletableFuture<Void>) gem.batchUpdate();
+        final CompletableFuture<Void> res =
+            (CompletableFuture<Void>) gem.batchUpdate(new Key.From(prefix));
         res.join();
         final List<String> files = new ArrayList<>(0);
         try (Stream<Path> paths = Files.walk(repo)) {
@@ -77,26 +80,36 @@ public class SubmitGemITCase {
                 .forEach(filename -> files.add(filename.toString()));
             MatcherAssert.assertThat(
                 files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/prerelease_specs.4.8.gz"))
+                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                    .concat("/prerelease_specs.4.8.gz")
+                )
             );
             MatcherAssert.assertThat(
                 files,
-                Matchers.hasItem("".concat(repo.toString())
+                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
                     .concat("/quick/Marshal.4.8/builder-3.2.4.gemspec.rz")
                 )
             );
             MatcherAssert.assertThat(
-                files, Matchers.hasItem("".concat(repo.toString()).concat("/latest_specs.4.8"))
+                files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                    .concat("/latest_specs.4.8")
+                )
             );
             MatcherAssert.assertThat(
                 files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/gems/builder-3.2.4.gem"))
+                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                    .concat("/gems/builder-3.2.4.gem")
+                )
             );
             MatcherAssert.assertThat(
-                files, Matchers.hasItem("".concat(repo.toString()).concat("/specs.4.8.gz"))
+                files, Matchers.hasItem(
+                    "".concat(repo.toString()).concat("/").concat(prefix).concat("/specs.4.8.gz")
+                )
             );
             MatcherAssert.assertThat(
-                files, Matchers.hasItem("".concat(repo.toString()).concat("/latest_specs.4.8.gz"))
+                files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                    .concat("/latest_specs.4.8.gz")
+                )
             );
         }
     }
