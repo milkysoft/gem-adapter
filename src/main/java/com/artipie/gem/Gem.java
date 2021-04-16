@@ -57,7 +57,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
  */
-final public class Gem {
+public final class Gem {
     /**
      * Primary evaler.
      */

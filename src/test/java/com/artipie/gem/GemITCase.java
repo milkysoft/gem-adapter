@@ -66,7 +66,7 @@ public class GemITCase {
         }
         final Path target = path.resolve("builder-3.2.4.gem");
         try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
-             OutputStream os = Files.newOutputStream(target)) {
+            OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(repo));
