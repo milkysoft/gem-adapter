@@ -56,65 +56,6 @@ import org.junit.jupiter.api.io.TempDir;
 public class SubmitGemITCase {
 
     @Test
-    public void testGem(final @TempDir Path tmp) throws IOException {
-        final Path repo = Paths.get(tmp.toString(), "Artipie");
-        final String prefix = "builder";
-        final Path path = repo.resolve(prefix).resolve("gems");
-        try {
-            Files.createDirectories(path);
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
-        final Path target = path.resolve("builder-3.2.4.gem");
-        try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
-            OutputStream os = Files.newOutputStream(target)) {
-            IOUtils.copy(is, os);
-        }
-        final Gem gem = new Gem(new FileStorage(repo));
-        final CompletableFuture<Void> res =
-            (CompletableFuture<Void>) gem.batchUpdate(new Key.From(prefix));
-        res.join();
-        final List<String> files = new ArrayList<>(0);
-        try (Stream<Path> paths = Files.walk(repo)) {
-            paths.filter(Files::isRegularFile)
-                .forEach(filename -> files.add(filename.toString()));
-            MatcherAssert.assertThat(
-                files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/prerelease_specs.4.8.gz")
-                )
-            );
-            MatcherAssert.assertThat(
-                files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/quick/Marshal.4.8/builder-3.2.4.gemspec.rz")
-                )
-            );
-            MatcherAssert.assertThat(
-                files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/latest_specs.4.8")
-                )
-            );
-            MatcherAssert.assertThat(
-                files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/gems/builder-3.2.4.gem")
-                )
-            );
-            MatcherAssert.assertThat(
-                files, Matchers.hasItem(
-                    "".concat(repo.toString()).concat("/").concat(prefix).concat("/specs.4.8.gz")
-                )
-            );
-            MatcherAssert.assertThat(
-                files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/latest_specs.4.8.gz")
-                )
-            );
-        }
-    }
-
-    @Test
     public void submitResultsInOkResponse(@TempDir final Path temp) throws IOException {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(

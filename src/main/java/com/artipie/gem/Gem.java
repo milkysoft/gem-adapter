@@ -38,6 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import org.apache.commons.io.FileUtils;
 import org.jruby.Ruby;
@@ -56,7 +57,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
  */
-public class Gem {
+final public class Gem {
     /**
      * Primary evaler.
      */
@@ -68,7 +69,7 @@ public class Gem {
     static final Ruby RUNTIME = JavaEmbedUtils.initialize(new ArrayList<>(0));
 
     /**
-     * Primary storage.
+     * Main storage.
      */
     private final Storage storage;
 
@@ -92,7 +93,7 @@ public class Gem {
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
-                    return Files.createTempDirectory(prefix.string());
+                    return Files.createTempDirectory("gem");
                 } catch (final IOException exc) {
                     throw new UncheckedIOException(exc);
                 }
@@ -159,6 +160,7 @@ public class Gem {
             Logger.warn(
                 Gem.class, "Failed to update gem indexes: %[exception]s", err
             );
+            throw new CompletionException(err);
         }
         return null;
     }
