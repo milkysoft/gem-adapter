@@ -32,10 +32,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -70,46 +68,41 @@ public class GemITCase {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(repo));
-        final CompletableFuture<Void> res =
-            (CompletableFuture<Void>) gem.batchUpdate(new Key.From(prefix));
-        res.join();
-        final List<String> files = new ArrayList<>(0);
-        try (Stream<Path> paths = Files.walk(repo)) {
-            paths.filter(Files::isRegularFile)
-                .forEach(filename -> files.add(filename.toString()));
-            MatcherAssert.assertThat(
-                files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/prerelease_specs.4.8.gz")
-                )
-            );
-            MatcherAssert.assertThat(
-                files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/quick/Marshal.4.8/builder-3.2.4.gemspec.rz")
-                )
-            );
-            MatcherAssert.assertThat(
-                files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/latest_specs.4.8")
-                )
-            );
-            MatcherAssert.assertThat(
-                files,
-                Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/gems/builder-3.2.4.gem")
-                )
-            );
-            MatcherAssert.assertThat(
-                files, Matchers.hasItem(
-                    "".concat(repo.toString()).concat("/").concat(prefix).concat("/specs.4.8.gz")
-                )
-            );
-            MatcherAssert.assertThat(
-                files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
-                    .concat("/latest_specs.4.8.gz")
-                )
-            );
-        }
+        gem.batchUpdate(new Key.From(prefix)).toCompletableFuture().join();
+        final List<String> files = Files.walk(repo).map(Path::toString)
+            .collect(Collectors.toList());
+        MatcherAssert.assertThat(
+            files,
+            Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                .concat("/prerelease_specs.4.8.gz")
+            )
+        );
+        MatcherAssert.assertThat(
+            files,
+            Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                .concat("/quick/Marshal.4.8/builder-3.2.4.gemspec.rz")
+            )
+        );
+        MatcherAssert.assertThat(
+            files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                .concat("/latest_specs.4.8")
+            )
+        );
+        MatcherAssert.assertThat(
+            files,
+            Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                .concat("/gems/builder-3.2.4.gem")
+            )
+        );
+        MatcherAssert.assertThat(
+            files, Matchers.hasItem(
+                "".concat(repo.toString()).concat("/").concat(prefix).concat("/specs.4.8.gz")
+            )
+        );
+        MatcherAssert.assertThat(
+            files, Matchers.hasItem("".concat(repo.toString()).concat("/").concat(prefix)
+                .concat("/latest_specs.4.8.gz")
+            )
+        );
     }
 }

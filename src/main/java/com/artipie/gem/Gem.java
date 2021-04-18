@@ -27,7 +27,6 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.fs.FileStorage;
-import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -157,9 +156,6 @@ public final class Gem {
             throw new UncheckedIOException(exc);
         }
         if (err != null) {
-            Logger.warn(
-                Gem.class, "Failed to update gem indexes: %[exception]s", err
-            );
             throw new CompletionException(err);
         }
         return null;
