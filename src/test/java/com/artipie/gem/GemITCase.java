@@ -45,10 +45,7 @@ import org.junit.jupiter.api.io.TempDir;
  * A test which ensures {@code gem} console tool compatibility with the adapter.
  *
  * @since 1.0
- * @checkstyle StringLiteralsConcatenationCheck (500 lines)
- * @checkstyle ExecutableStatementCountCheck (500 lines)
  */
-@SuppressWarnings("PMD.SystemPrintln")
 @DisabledIfSystemProperty(named = "os.name", matches = "Windows.*")
 public class GemITCase {
 
