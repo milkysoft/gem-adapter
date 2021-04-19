@@ -446,4 +446,3 @@ class AstoIndexer
     end
   end
 end
-
