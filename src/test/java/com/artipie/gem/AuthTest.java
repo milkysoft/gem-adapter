@@ -40,12 +40,10 @@ import io.reactivex.Flowable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.AllOf;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
 
 /**
