@@ -40,20 +40,14 @@ import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
-import java.util.ArrayList;
 import java.util.Optional;
-import org.jruby.Ruby;
-import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * A slice, which servers gem packages.
  *
- * @todo #13:30min Initialize on first request.
  *  Currently, Ruby runtime initialization and Slice evaluation is happening during the GemSlice
  *  construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
  *  on first request.
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
- * @checkstyle ParameterNumberCheck (500 lines)
  * @since 0.1
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
@@ -66,7 +60,6 @@ public final class GemSlice extends Slice.Wrap {
      */
     public GemSlice(final Storage storage) {
         this(storage,
-            JavaEmbedUtils.initialize(new ArrayList<>(0)),
             Permissions.FREE,
             (login, pwd) -> Optional.of(new Authentication.User("anonymous"))
         );
