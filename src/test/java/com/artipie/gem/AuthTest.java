@@ -77,7 +77,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 Permissions.FREE,
                 Authentication.ANONYMOUS
             ).response(
@@ -96,7 +95,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 new Permissions.Single(lgn, "download"),
                 new Authentication.Single(lgn, pwd)
             ).response(
@@ -115,7 +113,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 new Permissions.Single(String.format("another %s", lgn), "download"),
                 new Authentication.Single(lgn, pwd)
             ).response(
@@ -158,7 +155,6 @@ public class AuthTest {
         }
         return new GemSlice(
             new InMemoryStorage(),
-            JavaEmbedUtils.initialize(new ArrayList<>(0)),
             new Permissions.Single(user, "upload"),
             new Authentication.Single(user, pswd)
         ).response(
