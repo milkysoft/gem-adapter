@@ -138,7 +138,7 @@ public class AuthTest {
     public void returnsOkWhenBasicAuthTokenCorrect() throws IOException {
         MatcherAssert.assertThat(
             AuthTest.postWithBasicAuth(true),
-            new RsHasStatus(RsStatus.OK)
+            new RsHasStatus(RsStatus.CREATED)
         );
     }
 

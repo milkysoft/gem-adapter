@@ -27,12 +27,13 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
+import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.slice.ContentWithSize;
 import java.nio.ByteBuffer;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
 import org.reactivestreams.Publisher;
 
 /**
@@ -65,7 +66,9 @@ public final class SubmitGem implements Slice {
     }
 
     /**
-     * Ctor.
+     * Save attached gem file into storage.
+     * Create metadata for newly saved gem.
+     * Return OK result.
      *
      * @param line Request URI.
      * @param headers Request headers.
@@ -74,11 +77,13 @@ public final class SubmitGem implements Slice {
      */
     public Response response(final String line, final Iterable<Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
-        final CompletableFuture<Void> res = this.storage.save(
-            new Key.From("asdasd"),
-            new ContentWithSize(body, headers)
-        ).thenCompose(none -> this.gem.batchUpdate(Key.ROOT));
-        res.join();
-        return new RsWithStatus(RsStatus.OK);
+        return new AsyncResponse(
+            this.storage.save(
+                new Key.From(
+                    UUID.randomUUID().toString().replace("-", "")
+                ), new ContentWithSize(body, headers)
+            ).thenCompose(none -> this.gem.batchUpdate(Key.ROOT))
+                .thenApply(none -> new RsWithStatus(RsStatus.CREATED))
+        );
     }
 }
