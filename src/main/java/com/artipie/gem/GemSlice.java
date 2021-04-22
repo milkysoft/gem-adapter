@@ -23,7 +23,6 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;
@@ -83,7 +82,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByPath("/api/v1/gems")
                     ),
                     new AuthSlice(
-                        GemSlice.rubyLookUp(storage),
+                        new SubmitGem(storage, new Gem(storage)),
                         new GemApiKeyAuth(auth),
                         new Permission.ByName(permissions, Action.Standard.WRITE)
                     )
@@ -116,15 +115,5 @@ public final class GemSlice extends Slice.Wrap {
                 )
             )
         );
-    }
-
-    /**
-     * Lookup an instance of slice, implemented with JRuby.
-     * @param storage The storage to pass directly to Ruby instance.
-     * @return The Slice.
-     */
-    private static Slice rubyLookUp(final Storage storage) {
-        (new Gem(storage)).batchUpdate(Key.ROOT);
-        return new SliceSimple(new RsWithStatus(RsStatus.OK));
     }
 }
