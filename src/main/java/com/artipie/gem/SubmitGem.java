@@ -27,31 +27,58 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
-import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.slice.ContentWithSize;
 import java.nio.ByteBuffer;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import org.reactivestreams.Publisher;
 
+/**
+ * A slice, which servers gem packages.
+ *
+ * @since 1.0
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle ParameterNumberCheck (500 lines)
+ */
 public final class SubmitGem implements Slice {
+    /**
+     * Gem repository storage.
+     */
     private final Storage storage;
+
+    /**
+     * Origin gem index instance.
+     */
     private final Gem gem;
 
-    public SubmitGem(Storage storage, Gem gem) {
+    /**
+     * Ctor.
+     *
+     * @param storage The storage.
+     * @param gem The gem.
+     */
+    public SubmitGem(final Storage storage, final Gem gem) {
         this.storage = storage;
         this.gem = gem;
     }
 
-    public Response response(String line, Iterable<Entry<String, String>> headers, Publisher<ByteBuffer> body) {
-        return new AsyncResponse(
-            // Save attached gem file into storage
-            this.storage.save(new Key.From("asdasd"), new ContentWithSize(body, headers))
-                // Create metadata for newly saved gem
-                .thenCompose(none -> this.gem.batchUpdate(Key.ROOT))
-                // Return OK result
-                .thenApply(none -> new RsWithStatus(RsStatus.CREATED))
-        );
+    /**
+     * Ctor.
+     *
+     * @param line Request URI.
+     * @param headers Request headers.
+     * @param body Request body, attached file.
+     * @return The Slice
+     */
+    public Response response(final String line, final Iterable<Entry<String, String>> headers,
+        final Publisher<ByteBuffer> body) {
+        final CompletableFuture<Void> res = this.storage.save(
+            new Key.From("asdasd"),
+            new ContentWithSize(body, headers)
+        ).thenCompose(none -> this.gem.batchUpdate(Key.ROOT));
+        res.join();
+        return new RsWithStatus(RsStatus.OK);
     }
 }
