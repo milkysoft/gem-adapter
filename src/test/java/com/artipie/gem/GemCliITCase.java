@@ -70,8 +70,21 @@ public class GemCliITCase {
             .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
         final Path bgem = mount.resolve("builder-3.2.4.gem");
         final Path rgem = mount.resolve("rails-6.0.2.2.gem");
+        final Path latestspecs = mount.resolve("latest_specs.4.8.gz");
+        final Path prerelease = mount.resolve("prerelease_specs.4.8.gz");
+        Files.createDirectories(Paths.get(mount.toString(), "quick", "Marshal.4.8"));
+        Files.createDirectories(Paths.get(mount.toString(), "gems"));
+        final Path buildergem = mount.resolve("quick/Marshal.4.8/builder-3.2.4.gemspec.rz");
+        final Path builder = mount.resolve("gems/builder-3.2.4.gem");
         Files.copy(Paths.get("./src/test/resources/builder-3.2.4.gem"), bgem);
         Files.copy(Paths.get("./src/test/resources/rails-6.0.2.2.gem"), rgem);
+        Files.copy(Paths.get("./src/test/resources/test/latest_specs.4.8.gz"), latestspecs);
+        Files.copy(Paths.get("./src/test/resources/test/prerelease_specs.4.8.gz"), prerelease);
+        Files.copy(
+            Paths.get("./src/test/resources/test/quick/Marshal.4.8/builder-3.2.4.gemspec.rz"),
+            buildergem
+        );
+        Files.copy(Paths.get("./src/test/resources/test/gems/builder-3.2.4.gem"), builder);
         ruby.start();
         MatcherAssert.assertThat(
             String.format("'gem push builder-3.2.4.gem failed with non-zero code", host),
@@ -130,7 +143,7 @@ public class GemCliITCase {
         Logger.info(GemCliITCase.class, exec.getStdout());
         Logger.error(GemCliITCase.class, exec.getStderr());
         if (!exec.getStderr().equals("")) {
-            throw new IllegalStateException("An error occurred");
+            throw new IllegalStateException(exec.getStderr());
         }
         return exec.getExitCode();
     }
