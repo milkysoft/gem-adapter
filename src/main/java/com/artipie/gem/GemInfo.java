@@ -107,7 +107,8 @@ public final class GemInfo implements Slice {
             );
             String gemLocation = gemLocationRubyObject.asJavaString();
             //if (extension.equals("json")) {
-            response = new RsWithBody(gemLocation, StandardCharsets.UTF_8);
+            response = new RsWithBody(new RsWithStatus(RsStatus.OK),
+                gemLocation, StandardCharsets.UTF_8);
             //} else if (extension.equals("yml")) {
             //    response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
             //} else {
