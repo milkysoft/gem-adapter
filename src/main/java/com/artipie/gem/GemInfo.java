@@ -28,12 +28,19 @@ import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
+import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.RsWithStatus;
 import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jruby.Ruby;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.RubyString;
+import org.jruby.javasupport.JavaEmbedUtils;
 import org.reactivestreams.Publisher;
 
 /**
@@ -47,6 +54,16 @@ import org.reactivestreams.Publisher;
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class GemInfo implements Slice {
+
+    /**
+     * Ruby runtime.
+     */
+    private final RubyRuntimeAdapter runtime;
+
+    /**
+     * Ruby interpreter.
+     */
+    private final Ruby ruby;
 
     /**
      * Endpoint path pattern.
@@ -64,6 +81,9 @@ public final class GemInfo implements Slice {
      */
     public GemInfo(final Storage storage) {
         this.storage = storage;
+        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
+        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
+        this.runtime.eval(this.ruby, "require 'rubygems/commands/query_command.rb'");
     }
 
     @Override
@@ -81,13 +101,19 @@ public final class GemInfo implements Slice {
                 gem,
                 extension
             );
-            if (extension.equals("json")) {
-                response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
-            } else if (extension.equals("yml")) {
-                response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
-            } else {
-                throw new IllegalStateException("Not expected extension format has been matched");
-            }
+            RubyString gemLocationRubyObject = (RubyString) this.runtime.eval(
+                this.ruby,
+                String.format("Gem::Commands::QueryCommand.new('%s')", gem)
+            );
+            String gemLocation = gemLocationRubyObject.asJavaString();
+            //if (extension.equals("json")) {
+            response = new RsWithBody(new RsWithStatus(RsStatus.OK),
+                gemLocation, StandardCharsets.UTF_8);
+            //} else if (extension.equals("yml")) {
+            //    response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
+            //} else {
+            //    throw new IllegalStateException("Not expected extension format has been matched");
+            //}
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
