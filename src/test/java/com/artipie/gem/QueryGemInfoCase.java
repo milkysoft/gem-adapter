@@ -54,7 +54,7 @@ public class QueryGemInfoCase {
         );
         final WebClient web = WebClient.create(vertx);
         final int port = server.start();
-        final int code = web.get(port, "localhost", "/api/v1/gems/builder.json")
+        final int code = web.get(port, "localhost", "/api/v1/gems/did_you_mean.json")
             .rxSend()
             .blockingGet()
             .statusCode();

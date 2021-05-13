@@ -34,13 +34,16 @@ import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jruby.Ruby;
+import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.RubyString;
 import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.runtime.builtin.Variable;
 import org.reactivestreams.Publisher;
 
 /**
@@ -83,7 +86,8 @@ public final class GemInfo implements Slice {
         this.storage = storage;
         this.runtime = JavaEmbedUtils.newRuntimeAdapter();
         this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
-        this.runtime.eval(this.ruby, "require 'rubygems/commands/query_command.rb'");
+        this.runtime.eval(this.ruby, "require 'rubygems/commands/contents_command.rb'");
+        System.out.println("7777777");
     }
 
     @Override
@@ -95,29 +99,42 @@ public final class GemInfo implements Slice {
         if (matcher.find()) {
             final String gem = matcher.group(1);
             final String extension = matcher.group(2);
+            System.out.println(gem);
+            System.out.println(extension);
+            System.out.println("55555555");
             Logger.info(
                 GemInfo.class,
                 "Gem info for '%s' has been requested. Extension: '%s'",
                 gem,
                 extension
             );
-            RubyString gemLocationRubyObject = (RubyString) this.runtime.eval(
-                this.ruby,
-                String.format("Gem::Commands::QueryCommand.new('%s')", gem)
-            );
-            String gemLocation = gemLocationRubyObject.asJavaString();
-            //if (extension.equals("json")) {
-            response = new RsWithBody(new RsWithStatus(RsStatus.OK),
-                gemLocation, StandardCharsets.UTF_8);
-            //} else if (extension.equals("yml")) {
-            //    response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
-            //} else {
-            //    throw new IllegalStateException("Not expected extension format has been matched");
-            //}
+            try {
+                RubyObject gemLocationRubyObject = (RubyObject) this.runtime.eval(
+                    this.ruby,
+                    String.format("Gem::Commands::ContentsCommand.new.spec_for('%s')", gem)
+                );
+
+                List<Variable<Object>> vars = gemLocationRubyObject.getVariableList();
+                for(int i = 0; i<vars.size(); i++){
+                    Variable<Object> var = vars.get(i);
+                    System.out.print(var.getName());
+                    System.out.println(gemLocationRubyObject.getVariable(i));
+                }
+                System.out.println("222222222");
+                System.out.println(vars.toString());
+                //if (extension.equals("json")) {
+                response = new RsWithBody(new RsWithStatus(RsStatus.OK),
+                    vars.toString(), StandardCharsets.UTF_8);
+                return response;
+            } catch(Exception e) {
+                System.out.println(e.getMessage());
+            }
+
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
-        return response;
+        return new RsWithStatus(RsStatus.INTERNAL_ERROR);
     }
 
 }
+
