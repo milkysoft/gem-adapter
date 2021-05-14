@@ -131,6 +131,12 @@ SOFTWARE.
       <artifactId>vertx-rx-java2</artifactId>
       <version>${vertx.version}</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.json/json -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20210307</version>
+    </dependency>
   </dependencies>
   <build>
     <resources>

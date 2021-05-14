@@ -23,20 +23,13 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.WebClient;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * A test for gem submit operation.
@@ -46,11 +39,11 @@ import org.junit.jupiter.api.io.TempDir;
 public class QueryGemInfoCase {
 
     @Test
-    public void queryResultsInOkResponse(@TempDir final Path temp) throws IOException {
+    public void queryResultsInOkResponse() {
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
-            new GemInfo(new FileStorage(temp))
+            new GemInfo()
         );
         final WebClient web = WebClient.create(vertx);
         final int port = server.start();
