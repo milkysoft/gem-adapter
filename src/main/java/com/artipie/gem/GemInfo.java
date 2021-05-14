@@ -26,23 +26,21 @@ package com.artipie.gem;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RequestLineFrom;
-import com.artipie.http.rs.RsStatus;
-import com.artipie.http.rs.RsWithBody;
-import com.artipie.http.rs.RsWithStatus;
+import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.Variable;
-import org.json.JSONObject;
 import org.reactivestreams.Publisher;
 
 /**
@@ -85,7 +83,6 @@ public final class GemInfo implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
-        Response response = new RsWithStatus(RsStatus.NOT_IMPLEMENTED);
         this.runtime.eval(this.ruby, "require 'rubygems/commands/contents_command.rb'");
         if (matcher.find()) {
             final String gem = matcher.group(1);
@@ -101,7 +98,7 @@ public final class GemInfo implements Slice {
                 String.format("Gem::Commands::ContentsCommand.new.spec_for('%s')", gem)
             );
             final List<Variable<Object>> vars = gemobject.getVariableList();
-            final JSONObject obj = new JSONObject();
+            final JsonObjectBuilder obj = Json.createObjectBuilder();
             for (int ind = 0; ind < vars.size(); ind = ind + 1) {
                 final Variable<Object> var = vars.get(ind);
                 String name = var.getName();
@@ -109,19 +106,13 @@ public final class GemInfo implements Slice {
                     name = var.getName().substring(1);
                 }
                 if (gemobject.getVariable(ind) != null) {
-                    obj.put(name, gemobject.getVariable(ind).toString());
+                    obj.add(name, gemobject.getVariable(ind).toString());
                 }
             }
-            if (extension.equals("json")) {
-                response = new RsWithBody(
-                    new RsWithStatus(RsStatus.OK),
-                    obj.toString(), StandardCharsets.UTF_8
-                );
-            }
+            return new RsJson(obj);
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
-        return response;
     }
 
 }

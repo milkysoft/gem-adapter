@@ -26,15 +26,18 @@ package com.artipie.gem;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.buffer.Buffer;
+import io.vertx.reactivex.ext.web.client.HttpResponse;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 /**
  * A test for gem submit operation.
  *
- * @since 0.2
+ * @since 0.7
  */
 public class QueryGemITCase {
 
@@ -47,13 +50,21 @@ public class QueryGemITCase {
         );
         final WebClient web = WebClient.create(vertx);
         final int port = server.start();
-        final int code = web.get(port, "localhost", "/api/v1/gems/did_you_mean.json")
-            .rxSend()
-            .blockingGet()
-            .statusCode();
+        final HttpResponse<Buffer> req = web.get(
+            port,
+            "localhost",
+            "/api/v1/gems/did_you_mean.json"
+        ).rxSend().blockingGet();
+        final int code = req.statusCode();
+        final Buffer response = req.body();
         MatcherAssert.assertThat(
             code,
             new IsEqual<>(Integer.parseInt(RsStatus.OK.code()))
+        );
+        MatcherAssert.assertThat(
+            "Test GEM info",
+            response.toString(),
+            Matchers.containsString("https://github.com/yuki24/did_you_mean")
         );
         web.close();
         server.close();
