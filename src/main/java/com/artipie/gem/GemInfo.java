@@ -23,7 +23,6 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.Storage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RequestLineFrom;

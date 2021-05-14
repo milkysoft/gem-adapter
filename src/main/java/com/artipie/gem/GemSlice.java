@@ -113,7 +113,7 @@ public final class GemSlice extends Slice.Wrap {
                         new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath(GemInfo.PATH_PATTERN)
                     ),
-                    new GemInfo(storage)
+                    new GemInfo()
                 ),
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.GET),
