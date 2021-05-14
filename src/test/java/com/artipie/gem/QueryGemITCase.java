@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
  *
  * @since 0.2
  */
-public class QueryGemInfoCase {
+public class QueryGemITCase {
 
     @Test
     public void queryResultsInOkResponse() {
@@ -60,3 +60,4 @@ public class QueryGemInfoCase {
         vertx.close();
     }
 }
+
