@@ -23,15 +23,20 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Content;
+import com.artipie.http.Headers;
+import com.artipie.http.hm.RsHasBody;
+import com.artipie.http.hm.RsHasStatus;
+import com.artipie.http.hm.SliceHasResponse;
+import com.artipie.http.rq.RequestLine;
+import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
-import com.artipie.vertx.VertxSliceServer;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.ext.web.client.HttpResponse;
-import io.vertx.reactivex.ext.web.client.WebClient;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -42,33 +47,22 @@ import org.junit.jupiter.api.Test;
 public class QueryGemITCase {
 
     @Test
-    public void queryResultsInOkResponse() {
-        final Vertx vertx = Vertx.vertx();
-        final VertxSliceServer server = new VertxSliceServer(
-            vertx,
-            new GemInfo()
-        );
-        final WebClient web = WebClient.create(vertx);
-        final int port = server.start();
-        final HttpResponse<Buffer> req = web.get(
-            port,
-            "localhost",
-            "/api/v1/gems/did_you_mean.json"
-        ).rxSend().blockingGet();
-        final int code = req.statusCode();
-        final Buffer response = req.body();
-        MatcherAssert.assertThat(
-            code,
-            new IsEqual<>(Integer.parseInt(RsStatus.OK.code()))
+    public void queryResultsInOkResponse() throws IOException {
+        final String content = new String(
+            Files.readAllBytes(Paths.get("./src/test/resources/test_response.json"))
         );
         MatcherAssert.assertThat(
-            "Test GEM info",
-            response.toString(),
-            Matchers.containsString("https://github.com/yuki24/did_you_mean")
+            new GemInfo(),
+            new SliceHasResponse(
+                Matchers.allOf(
+                    new RsHasStatus(RsStatus.OK),
+                    new RsHasBody(content, StandardCharsets.UTF_8)
+                ),
+                new RequestLine(RqMethod.GET, "/api/v1/gems/did_you_mean.json"),
+                Headers.EMPTY,
+                new Content.From("".getBytes())
+            )
         );
-        web.close();
-        server.close();
-        vertx.close();
     }
 }
 
