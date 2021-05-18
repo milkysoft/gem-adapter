@@ -23,7 +23,6 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +51,6 @@ public class GemITCase {
     @Test
     public void testGem(final @TempDir Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString(), "Artipie");
-        //final String prefix = "builder";
         final Path path = repo.resolve("gems");
         try {
             Files.createDirectories(path);
