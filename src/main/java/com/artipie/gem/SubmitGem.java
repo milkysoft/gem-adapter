@@ -82,7 +82,7 @@ public final class SubmitGem implements Slice {
                 new Key.From(
                     UUID.randomUUID().toString().replace("-", "")
                 ), new ContentWithSize(body, headers)
-            ).thenCompose(none -> this.gem.batchUpdate(new Key.From("TestKey")))
+            ).thenCompose(none -> this.gem.batchUpdate(Key.ROOT))
                 .thenApply(none -> new RsWithStatus(RsStatus.CREATED))
         );
     }

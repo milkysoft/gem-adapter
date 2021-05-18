@@ -25,7 +25,6 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.SubStorage;
 import com.artipie.asto.fs.FileStorage;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import io.reactivex.Observable;
@@ -35,6 +34,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -89,11 +90,11 @@ public final class Gem {
     /**
      * Batch update Ruby gems for repository.
      *
-     * @param prefix Location of repository
+     * @param gem Location of repository
      * @return Completable action
      */
-    public CompletionStage<Void> batchUpdate(final Key prefix) {
-        final Storage remote = new SubStorage(prefix, this.storage);
+    public CompletionStage<Void> batchUpdate(final Key gem) {
+        final Storage remote = this.storage;
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -103,14 +104,14 @@ public final class Gem {
                 }
             }
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(remote, new FileStorage(tmpdir))
+            tmpdir -> Gem.copyStorage(remote, new FileStorage(tmpdir), gem)
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
             tmpdir -> this.sharedIndexer()
                 .thenAccept(idx -> idx.update(tmpdir))
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), remote)
+            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), remote, null)
                 .thenApply(ignore -> tmpdir)
         ).handle(Gem::removeTempDir);
     }
@@ -137,10 +138,23 @@ public final class Gem {
      * Copy storage from src to dst.
      * @param src Source storage
      * @param dst Destination storage
+     * @param gem Key for gem
      * @return Async result
      */
-    private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst) {
+    private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
+        final Key gem) {
+        final List<String> vars = new ArrayList<>(7);
+        vars.add("latest_specs.4.8");
+        vars.add("latest_specs.4.8.gz");
+        vars.add("prerelease_specs.4.8");
+        vars.add("prerelease_specs.4.8.gz");
+        vars.add("specs.4.8");
+        vars.add("specs.4.8.gz");
+        if (gem != null) {
+            vars.add(gem.toString());
+        }
         return Single.fromFuture(src.list(Key.ROOT))
+            .filter(pair -> vars.contains(pair))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
                 key -> Single.fromFuture(
