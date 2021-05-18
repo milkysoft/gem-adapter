@@ -154,7 +154,6 @@ public final class Gem {
             vars.add(gem.toString());
         }
         return Single.fromFuture(src.list(Key.ROOT))
-            .filter(pair -> vars.contains(pair))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
                 key -> Single.fromFuture(
