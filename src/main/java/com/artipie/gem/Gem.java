@@ -34,13 +34,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -145,32 +146,23 @@ public final class Gem {
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
         final Key gem) {
-        final List<String> vars = new ArrayList<>(9);
-        String gemfile = "";
-        String gemstr = "";
+        final Set<String> vars = new HashSet<>();
+        vars.add("latest_specs.4.8");
+        vars.add("latest_specs.4.8.gz");
+        vars.add("prerelease_specs.4.8");
+        vars.add("prerelease_specs.4.8.gz");
+        vars.add("specs.4.8");
+        vars.add("specs.4.8.gz");
         if (gem != null) {
-            gemfile = "gems/".concat(gem.toString()).concat(".gem");
-            gemstr = gem.toString();
+            vars.add(gem.string());
         }
-        final String partmeta = "latest_specs.4.8, latest_specs.4.8.gz, prerelease_specs.4.8"
-            .concat(", prerelease_specs.4.8.gz");
-        final String endmeta = ", specs.4.8, specs.4.8.gz";
-        final String meta = partmeta.concat(endmeta);
-        final String anothermeta = partmeta
-            .concat(String.format(", quick/Marshal.4.8/%s.gemspec.rz", gemstr))
-            .concat(endmeta);
-        final String full = gemfile.concat(", ").concat(anothermeta);
-        vars.add(meta);
-        vars.add(anothermeta);
-        vars.add(gemfile);
-        vars.add(full);
         return Single.fromFuture(src.list(Key.ROOT))
-            .filter(
-                pair -> {
-                    final String str = pair.toString();
-                    return vars.contains(str.substring(1, str.length() - 1));
-                }
-            )
+            .map(
+                list -> list.stream().filter(
+                    key -> {
+                        return vars.contains(key.string());
+                    }
+                ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
                 key -> Single.fromFuture(

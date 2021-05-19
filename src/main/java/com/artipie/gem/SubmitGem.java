@@ -77,12 +77,12 @@ public final class SubmitGem implements Slice {
      */
     public Response response(final String line, final Iterable<Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
+        final String gemstr = UUID.randomUUID().toString().replace("-", "").concat(".gem");
+        final Key folder = new Key.From("gems", gemstr);
         return new AsyncResponse(
             this.storage.save(
-                new Key.From(
-                    UUID.randomUUID().toString().replace("-", "")
-                ), new ContentWithSize(body, headers)
-            ).thenCompose(none -> this.gem.batchUpdate(Key.ROOT))
+                folder, new ContentWithSize(body, headers)
+            ).thenCompose(none -> this.gem.batchUpdate(folder))
                 .thenApply(none -> new RsWithStatus(RsStatus.CREATED))
         );
     }
