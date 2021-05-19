@@ -111,7 +111,7 @@ public final class Gem {
                 .thenAccept(idx -> idx.update(tmpdir))
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), remote, null)
+            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), remote, gem)
                 .thenApply(ignore -> tmpdir)
         ).handle(Gem::removeTempDir);
     }
@@ -124,7 +124,9 @@ public final class Gem {
      */
     private static Void removeTempDir(final Path tmpdir, final Throwable err) {
         try {
-            FileUtils.deleteDirectory(new File(tmpdir.toString()));
+            if (tmpdir != null) {
+                FileUtils.deleteDirectory(new File(tmpdir.toString()));
+            }
         } catch (final IOException exc) {
             throw new UncheckedIOException(exc);
         }
@@ -143,17 +145,32 @@ public final class Gem {
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
         final Key gem) {
-        final List<String> vars = new ArrayList<>(7);
-        vars.add("latest_specs.4.8");
-        vars.add("latest_specs.4.8.gz");
-        vars.add("prerelease_specs.4.8");
-        vars.add("prerelease_specs.4.8.gz");
-        vars.add("specs.4.8");
-        vars.add("specs.4.8.gz");
+        final List<String> vars = new ArrayList<>(9);
+        String gemfile = "";
+        String gemstr = "";
         if (gem != null) {
-            vars.add(gem.toString());
+            gemfile = "gems/".concat(gem.toString()).concat(".gem");
+            gemstr = gem.toString();
         }
+        final String partmeta = "latest_specs.4.8, latest_specs.4.8.gz, prerelease_specs.4.8"
+            .concat(", prerelease_specs.4.8.gz");
+        final String endmeta = ", specs.4.8, specs.4.8.gz";
+        final String meta = partmeta.concat(endmeta);
+        final String anothermeta = partmeta
+            .concat(String.format(", quick/Marshal.4.8/%s.gemspec.rz", gemstr))
+            .concat(endmeta);
+        final String full = gemfile.concat(", ").concat(anothermeta);
+        vars.add(meta);
+        vars.add(anothermeta);
+        vars.add(gemfile);
+        vars.add(full);
         return Single.fromFuture(src.list(Key.ROOT))
+            .filter(
+                pair -> {
+                    final String str = pair.toString();
+                    return vars.contains(str.substring(1, str.length() - 1));
+                }
+            )
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
                 key -> Single.fromFuture(

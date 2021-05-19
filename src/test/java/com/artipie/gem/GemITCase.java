@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,7 +64,7 @@ public class GemITCase {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(repo));
-        gem.batchUpdate(null).toCompletableFuture().join();
+        gem.batchUpdate(new Key.From("builder-3.2.4")).toCompletableFuture().join();
         final List<String> files = Files.walk(repo).map(Path::toString)
             .collect(Collectors.toList());
         MatcherAssert.assertThat(
