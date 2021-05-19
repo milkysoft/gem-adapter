@@ -52,19 +52,21 @@ public class GemITCase {
     @Test
     public void testGem(final @TempDir Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString(), "Artipie");
-        final Path path = repo.resolve("gems");
+        final String gemstr = "gems";
+        final Path path = repo.resolve(gemstr);
         try {
             Files.createDirectories(path);
         } catch (final IOException exc) {
             throw new UncheckedIOException(exc);
         }
-        final Path target = path.resolve("builder-3.2.4.gem");
+        final String builderstr = "builder-3.2.4.gem";
+        final Path target = path.resolve(builderstr);
         try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(repo));
-        gem.batchUpdate(new Key.From("builder-3.2.4")).toCompletableFuture().join();
+        gem.batchUpdate(new Key.From(gemstr, builderstr)).toCompletableFuture().join();
         final List<String> files = Files.walk(repo).map(Path::toString)
             .collect(Collectors.toList());
         MatcherAssert.assertThat(

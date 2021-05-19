@@ -160,7 +160,8 @@ public final class Gem {
             .map(
                 list -> list.stream().filter(
                     key -> {
-                        return vars.contains(key.string());
+                        return vars.contains(key.string())
+                            || key.string().contains("quick/Marshal.4.8");
                     }
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
