@@ -44,8 +44,7 @@ import java.util.Optional;
 /**
  * A slice, which servers gem packages.
  *
- *  Currently, Ruby runtime initialization and Slice evaluation is happening during the GemSlice
- *  construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
+ *  Ruby runtime initialization and Slice evaluation happens
  *  on first request.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)

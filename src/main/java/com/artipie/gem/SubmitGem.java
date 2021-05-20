@@ -40,8 +40,6 @@ import org.reactivestreams.Publisher;
  * A slice, which servers gem packages.
  *
  * @since 1.0
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
- * @checkstyle ParameterNumberCheck (500 lines)
  */
 public final class SubmitGem implements Slice {
     /**

@@ -91,11 +91,10 @@ public final class Gem {
     /**
      * Batch update Ruby gems for repository.
      *
-     * @param gem Location of repository
+     * @param gem Ruby gem for indexing
      * @return Completable action
      */
     public CompletionStage<Void> batchUpdate(final Key gem) {
-        final Storage remote = this.storage;
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -105,14 +104,14 @@ public final class Gem {
                 }
             }
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(remote, new FileStorage(tmpdir), gem)
+            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem)
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
             tmpdir -> this.sharedIndexer()
                 .thenAccept(idx -> idx.update(tmpdir))
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), remote, gem)
+            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), this.storage, gem)
                 .thenApply(ignore -> tmpdir)
         ).handle(Gem::removeTempDir);
     }
@@ -153,9 +152,7 @@ public final class Gem {
         vars.add("prerelease_specs.4.8.gz");
         vars.add("specs.4.8");
         vars.add("specs.4.8.gz");
-        if (gem != null) {
-            vars.add(gem.string());
-        }
+        vars.add(gem.string());
         return Single.fromFuture(src.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
