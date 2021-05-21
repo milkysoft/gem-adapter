@@ -33,7 +33,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.cactoos.text.Base64Encoded;
@@ -77,7 +76,7 @@ public class GemCliITCase {
         final Set<String> gems = new HashSet<>();
         gems.add("builder-3.2.4.gem");
         gems.add("rails-6.0.2.2.gem");
-        for (String gem : gems) {
+        for (final String gem : gems) {
             final Path target = mount.resolve(gem);
             try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
                 OutputStream os = Files.newOutputStream(target)) {
