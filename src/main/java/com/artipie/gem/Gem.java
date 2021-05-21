@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -145,21 +146,19 @@ public final class Gem {
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
         final Key gem) {
-        final Set<String> vars = new HashSet<>();
-        vars.add("latest_specs.4.8");
-        vars.add("latest_specs.4.8.gz");
-        vars.add("prerelease_specs.4.8");
-        vars.add("prerelease_specs.4.8.gz");
-        vars.add("specs.4.8");
-        vars.add("specs.4.8.gz");
+        final Set<String> vars = new HashSet<>(
+            Arrays.asList(
+                "latest_specs.4.8", "latest_specs.4.8.gz", "prerelease_specs.4.8",
+                "prerelease_specs.4.8.gz", "specs.4.8", "specs.4.8.gz"
+            )
+        );
         vars.add(gem.string());
+        final String tmp = gem.string().substring(gem.string().indexOf('/') + 1);
+        vars.add(String.format("quick/Marshal.4.8/%sspec.rz", tmp));
         return Single.fromFuture(src.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> {
-                        return vars.contains(key.string())
-                            || key.string().contains("quick/Marshal.4.8");
-                    }
+                    key -> vars.contains(key.string())
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
