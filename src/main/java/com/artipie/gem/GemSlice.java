@@ -44,8 +44,7 @@ import java.util.Optional;
 /**
  * A slice, which servers gem packages.
  *
- *  Ruby runtime initialization and Slice evaluation happens
- *  on first request.
+ *  Ruby HTTP layer.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
  * @since 0.1

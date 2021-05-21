@@ -77,9 +77,7 @@ public class GemCliITCase {
         final Set<String> gems = new HashSet<>();
         gems.add("builder-3.2.4.gem");
         gems.add("rails-6.0.2.2.gem");
-        final Iterator<String> iter = gems.iterator();
-        while (iter.hasNext()) {
-            final String gem = iter.next();
+        for (String gem : gems) {
             final Path target = mount.resolve(gem);
             try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
                 OutputStream os = Files.newOutputStream(target)) {
