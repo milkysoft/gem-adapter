@@ -40,12 +40,10 @@ import io.reactivex.Flowable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.AllOf;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -77,7 +75,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 Permissions.FREE,
                 Authentication.ANONYMOUS
             ).response(
@@ -96,7 +93,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 new Permissions.Single(lgn, "download"),
                 new Authentication.Single(lgn, pwd)
             ).response(
@@ -115,7 +111,6 @@ public class AuthTest {
         MatcherAssert.assertThat(
             new GemSlice(
                 new InMemoryStorage(),
-                JavaEmbedUtils.initialize(new ArrayList<>(0)),
                 new Permissions.Single(String.format("another %s", lgn), "download"),
                 new Authentication.Single(lgn, pwd)
             ).response(
@@ -143,7 +138,7 @@ public class AuthTest {
     public void returnsOkWhenBasicAuthTokenCorrect() throws IOException {
         MatcherAssert.assertThat(
             AuthTest.postWithBasicAuth(true),
-            new RsHasStatus(RsStatus.OK)
+            new RsHasStatus(RsStatus.CREATED)
         );
     }
 
@@ -158,7 +153,6 @@ public class AuthTest {
         }
         return new GemSlice(
             new InMemoryStorage(),
-            JavaEmbedUtils.initialize(new ArrayList<>(0)),
             new Permissions.Single(user, "upload"),
             new Authentication.Single(user, pswd)
         ).response(
