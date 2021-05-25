@@ -25,7 +25,6 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.SubStorage;
 import com.artipie.asto.fs.FileStorage;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import io.reactivex.Observable;
@@ -35,11 +34,15 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -89,11 +92,10 @@ public final class Gem {
     /**
      * Batch update Ruby gems for repository.
      *
-     * @param prefix Location of repository
+     * @param gem Ruby gem for indexing
      * @return Completable action
      */
-    public CompletionStage<Void> batchUpdate(final Key prefix) {
-        final Storage remote = new SubStorage(prefix, this.storage);
+    public CompletionStage<Void> batchUpdate(final Key gem) {
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -103,14 +105,14 @@ public final class Gem {
                 }
             }
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(remote, new FileStorage(tmpdir))
+            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem)
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
             tmpdir -> this.sharedIndexer()
                 .thenAccept(idx -> idx.update(tmpdir))
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), remote)
+            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), this.storage, gem)
                 .thenApply(ignore -> tmpdir)
         ).handle(Gem::removeTempDir);
     }
@@ -123,7 +125,9 @@ public final class Gem {
      */
     private static Void removeTempDir(final Path tmpdir, final Throwable err) {
         try {
-            FileUtils.deleteDirectory(new File(tmpdir.toString()));
+            if (tmpdir != null) {
+                FileUtils.deleteDirectory(new File(tmpdir.toString()));
+            }
         } catch (final IOException exc) {
             throw new UncheckedIOException(exc);
         }
@@ -137,10 +141,25 @@ public final class Gem {
      * Copy storage from src to dst.
      * @param src Source storage
      * @param dst Destination storage
+     * @param gem Key for gem
      * @return Async result
      */
-    private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst) {
+    private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
+        final Key gem) {
+        final Set<String> vars = new HashSet<>(
+            Arrays.asList(
+                "latest_specs.4.8", "latest_specs.4.8.gz", "prerelease_specs.4.8",
+                "prerelease_specs.4.8.gz", "specs.4.8", "specs.4.8.gz"
+            )
+        );
+        vars.add(gem.string());
+        final String tmp = gem.string().substring(gem.string().indexOf('/') + 1);
+        vars.add(String.format("quick/Marshal.4.8/%sspec.rz", tmp));
         return Single.fromFuture(src.list(Key.ROOT))
+            .map(
+                list -> list.stream().filter(
+                    key -> vars.contains(key.string())
+                ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
                 key -> Single.fromFuture(

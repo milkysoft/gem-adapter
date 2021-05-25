@@ -63,7 +63,7 @@ public class SubmitGemITCase {
             .statusCode();
         MatcherAssert.assertThat(
             code,
-            new IsEqual<>(Integer.parseInt(RsStatus.OK.code()))
+            new IsEqual<>(Integer.parseInt(RsStatus.CREATED.code()))
         );
         web.close();
         server.close();

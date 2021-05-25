@@ -28,9 +28,13 @@ import com.artipie.vertx.VertxSliceServer;
 import com.jcabi.log.Logger;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.commons.io.IOUtils;
 import org.cactoos.text.Base64Encoded;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -68,42 +72,42 @@ public class GemCliITCase {
             .withCommand("tail", "-f", "/dev/null")
             .withWorkingDirectory("/home/")
             .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
-        final Path bgem = mount.resolve("builder-3.2.4.gem");
-        final Path rgem = mount.resolve("rails-6.0.2.2.gem");
-        Files.copy(Paths.get("./src/test/resources/builder-3.2.4.gem"), bgem);
-        Files.copy(Paths.get("./src/test/resources/rails-6.0.2.2.gem"), rgem);
         ruby.start();
-        MatcherAssert.assertThat(
-            String.format("'gem push builder-3.2.4.gem failed with non-zero code", host),
-            this.bash(
-                ruby,
-                String.format("GEM_HOST_API_KEY=%s gem push builder-3.2.4.gem --host %s", key, host)
-            ),
-            Matchers.equalTo(0)
-        );
-        MatcherAssert.assertThat(
-            String.format("'gem push rails-6.0.2.2.gem failed with non-zero code", host),
-            this.bash(
-                ruby,
-                String.format("GEM_HOST_API_KEY=%s gem push rails-6.0.2.2.gem --host %s", key, host)
-            ),
-            Matchers.equalTo(0)
-        );
-        Files.delete(bgem);
-        Files.delete(rgem);
+        final Set<String> gems = new HashSet<>();
+        gems.add("builder-3.2.4.gem");
+        gems.add("rails-6.0.2.2.gem");
+        for (final String gem : gems) {
+            final Path target = mount.resolve(gem);
+            try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
+                OutputStream os = Files.newOutputStream(target)) {
+                IOUtils.copy(is, os);
+            }
+            MatcherAssert.assertThat(
+                String.format("'gem push %s failed with non-zero code", host, gem),
+                this.bash(
+                    ruby,
+                    String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, gem, host)
+                ),
+                Matchers.equalTo(0)
+            );
+            Files.delete(target);
+            MatcherAssert.assertThat(
+                String.format("'gem fetch %s failed with non-zero code", host, gem),
+                this.bash(
+                    ruby,
+                    String.format(
+                        "GEM_HOST_API_KEY=%s gem fetch -V %s --source %s",
+                        key, gem.substring(0, gem.indexOf('-')), host
+                    )
+                ),
+                Matchers.equalTo(0)
+            );
+        }
         MatcherAssert.assertThat(
             String.format("Unable to remove https://rubygems.org from the list of sources", host),
             this.bash(
                 ruby,
                 String.format("gem sources -r https://rubygems.org/", host)
-            ),
-            Matchers.equalTo(0)
-        );
-        MatcherAssert.assertThat(
-            String.format("'gem fetch failed with non-zero code", host),
-            this.bash(
-                ruby,
-                String.format("GEM_HOST_API_KEY=%s gem fetch -V builder --source %s", key, host)
             ),
             Matchers.equalTo(0)
         );
@@ -130,7 +134,7 @@ public class GemCliITCase {
         Logger.info(GemCliITCase.class, exec.getStdout());
         Logger.error(GemCliITCase.class, exec.getStderr());
         if (!exec.getStderr().equals("")) {
-            throw new IllegalStateException("An error occurred");
+            throw new IllegalStateException(exec.getStderr());
         }
         return exec.getExitCode();
     }

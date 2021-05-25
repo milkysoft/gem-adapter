@@ -39,23 +39,12 @@ import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Optional;
-import org.apache.commons.io.IOUtils;
-import org.jruby.Ruby;
-import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * A slice, which servers gem packages.
  *
- * @todo #13:30min Initialize on first request.
- *  Currently, Ruby runtime initialization and Slice evaluation is happening during the GemSlice
- *  construction. Instead, the Ruby runtime initialization and Slice evaluation should happen
- *  on first request.
+ *  Ruby HTTP layer.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ParameterNumberCheck (500 lines)
  * @since 0.1
@@ -70,7 +59,6 @@ public final class GemSlice extends Slice.Wrap {
      */
     public GemSlice(final Storage storage) {
         this(storage,
-            JavaEmbedUtils.initialize(new ArrayList<>(0)),
             Permissions.FREE,
             (login, pwd) -> Optional.of(new Authentication.User("anonymous"))
         );
@@ -80,12 +68,10 @@ public final class GemSlice extends Slice.Wrap {
      * Ctor.
      *
      * @param storage The storage.
-     * @param runtime The Jruby runtime.
      * @param permissions The permissions.
      * @param auth The auth.
      */
     public GemSlice(final Storage storage,
-        final Ruby runtime,
         final Permissions permissions,
         final Authentication auth) {
         super(
@@ -96,7 +82,7 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByPath("/api/v1/gems")
                     ),
                     new AuthSlice(
-                        GemSlice.rubyLookUp("SubmitGem", storage, runtime),
+                        new SubmitGem(storage, new Gem(storage)),
                         new GemApiKeyAuth(auth),
                         new Permission.ByName(permissions, Action.Standard.WRITE)
                     )
@@ -129,34 +115,5 @@ public final class GemSlice extends Slice.Wrap {
                 )
             )
         );
-    }
-
-    /**
-     * Lookup an instance of slice, implemented with JRuby.
-     * @param rclass The name of a slice class, implemented in JRuby.
-     * @param storage The storage to pass directly to Ruby instance.
-     * @param runtime The JRuby runtime.
-     * @return The Slice.
-     */
-    private static Slice rubyLookUp(final String rclass,
-        final Storage storage,
-        final Ruby runtime) {
-        try {
-            final RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
-            final String script = IOUtils.toString(
-                GemSlice.class.getResourceAsStream(String.format("/%s.rb", rclass)),
-                StandardCharsets.UTF_8
-            );
-            evaler.eval(runtime, script);
-            return (Slice) JavaEmbedUtils.invokeMethod(
-                runtime,
-                evaler.eval(runtime, rclass),
-                "new",
-                new Object[]{storage},
-                Slice.class
-            );
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
     }
 }
