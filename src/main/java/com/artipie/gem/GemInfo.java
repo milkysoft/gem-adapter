@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Storage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RequestLineFrom;
@@ -68,16 +69,23 @@ public final class GemInfo implements Slice {
     /**
      * Ruby interpreter.
      */
+    private final Storage storage;
+
+    /**
+     * Ruby interpreter.
+     */
     private final Ruby ruby;
 
     /**
      * New gem info.
+     * @param storage Gems storage
      * @param runtime Ruby runtime
      * @param ruby Interpreter
      */
-    public GemInfo(final RubyRuntimeAdapter runtime, final Ruby ruby) {
+    public GemInfo(final Storage storage, final RubyRuntimeAdapter runtime, final Ruby ruby) {
         this.runtime = runtime;
         this.ruby = ruby;
+        this.storage = storage;
     }
 
     /**
@@ -89,11 +97,13 @@ public final class GemInfo implements Slice {
 
     /**
      * Create new gem indexer.
+     * @param storage Gems storage
      * @return A new ruby gem info.
      */
     @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
-    public static GemInfo createNew() {
+    public static GemInfo createNew(final Storage storage) {
         final GemInfo result = new GemInfo(
+            storage,
             JavaEmbedUtils.newRuntimeAdapter(),
             JavaEmbedUtils.initialize(Collections.emptyList())
         );

@@ -23,15 +23,18 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import java.io.IOException;
+import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import wtf.g4s8.hamcrest.json.JsonHas;
 import wtf.g4s8.hamcrest.json.JsonValueIs;
 
@@ -43,9 +46,9 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
 public class QueryGemITCase {
 
     @Test
-    public void queryResultsInOkResponse() throws IOException {
+    public void queryResultsInOkResponse(@TempDir final Path temp) throws IOException {
         MatcherAssert.assertThat(
-            GemInfo.createNew(),
+            GemInfo.createNew(new FileStorage(temp)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
