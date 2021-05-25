@@ -23,21 +23,17 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.Content;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasBody;
-import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
-import com.artipie.http.rs.RsStatus;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import wtf.g4s8.hamcrest.json.JsonHas;
+import wtf.g4s8.hamcrest.json.JsonValueIs;
 
 /**
  * A test for gem submit operation.
@@ -48,21 +44,23 @@ public class QueryGemITCase {
 
     @Test
     public void queryResultsInOkResponse() throws IOException {
-        final String content = new String(
-            Files.readAllBytes(Paths.get("./src/test/resources/test_response.json"))
-        );
         MatcherAssert.assertThat(
             new GemInfo(),
             new SliceHasResponse(
                 Matchers.allOf(
-                    new RsHasStatus(RsStatus.OK),
-                    new RsHasBody(content, StandardCharsets.UTF_8)
+                    new RsHasBody(
+                        new IsJson(
+                            new JsonHas(
+                                "homepage",
+                                new JsonValueIs("https://github.com/yuki24/did_you_mean")
+                            )
+                        )
+                    )
                 ),
                 new RequestLine(RqMethod.GET, "/api/v1/gems/did_you_mean.json"),
                 Headers.EMPTY,
-                new Content.From("".getBytes())
+                com.artipie.asto.Content.EMPTY
             )
         );
     }
 }
-
