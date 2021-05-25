@@ -71,11 +71,34 @@ public final class GemInfo implements Slice {
     private final Ruby ruby;
 
     /**
-     * Ctor.
+     * New gem info.
+     * @param runtime Ruby runtime
+     * @param ruby Interpreter
      */
-    public GemInfo() {
-        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
-        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
+    public GemInfo(final RubyRuntimeAdapter runtime, final Ruby ruby) {
+        this.runtime = runtime;
+        this.ruby = ruby;
+    }
+
+    /**
+     * Initialize indexer.
+     */
+    public void initialize() {
+        this.runtime.eval(this.ruby, "require 'rubygems/commands/contents_command.rb'");
+    }
+
+    /**
+     * Create new gem indexer.
+     * @return A new ruby gem info.
+     */
+    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
+    public static GemInfo createNew() {
+        final GemInfo result = new GemInfo(
+            JavaEmbedUtils.newRuntimeAdapter(),
+            JavaEmbedUtils.initialize(Collections.emptyList())
+        );
+        result.initialize();
+        return result;
     }
 
     @Override
@@ -83,7 +106,6 @@ public final class GemInfo implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
-        this.runtime.eval(this.ruby, "require 'rubygems/commands/contents_command.rb'");
         if (matcher.find()) {
             final String gem = matcher.group(1);
             final String extension = matcher.group(2);

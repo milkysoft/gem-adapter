@@ -45,7 +45,7 @@ public class QueryGemITCase {
     @Test
     public void queryResultsInOkResponse() throws IOException {
         MatcherAssert.assertThat(
-            new GemInfo(),
+            GemInfo.createNew(),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
