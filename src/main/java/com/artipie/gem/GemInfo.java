@@ -134,7 +134,8 @@ public final class GemInfo implements Slice {
         final Publisher<ByteBuffer> body) {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
         if (matcher.find()) {
-            final Path tmpdir = this.preparedir(matcher.group(1));
+            final String gem = matcher.group(1);
+            final Path tmpdir = this.preparedir(gem);
             this.install(tmpdir, gem);
             final String script = String.format(
                 "Gem::Commands::ContentsCommand.new.spec_for('%s')", gem
@@ -196,7 +197,7 @@ public final class GemInfo implements Slice {
      * @param tmpdir Gem directory
      * @param gem Is Gem to be installed
      */
-    private void install(final String tmpdir, final String gem) {
+    private void install(final Path tmpdir, final String gem) {
         try {
             final List<String> files = Files.walk(tmpdir).map(Path::toString)
                 .collect(Collectors.toList());
