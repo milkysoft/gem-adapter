@@ -23,17 +23,30 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Key;
+import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import io.reactivex.Observable;
+import io.reactivex.Single;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
@@ -68,14 +81,51 @@ public final class GemInfo implements Slice {
     /**
      * Ruby interpreter.
      */
+    private final Storage storage;
+
+    /**
+     * Ruby interpreter.
+     */
     private final Ruby ruby;
 
     /**
-     * Ctor.
+     * New gem info.
+     * @param storage Gems storage
+     * @param runtime Ruby runtime
+     * @param ruby Interpreter
      */
-    public GemInfo() {
-        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
-        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
+    public GemInfo(final Storage storage, final RubyRuntimeAdapter runtime, final Ruby ruby) {
+        this.runtime = runtime;
+        this.ruby = ruby;
+        this.storage = storage;
+    }
+
+    /**
+     * Initialize indexer.
+     */
+    public void initialize() {
+        this.runtime.eval(
+            this.ruby,
+            "require 'rubygems/commands/contents_command.rb'\n".concat(
+                "require 'rubygems/installer.rb'"
+            )
+        );
+    }
+
+    /**
+     * Create new gem indexer.
+     * @param storage Gems storage
+     * @return A new ruby gem info.
+     */
+    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
+    public static GemInfo createNew(final Storage storage) {
+        final GemInfo result = new GemInfo(
+            storage,
+            JavaEmbedUtils.newRuntimeAdapter(),
+            JavaEmbedUtils.initialize(Collections.emptyList())
+        );
+        result.initialize();
+        return result;
     }
 
     @Override
@@ -83,9 +133,12 @@ public final class GemInfo implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
-        this.runtime.eval(this.ruby, "require 'rubygems/commands/contents_command.rb'");
         if (matcher.find()) {
-            final String gem = matcher.group(1);
+            final Path tmpdir = this.preparedir(matcher.group(1));
+            this.install(tmpdir, gem);
+            final String script = String.format(
+                "Gem::Commands::ContentsCommand.new.spec_for('%s')", gem
+            );
             final String extension = matcher.group(2);
             Logger.info(
                 GemInfo.class,
@@ -94,8 +147,7 @@ public final class GemInfo implements Slice {
                 extension
             );
             final RubyObject gemobject = (RubyObject) this.runtime.eval(
-                this.ruby,
-                String.format("Gem::Commands::ContentsCommand.new.spec_for('%s')", gem)
+                this.ruby, script
             );
             final List<Variable<Object>> vars = gemobject.getVariableList();
             final JsonObjectBuilder obj = Json.createObjectBuilder();
@@ -115,5 +167,68 @@ public final class GemInfo implements Slice {
         }
     }
 
-}
+    /**
+     * Copy storage from src to dst.
+     * @param src Source storage
+     * @param dst Destination storage
+     * @param gem Key for gem
+     * @return Async result
+     */
+    private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
+        final String gem) {
+        return Single.fromFuture(src.list(Key.ROOT))
+            .map(
+                list -> list.stream().filter(
+                    key -> key.string().contains(gem)
+                ).collect(Collectors.toList()))
+            .flatMapObservable(Observable::fromIterable)
+            .flatMapSingle(
+                key -> Single.fromFuture(
+                    src.value(key)
+                        .thenCompose(content -> dst.save(key, content))
+                        .thenApply(none -> true)
+                )
+            ).ignoreElements().to(CompletableInterop.await());
+    }
 
+    /**
+     * Install new gem.
+     * @param tmpdir Gem directory
+     * @param gem Is Gem to be installed
+     */
+    private void install(final String tmpdir, final String gem) {
+        try {
+            final List<String> files = Files.walk(tmpdir).map(Path::toString)
+                .collect(Collectors.toList());
+            for (final String file : files) {
+                if (file.contains(gem) && file.contains(".gem")) {
+                    final String script = "Gem::Installer.at('"
+                        .concat(file).concat("')");
+                    this.runtime.eval(this.ruby, script);
+                }
+            }
+        } catch (final IOException exc) {
+            Logger.error(GemInfo.class, exc.getMessage());
+        }
+    }
+
+    /**
+     * Prepare directory to install new gem.
+     * @param gem Is Gem to be installed
+     * @return Path To directory with gem
+     */
+    private Path preparedir(final String gem) {
+        final Path tmpdir;
+        try {
+            tmpdir = Files.createTempDirectory("gem");
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
+        }
+        CompletableFuture.allOf(
+            (CompletableFuture<?>) GemInfo.copyStorage(
+                this.storage, new FileStorage(tmpdir), gem
+            )
+        ).join();
+        return tmpdir;
+    }
+}

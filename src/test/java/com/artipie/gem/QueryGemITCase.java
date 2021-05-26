@@ -23,15 +23,23 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import wtf.g4s8.hamcrest.json.JsonHas;
 import wtf.g4s8.hamcrest.json.JsonValueIs;
 
@@ -43,24 +51,32 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
 public class QueryGemITCase {
 
     @Test
-    public void queryResultsInOkResponse() throws IOException {
+    public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
+        final Path repo = Paths.get(tmp.toString());
+        final String builderstr = "builder-3.2.4.gem";
+        final Path target = repo.resolve(builderstr);
+        try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
         MatcherAssert.assertThat(
-            new GemInfo(),
+            GemInfo.createNew(new FileStorage(tmp)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
                         new IsJson(
                             new JsonHas(
                                 "homepage",
-                                new JsonValueIs("https://github.com/yuki24/did_you_mean")
+                                new JsonValueIs("http://onestepback.org")
                             )
                         )
                     )
                 ),
-                new RequestLine(RqMethod.GET, "/api/v1/gems/did_you_mean.json"),
+                new RequestLine(RqMethod.GET, "/api/v1/gems/builder.json"),
                 Headers.EMPTY,
                 com.artipie.asto.Content.EMPTY
             )
         );
     }
 }
+
