@@ -53,9 +53,9 @@ public class QueryGemITCase {
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final String builderstr = "builder-3.2.4.gem";
+        final String builderstr = "gviz-0.3.5.gem";
         final Path target = repo.resolve(builderstr);
-        try (InputStream is = this.getClass().getResourceAsStream("/builder-3.2.4.gem");
+        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
@@ -67,12 +67,12 @@ public class QueryGemITCase {
                         new IsJson(
                             new JsonHas(
                                 "homepage",
-                                new JsonValueIs("http://onestepback.org")
+                                new JsonValueIs("https://github.com/melborne/Gviz")
                             )
                         )
                     )
                 ),
-                new RequestLine(RqMethod.GET, "/api/v1/gems/builder.json"),
+                new RequestLine(RqMethod.GET, "/api/v1/gems/gviz.json"),
                 Headers.EMPTY,
                 com.artipie.asto.Content.EMPTY
             )

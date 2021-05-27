@@ -220,7 +220,7 @@ public final class GemInfo implements Slice {
             for (final String file : files) {
                 if (file.contains(gem) && file.contains(".gem")) {
                     final String script = "Gem::Installer.at('"
-                        .concat(file).concat("')");
+                        .concat(file).concat("').install()");
                     this.runtime.eval(this.ruby, script);
                 }
             }
