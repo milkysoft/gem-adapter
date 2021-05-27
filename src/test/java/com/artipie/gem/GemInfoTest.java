@@ -48,31 +48,31 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  *
  * @since 0.7
  */
-public class QueryGemITCase {
+public class GemInfoTest {
 
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final String builderstr = "gviz-0.3.5.gem";
+        final String builderstr = "thor-1.1.0.gem";
         final Path target = repo.resolve(builderstr);
-        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
+        try (InputStream is = this.getClass().getResourceAsStream("/thor-1.1.0.gem");
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         MatcherAssert.assertThat(
-            GemInfo.createNew(new FileStorage(tmp)),
+            new GemInfo(new FileStorage(tmp)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
                         new IsJson(
                             new JsonHas(
                                 "homepage",
-                                new JsonValueIs("https://github.com/melborne/Gviz")
+                                new JsonValueIs("http://whatisthor.com/")
                             )
                         )
                     )
                 ),
-                new RequestLine(RqMethod.GET, "/api/v1/gems/gviz.json"),
+                new RequestLine(RqMethod.GET, "/api/v1/gems/thor.json"),
                 Headers.EMPTY,
                 com.artipie.asto.Content.EMPTY
             )

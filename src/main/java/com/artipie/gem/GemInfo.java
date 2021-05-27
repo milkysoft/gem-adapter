@@ -93,41 +93,11 @@ public final class GemInfo implements Slice {
     /**
      * New gem info.
      * @param storage Gems storage
-     * @param runtime Ruby runtime
-     * @param ruby Interpreter
      */
-    public GemInfo(final Storage storage, final RubyRuntimeAdapter runtime, final Ruby ruby) {
-        this.runtime = runtime;
-        this.ruby = ruby;
+    public GemInfo(final Storage storage) {
+        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
+        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
         this.storage = storage;
-    }
-
-    /**
-     * Initialize indexer.
-     */
-    public void initialize() {
-        this.runtime.eval(
-            this.ruby,
-            "require 'rubygems/commands/contents_command.rb'\n".concat(
-                "require 'rubygems/installer.rb'"
-            )
-        );
-    }
-
-    /**
-     * Create new gem indexer.
-     * @param storage Gems storage
-     * @return A new ruby gem info.
-     */
-    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
-    public static GemInfo createNew(final Storage storage) {
-        final GemInfo result = new GemInfo(
-            storage,
-            JavaEmbedUtils.newRuntimeAdapter(),
-            JavaEmbedUtils.initialize(Collections.emptyList())
-        );
-        result.initialize();
-        return result;
     }
 
     @Override
@@ -139,9 +109,11 @@ public final class GemInfo implements Slice {
             final String gem = matcher.group(1);
             final Path tmpdir = this.preparedir(gem);
             this.install(tmpdir, gem);
-            final String script = String.format(
-                "Gem::Commands::ContentsCommand.new.spec_for('%s')", gem
-            );
+            try {
+                FileUtils.deleteDirectory(new File(tmpdir.toString()));
+            } catch (final IOException exc) {
+                throw new UncheckedIOException(exc);
+            }
             final String extension = matcher.group(2);
             Logger.info(
                 GemInfo.class,
@@ -149,14 +121,18 @@ public final class GemInfo implements Slice {
                 gem,
                 extension
             );
+            this.runtime.eval(
+                this.ruby,
+                "require 'rubygems/commands/contents_command.rb'\n".concat(
+                    "require 'rubygems/installer.rb'"
+                )
+            );
+            final String script = String.format(
+                "Gem::Commands::ContentsCommand.new.spec_for('%s')", gem
+            );
             final RubyObject gemobject = (RubyObject) this.runtime.eval(
                 this.ruby, script
             );
-            try {
-                FileUtils.deleteDirectory(new File(tmpdir.toString()));
-            } catch (final IOException exc) {
-                Logger.error(GemInfo.class, exc.getMessage());
-            }
             return new RsJson(GemInfo.createJson(gemobject));
         } else {
             throw new IllegalStateException("Not expected path has been matched");
@@ -215,17 +191,17 @@ public final class GemInfo implements Slice {
      */
     private void install(final Path tmpdir, final String gem) {
         try {
-            final List<String> files = Files.walk(tmpdir).map(Path::toString)
-                .collect(Collectors.toList());
-            for (final String file : files) {
-                if (file.contains(gem) && file.contains(".gem")) {
-                    final String script = "Gem::Installer.at('"
-                        .concat(file).concat("').install()");
-                    this.runtime.eval(this.ruby, script);
-                }
-            }
+            Files.walk(tmpdir).map(Path::toString)
+                .filter(file -> file.contains(gem) && file.contains(".gem"))
+                .forEach(
+                    file -> {
+                        final String script = "Gem::Installer.at('"
+                            .concat(file).concat("').install()");
+                        this.runtime.eval(this.ruby, script);
+                    }
+            );
         } catch (final IOException exc) {
-            Logger.error(GemInfo.class, exc.getMessage());
+            throw new UncheckedIOException(exc);
         }
     }
 
