@@ -197,7 +197,7 @@ public final class GemInfo implements Slice {
                 );
             }
         } catch (final IOException exc) {
-            Logger.error(GemInfo.class, exc.getMessage());
+            throw new UncheckedIOException(exc);
         }
         try {
             FileUtils.deleteDirectory(new File(tmpdir.toString()));
