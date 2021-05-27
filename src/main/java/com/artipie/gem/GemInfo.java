@@ -34,6 +34,7 @@ import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -49,6 +50,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import org.apache.commons.io.FileUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
@@ -150,22 +152,36 @@ public final class GemInfo implements Slice {
             final RubyObject gemobject = (RubyObject) this.runtime.eval(
                 this.ruby, script
             );
-            final List<Variable<Object>> vars = gemobject.getVariableList();
-            final JsonObjectBuilder obj = Json.createObjectBuilder();
-            for (int ind = 0; ind < vars.size(); ind = ind + 1) {
-                final Variable<Object> var = vars.get(ind);
-                String name = var.getName();
-                if (var.getName().substring(0, 1).equals("@")) {
-                    name = var.getName().substring(1);
-                }
-                if (gemobject.getVariable(ind) != null) {
-                    obj.add(name, gemobject.getVariable(ind).toString());
-                }
+            try {
+                FileUtils.deleteDirectory(new File(tmpdir.toString()));
+            } catch (final IOException exc) {
+                Logger.error(GemInfo.class, exc.getMessage());
             }
-            return new RsJson(obj);
+            return new RsJson(GemInfo.createJson(gemobject));
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
+    }
+
+    /**
+     * Copy storage from src to dst.
+     * @param gemobject Gem to parsing info
+     * @return JsonObjectBuilder result
+     */
+    private static JsonObjectBuilder createJson(final RubyObject gemobject) {
+        final List<Variable<Object>> vars = gemobject.getVariableList();
+        final JsonObjectBuilder obj = Json.createObjectBuilder();
+        for (int ind = 0; ind < vars.size(); ind = ind + 1) {
+            final Variable<Object> var = vars.get(ind);
+            String name = var.getName();
+            if (var.getName().substring(0, 1).equals("@")) {
+                name = var.getName().substring(1);
+            }
+            if (gemobject.getVariable(ind) != null) {
+                obj.add(name, gemobject.getVariable(ind).toString());
+            }
+        }
+        return obj;
     }
 
     /**
