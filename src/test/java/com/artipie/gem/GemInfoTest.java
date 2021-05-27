@@ -23,7 +23,6 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.SliceHasResponse;
@@ -53,26 +52,26 @@ public class GemInfoTest {
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final String builderstr = "thor-1.1.0.gem";
+        final String builderstr = "gviz-0.3.5.gem";
         final Path target = repo.resolve(builderstr);
-        try (InputStream is = this.getClass().getResourceAsStream("/thor-1.1.0.gem");
+        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         MatcherAssert.assertThat(
-            new GemInfo(new FileStorage(tmp)),
+            new GemInfo(tmp),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
                         new IsJson(
                             new JsonHas(
                                 "homepage",
-                                new JsonValueIs("http://whatisthor.com/")
+                                new JsonValueIs("https://github.com/melborne/Gviz")
                             )
                         )
                     )
                 ),
-                new RequestLine(RqMethod.GET, "/api/v1/gems/thor.json"),
+                new RequestLine(RqMethod.GET, "/api/v1/gems/gviz.json"),
                 Headers.EMPTY,
                 com.artipie.asto.Content.EMPTY
             )

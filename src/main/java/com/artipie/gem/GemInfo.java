@@ -100,6 +100,14 @@ public final class GemInfo implements Slice {
         this.storage = storage;
     }
 
+    /**
+     * New gem info.
+     * @param dir Gems storage
+     */
+    public GemInfo(final Path dir) {
+        this(new FileStorage(dir));
+    }
+
     @Override
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers,
@@ -108,12 +116,6 @@ public final class GemInfo implements Slice {
         if (matcher.find()) {
             final String gem = matcher.group(1);
             final Path tmpdir = this.preparedir(gem);
-            this.install(tmpdir, gem);
-            try {
-                FileUtils.deleteDirectory(new File(tmpdir.toString()));
-            } catch (final IOException exc) {
-                throw new UncheckedIOException(exc);
-            }
             final String extension = matcher.group(2);
             Logger.info(
                 GemInfo.class,
@@ -123,17 +125,9 @@ public final class GemInfo implements Slice {
             );
             this.runtime.eval(
                 this.ruby,
-                "require 'rubygems/commands/contents_command.rb'\n".concat(
-                    "require 'rubygems/installer.rb'"
-                )
+                "require 'rubygems/package.rb'"
             );
-            final String script = String.format(
-                "Gem::Commands::ContentsCommand.new.spec_for('%s')", gem
-            );
-            final RubyObject gemobject = (RubyObject) this.runtime.eval(
-                this.ruby, script
-            );
-            return new RsJson(GemInfo.createJson(gemobject));
+            return new RsJson(GemInfo.createJson(this.getSpecification(tmpdir, gem)));
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
@@ -147,14 +141,13 @@ public final class GemInfo implements Slice {
     private static JsonObjectBuilder createJson(final RubyObject gemobject) {
         final List<Variable<Object>> vars = gemobject.getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();
-        for (int ind = 0; ind < vars.size(); ind = ind + 1) {
-            final Variable<Object> var = vars.get(ind);
+        for (final Variable<Object> var : vars) {
             String name = var.getName();
-            if (var.getName().substring(0, 1).equals("@")) {
+            if (name.substring(0, 1).equals("@")) {
                 name = var.getName().substring(1);
             }
-            if (gemobject.getVariable(ind) != null) {
-                obj.add(name, gemobject.getVariable(ind).toString());
+            if (var.getValue() != null) {
+                obj.add(name, var.getValue().toString());
             }
         }
         return obj;
@@ -187,22 +180,33 @@ public final class GemInfo implements Slice {
     /**
      * Install new gem.
      * @param tmpdir Gem directory
-     * @param gem Is Gem to be installed
+     * @param gem Is Gem to be inspected
+     * @return RubyObject specification
      */
-    private void install(final Path tmpdir, final String gem) {
+    private RubyObject getSpecification(final Path tmpdir, final String gem) {
+        RubyObject gemobject = null;
         try {
-            Files.walk(tmpdir).map(Path::toString)
-                .filter(file -> file.contains(gem) && file.contains(".gem"))
-                .forEach(
-                    file -> {
-                        final String script = "Gem::Installer.at('"
-                            .concat(file).concat("').install()");
-                        this.runtime.eval(this.ruby, script);
-                    }
-            );
+            final List<String> files = Files.walk(tmpdir).map(Path::toString)
+                .collect(Collectors.toList());
+            for (final String file : files) {
+                if (file.contains(gem) && file.contains(".gem")) {
+                    final String script = "Gem::Package.new('"
+                        .concat(file).concat("').spec");
+                    gemobject = (RubyObject) this.runtime.eval(
+                        this.ruby, script
+                    );
+                    break;
+                }
+            }
+        } catch (final IOException exc) {
+            Logger.error(GemInfo.class, exc.getMessage());
+        }
+        try {
+            FileUtils.deleteDirectory(new File(tmpdir.toString()));
         } catch (final IOException exc) {
             throw new UncheckedIOException(exc);
         }
+        return gemobject;
     }
 
     /**
