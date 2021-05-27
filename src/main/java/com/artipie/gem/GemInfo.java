@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
@@ -186,17 +187,14 @@ public final class GemInfo implements Slice {
     private RubyObject getSpecification(final Path tmpdir, final String gem) {
         RubyObject gemobject = null;
         try {
-            final List<String> files = Files.walk(tmpdir).map(Path::toString)
-                .collect(Collectors.toList());
-            for (final String file : files) {
-                if (file.contains(gem) && file.contains(".gem")) {
-                    final String script = "Gem::Package.new('"
-                        .concat(file).concat("').spec");
-                    gemobject = (RubyObject) this.runtime.eval(
-                        this.ruby, script
-                    );
-                    break;
-                }
+            final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
+                .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
+            if (filename.isPresent()) {
+                final String script = "Gem::Package.new('"
+                    .concat(filename.get()).concat("').spec");
+                gemobject = (RubyObject) this.runtime.eval(
+                    this.ruby, script
+                );
             }
         } catch (final IOException exc) {
             Logger.error(GemInfo.class, exc.getMessage());
