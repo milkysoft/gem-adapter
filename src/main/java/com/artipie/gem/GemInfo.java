@@ -129,7 +129,18 @@ public final class GemInfo implements Slice {
                 "require 'rubygems/package.rb'"
             );
             return new AsyncResponse(
-                this.batchUpdate(gem).thenApply(
+                CompletableFuture.supplyAsync(
+                    () -> {
+                        try {
+                            return Files.createTempDirectory("gem");
+                        } catch (final IOException exc) {
+                            throw new UncheckedIOException(exc);
+                        }
+                    }
+                ).thenCompose(
+                    tmpdir -> GemInfo.copyStorage(this.storage, new FileStorage(tmpdir), gem)
+                        .thenApply(ignore -> tmpdir)
+                ).thenApply(
                     tmpdir -> {
                         return new RsJson(GemInfo.createJson(this.getSpecification(tmpdir, gem)));
                     }
@@ -138,27 +149,6 @@ public final class GemInfo implements Slice {
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
-    }
-
-    /**
-     * Batch update Ruby gems for repository.
-     *
-     * @param gem Ruby gem for indexing
-     * @return Completable action
-     */
-    public CompletionStage<Path> batchUpdate(final String gem) {
-        return CompletableFuture.supplyAsync(
-            () -> {
-                try {
-                    return Files.createTempDirectory("gem");
-                } catch (final IOException exc) {
-                    throw new UncheckedIOException(exc);
-                }
-            }
-        ).thenCompose(
-            tmpdir -> GemInfo.copyStorage(this.storage, new FileStorage(tmpdir), gem)
-                .thenApply(ignore -> tmpdir)
-        );
     }
 
     /**
@@ -234,4 +224,3 @@ public final class GemInfo implements Slice {
         return gemobject;
     }
 }
-
