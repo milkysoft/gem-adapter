@@ -28,6 +28,7 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
+import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
@@ -116,7 +117,6 @@ public final class GemInfo implements Slice {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
         if (matcher.find()) {
             final String gem = matcher.group(1);
-            final Path tmpdir = this.preparedir(gem);
             final String extension = matcher.group(2);
             Logger.info(
                 GemInfo.class,
@@ -128,10 +128,37 @@ public final class GemInfo implements Slice {
                 this.ruby,
                 "require 'rubygems/package.rb'"
             );
-            return new RsJson(GemInfo.createJson(this.getSpecification(tmpdir, gem)));
+            return new AsyncResponse(
+                this.batchUpdate(gem).thenApply(
+                    tmpdir -> {
+                        return new RsJson(GemInfo.createJson(this.getSpecification(tmpdir, gem)));
+                    }
+                )
+            );
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
+    }
+
+    /**
+     * Batch update Ruby gems for repository.
+     *
+     * @param gem Ruby gem for indexing
+     * @return Completable action
+     */
+    public CompletionStage<Path> batchUpdate(final String gem) {
+        return CompletableFuture.supplyAsync(
+            () -> {
+                try {
+                    return Files.createTempDirectory("gem");
+                } catch (final IOException exc) {
+                    throw new UncheckedIOException(exc);
+                }
+            }
+        ).thenCompose(
+            tmpdir -> GemInfo.copyStorage(this.storage, new FileStorage(tmpdir), gem)
+                .thenApply(ignore -> tmpdir)
+        );
     }
 
     /**
@@ -206,24 +233,5 @@ public final class GemInfo implements Slice {
         }
         return gemobject;
     }
-
-    /**
-     * Prepare directory to install new gem.
-     * @param gem Is Gem to be installed
-     * @return Path To directory with gem
-     */
-    private Path preparedir(final String gem) {
-        final Path tmpdir;
-        try {
-            tmpdir = Files.createTempDirectory("gem");
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
-        CompletableFuture.allOf(
-            (CompletableFuture<?>) GemInfo.copyStorage(
-                this.storage, new FileStorage(tmpdir), gem
-            )
-        ).join();
-        return tmpdir;
-    }
 }
+
