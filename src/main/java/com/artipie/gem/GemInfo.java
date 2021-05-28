@@ -161,7 +161,7 @@ public final class GemInfo implements Slice {
         final JsonObjectBuilder obj = Json.createObjectBuilder();
         for (final Variable<Object> var : vars) {
             String name = var.getName();
-            if (name.substring(0, 1).equals("@")) {
+            if (name.charAt(0) == '@') {
                 name = var.getName().substring(1);
             }
             if (var.getValue() != null) {
