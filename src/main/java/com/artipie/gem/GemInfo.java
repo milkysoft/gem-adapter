@@ -41,19 +41,13 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
-import org.jruby.Ruby;
-import org.jruby.RubyObject;
-import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.reactivestreams.Publisher;
 
 /**
@@ -74,27 +68,15 @@ public final class GemInfo implements Slice {
     public static final Pattern PATH_PATTERN = Pattern.compile("/api/v1/gems/([\\w]+).(json|yml)");
 
     /**
-     * Ruby runtime.
-     */
-    private final RubyRuntimeAdapter runtime;
-
-    /**
      * Ruby interpreter.
      */
     private final Storage storage;
-
-    /**
-     * Ruby interpreter.
-     */
-    private final Ruby ruby;
 
     /**
      * New gem info.
      * @param storage Gems storage
      */
     public GemInfo(final Storage storage) {
-        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
-        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
         this.storage = storage;
     }
 
@@ -120,10 +102,6 @@ public final class GemInfo implements Slice {
                 gem,
                 extension
             );
-            this.runtime.eval(
-                this.ruby,
-                "require 'rubygems/package.rb'"
-            );
             return new AsyncResponse(
                 CompletableFuture.supplyAsync(
                     () -> {
@@ -138,9 +116,16 @@ public final class GemInfo implements Slice {
                         .thenApply(ignore -> tmpdir)
                 ).thenApply(
                     tmpdir -> {
-                        return new RsJson(
-                            new RubyObjJson(this.getSpecification(tmpdir, gem)).createJson()
-                        );
+                        RsJson res = null;
+                        try {
+                            res = new RsJson(
+                                new RubyObjJson(tmpdir, gem).createJson()
+                            );
+                            FileUtils.deleteDirectory(new File(tmpdir.toString()));
+                        } catch (final IOException exc) {
+                            throw new UncheckedIOException(exc);
+                        }
+                        return res;
                     }
                 )
             );
@@ -172,33 +157,5 @@ public final class GemInfo implements Slice {
                 )
             ).ignoreElements().to(CompletableInterop.await());
     }
-
-    /**
-     * Install new gem.
-     * @param tmpdir Gem directory
-     * @param gem Is Gem to be inspected
-     * @return RubyObject specification
-     */
-    private RubyObject getSpecification(final Path tmpdir, final String gem) {
-        RubyObject gemobject = null;
-        try {
-            final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
-                .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
-            if (filename.isPresent()) {
-                final String script = "Gem::Package.new('"
-                    .concat(filename.get()).concat("').spec");
-                gemobject = (RubyObject) this.runtime.eval(
-                    this.ruby, script
-                );
-            }
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
-        try {
-            FileUtils.deleteDirectory(new File(tmpdir.toString()));
-        } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
-        }
-        return gemobject;
-    }
 }
+

@@ -23,10 +23,19 @@
  */
 package com.artipie.gem;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import org.jruby.Ruby;
 import org.jruby.RubyObject;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.Variable;
 
 /**
@@ -35,17 +44,37 @@ import org.jruby.runtime.builtin.Variable;
  * @since 1.0
  */
 public class RubyObjJson {
+
+    /**
+     * Ruby runtime.
+     */
+    private final RubyRuntimeAdapter runtime;
+
+    /**
+     * Ruby interpreter.
+     */
+    private final Ruby ruby;
+
     /**
      * Ruby object.
      */
-    private final RubyObject gemobject;
+    private final Path gemdir;
+
+    /**
+     * Ruby object.
+     */
+    private final String gem;
 
     /**
      * New Ruby object JSON converter.
-     * @param gemobject Gem to convert
+     * @param gemdir Directory to search for gem
+     * @param gem Gem to convert
      */
-    RubyObjJson(final RubyObject gemobject) {
-        this.gemobject = gemobject;
+    RubyObjJson(final Path gemdir, final String gem) {
+        this.gemdir = gemdir;
+        this.gem = gem;
+        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
+        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
     }
 
     /**
@@ -53,7 +82,8 @@ public class RubyObjJson {
      * @return JsonObjectBuilder result
      */
     public JsonObjectBuilder createJson() {
-        final List<Variable<Object>> vars = this.gemobject.getVariableList();
+        final List<Variable<Object>> vars = this.getSpecification()
+            .getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();
         for (final Variable<Object> var : vars) {
             String name = var.getName();
@@ -65,5 +95,31 @@ public class RubyObjJson {
             }
         }
         return obj;
+    }
+
+    /**
+     * Install new gem.
+     * @return RubyObject specification
+     */
+    private RubyObject getSpecification() {
+        RubyObject gemobject = null;
+        this.runtime.eval(
+            this.ruby,
+            "require 'rubygems/package.rb'"
+        );
+        try {
+            final Optional<String> filename = Files.walk(this.gemdir).map(Path::toString)
+                .filter(file -> file.contains(this.gem) && file.contains(".gem")).findFirst();
+            if (filename.isPresent()) {
+                final String script = "Gem::Package.new('"
+                    .concat(filename.get()).concat("').spec");
+                gemobject = (RubyObject) this.runtime.eval(
+                    this.ruby, script
+                );
+            }
+        } catch (final IOException exc) {
+            throw new UncheckedIOException(exc);
+        }
+        return gemobject;
     }
 }

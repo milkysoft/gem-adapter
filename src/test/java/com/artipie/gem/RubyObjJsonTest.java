@@ -24,18 +24,15 @@
 package com.artipie.gem;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Optional;
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.jruby.Ruby;
-import org.jruby.RubyObject;
-import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import wtf.g4s8.hamcrest.json.JsonHas;
 import wtf.g4s8.hamcrest.json.JsonValueIs;
 
@@ -47,18 +44,15 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
 public class RubyObjJsonTest {
 
     @Test
-    public void createJsonIsOk() throws IOException {
-        final RubyRuntimeAdapter runtime = JavaEmbedUtils.newRuntimeAdapter();
-        final Ruby ruby = JavaEmbedUtils.initialize(Collections.emptyList());
-        runtime.eval(ruby, "require 'rubygems/package.rb'");
-        RubyObject gemobject = null;
-        final Optional<String> filename = Files.walk(Paths.get("./")).map(Path::toString)
-            .filter(file -> file.contains("gviz") && file.contains(".gem")).findFirst();
-        final String script = "Gem::Package.new('"
-            .concat(filename.get()).concat("').spec");
-        gemobject = (RubyObject) runtime.eval(ruby, script);
+    public void createJsonIsOk(@TempDir final Path tmp) throws IOException {
+        final String builderstr = "gviz-0.3.5.gem";
+        final Path target = tmp.resolve(builderstr);
+        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
         MatcherAssert.assertThat(
-            new RubyObjJson(gemobject).createJson().build(),
+            new RubyObjJson(tmp, "gviz").createJson().build(),
             Matchers.allOf(
                 new JsonHas(
                     "homepage",
@@ -68,4 +62,3 @@ public class RubyObjJsonTest {
         );
     }
 }
-
