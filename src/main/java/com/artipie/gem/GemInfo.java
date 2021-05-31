@@ -42,7 +42,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -50,14 +49,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.json.Json;
-import javax.json.JsonObjectBuilder;
 import org.apache.commons.io.FileUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
-import org.jruby.runtime.builtin.Variable;
 import org.reactivestreams.Publisher;
 
 /**
@@ -142,33 +138,15 @@ public final class GemInfo implements Slice {
                         .thenApply(ignore -> tmpdir)
                 ).thenApply(
                     tmpdir -> {
-                        return new RsJson(GemInfo.createJson(this.getSpecification(tmpdir, gem)));
+                        return new RsJson(
+                            new RubyObjJson(this.getSpecification(tmpdir, gem)).createJson()
+                        );
                     }
                 )
             );
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
-    }
-
-    /**
-     * Copy storage from src to dst.
-     * @param gemobject Gem to parsing info
-     * @return JsonObjectBuilder result
-     */
-    private static JsonObjectBuilder createJson(final RubyObject gemobject) {
-        final List<Variable<Object>> vars = gemobject.getVariableList();
-        final JsonObjectBuilder obj = Json.createObjectBuilder();
-        for (final Variable<Object> var : vars) {
-            String name = var.getName();
-            if (name.charAt(0) == '@') {
-                name = var.getName().substring(1);
-            }
-            if (var.getValue() != null) {
-                obj.add(name, var.getValue().toString());
-            }
-        }
-        return obj;
     }
 
     /**
