@@ -23,14 +23,15 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.ArtipieIOException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.json.Json;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
@@ -78,11 +79,12 @@ public class RubyObjJson {
     }
 
     /**
-     * Copy storage from src to dst.
+     * Create JSON info for gem.
+     * @param gempath Full path to gem file or null
      * @return JsonObjectBuilder result
      */
-    public JsonObjectBuilder createJson() {
-        final List<Variable<Object>> vars = this.getSpecification()
+    public JsonObject createJson(final Path gempath) {
+        final List<Variable<Object>> vars = this.getSpecification(gempath)
             .getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();
         for (final Variable<Object> var : vars) {
@@ -94,32 +96,36 @@ public class RubyObjJson {
                 obj.add(name, var.getValue().toString());
             }
         }
-        return obj;
+        return obj.build();
     }
 
     /**
      * Install new gem.
+     * @param gempath Full path to gem file or null
      * @return RubyObject specification
      */
-    private RubyObject getSpecification() {
-        RubyObject gemobject = null;
+    private RubyObject getSpecification(final Path gempath) {
+        String gemfile = "";
         this.runtime.eval(
             this.ruby,
             "require 'rubygems/package.rb'"
         );
         try {
-            final Optional<String> filename = Files.walk(this.gemdir).map(Path::toString)
-                .filter(file -> file.contains(this.gem) && file.contains(".gem")).findFirst();
-            if (filename.isPresent()) {
-                final String script = "Gem::Package.new('"
-                    .concat(filename.get()).concat("').spec");
-                gemobject = (RubyObject) this.runtime.eval(
-                    this.ruby, script
-                );
+            if (gempath == null) {
+                final Optional<String> filename = Files.walk(this.gemdir).map(Path::toString)
+                    .filter(file -> file.contains(this.gem) && file.contains(".gem")).findFirst();
+                if (filename.isPresent()) {
+                    gemfile = filename.get();
+                }
+            } else {
+                gemfile = gempath.toString();
             }
         } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
+            throw new ArtipieIOException(exc);
         }
-        return gemobject;
+        final String script = String.format("Gem::Package.new('%s').spec", gemfile);
+        return (RubyObject) this.runtime.eval(
+            this.ruby, script
+        );
     }
 }

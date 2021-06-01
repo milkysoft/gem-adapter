@@ -119,7 +119,7 @@ public final class GemInfo implements Slice {
                         RsJson res = null;
                         try {
                             res = new RsJson(
-                                new RubyObjJson(tmpdir, gem).createJson()
+                                new RubyObjJson(tmpdir, gem).createJson(null)
                             );
                             FileUtils.deleteDirectory(new File(tmpdir.toString()));
                         } catch (final IOException exc) {
@@ -158,4 +158,3 @@ public final class GemInfo implements Slice {
             ).ignoreElements().to(CompletableInterop.await());
     }
 }
-
