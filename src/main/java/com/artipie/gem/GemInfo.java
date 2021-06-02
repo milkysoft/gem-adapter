@@ -120,18 +120,10 @@ public final class GemInfo implements Slice {
                     tmpdir -> {
                         RsJson res = null;
                         try {
-                            String gemfile = "";
-                            try {
-                                final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
-                                    .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
-                                if (filename.isPresent()) {
-                                    gemfile = filename.get();
-                                }
-                            } catch (final IOException exc) {
-                                throw new ArtipieIOException(exc);
-                            }
                             res = new RsJson(
-                                new RubyObjJson().createJson(Paths.get(gemfile))
+                                new RubyObjJson().createJson(
+                                    Paths.get(GemInfo.getGemFile(tmpdir, gem))
+                                )
                             );
                             FileUtils.deleteDirectory(new File(tmpdir.toString()));
                         } catch (final IOException exc) {
@@ -144,6 +136,26 @@ public final class GemInfo implements Slice {
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }
+    }
+
+    /**
+     * Copy storage from src to dst.
+     * @param tmpdir Path to directory to serahc for gem
+     * @param gem Gem name to get info
+     * @return String full path to gem file
+     */
+    private static String getGemFile(final Path tmpdir, final String gem) {
+        String gemfile = "";
+        try {
+            final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
+                .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
+            if (filename.isPresent()) {
+                gemfile = filename.get();
+            }
+        } catch (final IOException exc) {
+            throw new ArtipieIOException(exc);
+        }
+        return gemfile;
     }
 
     /**
@@ -170,4 +182,3 @@ public final class GemInfo implements Slice {
             ).ignoreElements().to(CompletableInterop.await());
     }
 }
-

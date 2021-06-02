@@ -44,12 +44,11 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  */
 public class RubyObjJsonTest {
 
-    private static String builderstr = "gviz-0.3.5.gem";
-    private final String gemattr = "homepage";
-    private final String attrval = "https://github.com/melborne/Gviz";
-
     @Test
     public void createJsonByPath(@TempDir final Path tmp) throws IOException {
+        final String builderstr = "gviz-0.3.5.gem";
+        final String gemattr = "homepage";
+        final String attrval = "https://github.com/melborne/Gviz";
         final Path target = tmp.resolve(builderstr);
         try (InputStream is = this.getClass().getResourceAsStream("/".concat(builderstr));
             OutputStream os = Files.newOutputStream(target)) {
