@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -43,20 +44,24 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  */
 public class RubyObjJsonTest {
 
+    private static String builderstr = "gviz-0.3.5.gem";
+    private final String gemattr = "homepage";
+    private final String attrval = "https://github.com/melborne/Gviz";
+
     @Test
-    public void createJsonIsOk(@TempDir final Path tmp) throws IOException {
-        final String builderstr = "gviz-0.3.5.gem";
+    public void createJsonByPath(@TempDir final Path tmp) throws IOException {
         final Path target = tmp.resolve(builderstr);
-        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
+        try (InputStream is = this.getClass().getResourceAsStream("/".concat(builderstr));
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         MatcherAssert.assertThat(
-            new RubyObjJson(tmp, "gviz").createJson().build(),
+            new RubyObjJson()
+                .createJson(Paths.get(tmp.toString(), builderstr)),
             Matchers.allOf(
                 new JsonHas(
-                    "homepage",
-                    new JsonValueIs("https://github.com/melborne/Gviz")
+                    gemattr,
+                    new JsonValueIs(attrval)
                 )
             )
         );

@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
@@ -37,11 +38,12 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
@@ -108,7 +110,7 @@ public final class GemInfo implements Slice {
                         try {
                             return Files.createTempDirectory("gem");
                         } catch (final IOException exc) {
-                            throw new UncheckedIOException(exc);
+                            throw new ArtipieIOException(exc);
                         }
                     }
                 ).thenCompose(
@@ -118,12 +120,22 @@ public final class GemInfo implements Slice {
                     tmpdir -> {
                         RsJson res = null;
                         try {
+                            String gemfile = "";
+                            try {
+                                final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
+                                    .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
+                                if (filename.isPresent()) {
+                                    gemfile = filename.get();
+                                }
+                            } catch (final IOException exc) {
+                                throw new ArtipieIOException(exc);
+                            }
                             res = new RsJson(
-                                new RubyObjJson(tmpdir, gem).createJson()
+                                new RubyObjJson().createJson(Paths.get(gemfile))
                             );
                             FileUtils.deleteDirectory(new File(tmpdir.toString()));
                         } catch (final IOException exc) {
-                            throw new UncheckedIOException(exc);
+                            throw new ArtipieIOException(exc);
                         }
                         return res;
                     }
