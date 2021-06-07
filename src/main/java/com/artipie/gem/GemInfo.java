@@ -70,7 +70,7 @@ public final class GemInfo implements Slice {
     public static final Pattern PATH_PATTERN = Pattern.compile("/api/v1/gems/([\\w]+).(json|yml)");
 
     /**
-     * Ruby interpreter.
+     * Storage where gem is located.
      */
     private final Storage storage;
 
@@ -118,7 +118,7 @@ public final class GemInfo implements Slice {
                         .thenApply(ignore -> tmpdir)
                 ).thenApply(
                     tmpdir -> {
-                        RsJson res = null;
+                        RsJson res;
                         try {
                             res = new RsJson(
                                 new RubyObjJson().createJson(
@@ -145,17 +145,17 @@ public final class GemInfo implements Slice {
      * @return String full path to gem file
      */
     private static String getGemFile(final Path tmpdir, final String gem) {
-        String gemfile = "";
         try {
             final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
                 .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
             if (filename.isPresent()) {
-                gemfile = filename.get();
+                return filename.get();
+            } else {
+                throw new ArtipieIOException(String.format("Gem %s not found", gem));
             }
         } catch (final IOException exc) {
             throw new ArtipieIOException(exc);
         }
-        return gemfile;
     }
 
     /**
