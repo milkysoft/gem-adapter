@@ -120,7 +120,7 @@ public final class GemInfo implements Slice {
                         .thenApply(ignore -> tmpdir)
                 ).thenApply(
                     tmpdir -> {
-                        RsJson res;
+                        final RsJson res;
                         try {
                             res = new RsJson(
                                 new RubyObjJson(
