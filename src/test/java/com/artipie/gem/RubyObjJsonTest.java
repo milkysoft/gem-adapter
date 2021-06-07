@@ -57,7 +57,8 @@ public class RubyObjJsonTest {
             IOUtils.copy(is, os);
         }
         MatcherAssert.assertThat(
-            new RubyObjJson(JavaEmbedUtils.newRuntimeAdapter(),
+            new RubyObjJson(
+                JavaEmbedUtils.newRuntimeAdapter(),
                 JavaEmbedUtils.initialize(Collections.emptyList())
             ).createJson(Paths.get(tmp.toString(), builderstr)),
             Matchers.allOf(

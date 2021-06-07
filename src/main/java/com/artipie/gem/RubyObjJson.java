@@ -24,7 +24,6 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -32,7 +31,6 @@ import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.Variable;
 
 /**
@@ -54,8 +52,10 @@ class RubyObjJson {
 
     /**
      * New Ruby object JSON converter.
+     * @param runtime Is Ruby runtime
+     * @param ruby Is Ruby system
      */
-    RubyObjJson(RubyRuntimeAdapter runtime, Ruby ruby) {
+    RubyObjJson(final RubyRuntimeAdapter runtime, final Ruby ruby) {
         this.runtime = runtime;
         this.ruby = ruby;
     }
