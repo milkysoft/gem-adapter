@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -50,6 +51,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.jruby.javasupport.JavaEmbedUtils;
 import org.reactivestreams.Publisher;
 
 /**
@@ -70,7 +72,7 @@ public final class GemInfo implements Slice {
     public static final Pattern PATH_PATTERN = Pattern.compile("/api/v1/gems/([\\w]+).(json|yml)");
 
     /**
-     * Ruby interpreter.
+     * Storage where gem is located.
      */
     private final Storage storage;
 
@@ -118,10 +120,13 @@ public final class GemInfo implements Slice {
                         .thenApply(ignore -> tmpdir)
                 ).thenApply(
                     tmpdir -> {
-                        RsJson res = null;
+                        RsJson res;
                         try {
                             res = new RsJson(
-                                new RubyObjJson().createJson(
+                                new RubyObjJson(
+                                    JavaEmbedUtils.newRuntimeAdapter(),
+                                    JavaEmbedUtils.initialize(Collections.emptyList())
+                                ).createJson(
                                     Paths.get(GemInfo.getGemFile(tmpdir, gem))
                                 )
                             );
@@ -145,17 +150,17 @@ public final class GemInfo implements Slice {
      * @return String full path to gem file
      */
     private static String getGemFile(final Path tmpdir, final String gem) {
-        String gemfile = "";
         try {
             final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
                 .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
             if (filename.isPresent()) {
-                gemfile = filename.get();
+                return filename.get();
+            } else {
+                throw new ArtipieIOException(String.format("Gem %s not found", gem));
             }
         } catch (final IOException exc) {
             throw new ArtipieIOException(exc);
         }
-        return gemfile;
     }
 
     /**

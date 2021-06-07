@@ -55,9 +55,9 @@ class RubyObjJson {
     /**
      * New Ruby object JSON converter.
      */
-    RubyObjJson() {
-        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
-        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
+    RubyObjJson(RubyRuntimeAdapter runtime, Ruby ruby) {
+        this.runtime = runtime;
+        this.ruby = ruby;
     }
 
     /**

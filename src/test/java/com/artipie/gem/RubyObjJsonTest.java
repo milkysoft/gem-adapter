@@ -29,9 +29,11 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import wtf.g4s8.hamcrest.json.JsonHas;
@@ -55,8 +57,9 @@ public class RubyObjJsonTest {
             IOUtils.copy(is, os);
         }
         MatcherAssert.assertThat(
-            new RubyObjJson()
-                .createJson(Paths.get(tmp.toString(), builderstr)),
+            new RubyObjJson(JavaEmbedUtils.newRuntimeAdapter(),
+                JavaEmbedUtils.initialize(Collections.emptyList())
+            ).createJson(Paths.get(tmp.toString(), builderstr)),
             Matchers.allOf(
                 new JsonHas(
                     gemattr,
