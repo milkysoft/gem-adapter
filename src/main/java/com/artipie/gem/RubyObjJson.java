@@ -40,7 +40,7 @@ import org.jruby.runtime.builtin.Variable;
  *
  * @since 1.0
  */
-class RubyObjJson {
+final class RubyObjJson {
 
     /**
      * Ruby runtime.
@@ -82,18 +82,15 @@ class RubyObjJson {
     }
 
     /**
-     * Install new gem.
+     * Get Ruby specification for arbitrary gem.
      * @param gempath Full path to gem file or null
      * @return RubyObject specification
      */
     private RubyObject getSpecification(final Path gempath) {
-        this.runtime.eval(
-            this.ruby,
-            "require 'rubygems/package.rb'"
-        );
-        final String script = String.format("Gem::Package.new('%s').spec", gempath.toString());
         return (RubyObject) this.runtime.eval(
-            this.ruby, script
+            this.ruby, String.format(
+                "require 'rubygems/package.rb'\nGem::Package.new('%s').spec", gempath.toString()
+            )
         );
     }
 }

@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.SliceHasResponse;
@@ -59,7 +60,7 @@ public class GemInfoTest {
             IOUtils.copy(is, os);
         }
         MatcherAssert.assertThat(
-            new GemInfo(tmp),
+            new GemInfo(new FileStorage(tmp)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(

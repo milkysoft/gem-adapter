@@ -36,7 +36,6 @@ import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -50,7 +49,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.reactivestreams.Publisher;
 
@@ -82,14 +80,6 @@ public final class GemInfo implements Slice {
      */
     public GemInfo(final Storage storage) {
         this.storage = storage;
-    }
-
-    /**
-     * New gem info.
-     * @param dir Gems storage
-     */
-    public GemInfo(final Path dir) {
-        this(new FileStorage(dir));
     }
 
     @Override
@@ -130,7 +120,7 @@ public final class GemInfo implements Slice {
                                     Paths.get(GemInfo.getGemFile(tmpdir, gem))
                                 )
                             );
-                            FileUtils.deleteDirectory(new File(tmpdir.toString()));
+                            Files.delete(tmpdir);
                         } catch (final IOException exc) {
                             throw new ArtipieIOException(exc);
                         }
@@ -144,8 +134,8 @@ public final class GemInfo implements Slice {
     }
 
     /**
-     * Copy storage from src to dst.
-     * @param tmpdir Path to directory to serahc for gem
+     * Find gem in a given path.
+     * @param tmpdir Path to directory to search for gem
      * @param gem Gem name to get info
      * @return String full path to gem file
      */
