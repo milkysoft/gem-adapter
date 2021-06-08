@@ -36,6 +36,7 @@ import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -49,6 +50,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.reactivestreams.Publisher;
 
@@ -117,7 +119,7 @@ public final class GemInfo implements Slice {
                                     Paths.get(GemInfo.getGemFile(tmpdir, gem))
                                 )
                             );
-                            Files.delete(tmpdir);
+                            FileUtils.deleteDirectory(new File(tmpdir.toString()));
                         } catch (final IOException exc) {
                             throw new ArtipieIOException(exc);
                         }
