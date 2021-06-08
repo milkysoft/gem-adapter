@@ -47,6 +47,7 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  * A test for gem submit operation.
  *
  * @since 0.7
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public class GemInfoTest {
 

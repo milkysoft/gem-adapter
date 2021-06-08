@@ -56,9 +56,6 @@ import org.reactivestreams.Publisher;
  * Returns some basic information about the given gem. GET - /api/v1/gems/[GEM NAME].(json|yaml)
  * https://guides.rubygems.org/rubygems-org-api/
  *
- * @todo #32:120min Gem Information implementation.
- *  The implementation must be able to response with either json or yaml format. An example response
- *  can be obtained via {@code curl https://rubygems.org/api/v1/gems/rails.json}
  * @since 0.2
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
