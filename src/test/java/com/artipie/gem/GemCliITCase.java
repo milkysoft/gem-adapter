@@ -88,7 +88,7 @@ public class GemCliITCase {
                     ruby,
                     String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, gem, host)
                 ),
-                Matchers.equalTo(1)
+                Matchers.equalTo(0)
             );
             Files.delete(target);
             MatcherAssert.assertThat(
