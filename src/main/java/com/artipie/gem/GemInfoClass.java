@@ -23,10 +23,9 @@
  */
 package com.artipie.gem;
 
-import com.artipie.asto.ArtipieIOException;
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
@@ -34,24 +33,17 @@ import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.reactivestreams.Publisher;
 
 /**
@@ -101,19 +93,17 @@ public final class GemInfoClass implements Slice {
                 gem,
                 extension
             );
+            Key key = null;
+            try {
+                key = getGemFile(gem).toCompletableFuture().get();
+                System.out.println(String.format("Key extracted: %s", key.string()));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
             return new AsyncResponse(
-                CompletableFuture.supplyAsync(
-                    () -> {
-                        try {
-                            return Files.createTempDirectory("gem");
-                        } catch (final IOException exc) {
-                            throw new ArtipieIOException(exc);
-                        }
-                    }
-                ).thenCompose(
-                    tmpdir -> GemInfoClass.copyStorage(this.storage, new FileStorage(tmpdir), gem)
-                        .thenApply(ignore -> tmpdir)
-                ).thenCompose(none -> this.gem.getInfo(new Key.From(gem)))
+                this.gem.getInfo(key)
                     .thenApply(
                         RsJson::new
                 )
@@ -125,45 +115,32 @@ public final class GemInfoClass implements Slice {
 
     /**
      * Find gem in a given path.
-     * @param tmpdir Path to directory to search for gem
      * @param gem Gem name to get info
      * @return String full path to gem file
      */
-    private static String getGemFile(final Path tmpdir, final String gem) {
-        try {
-            final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
-                .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
-            if (filename.isPresent()) {
-                return filename.get();
-            } else {
-                throw new ArtipieIOException(String.format("Gem %s not found", gem));
-            }
-        } catch (final IOException exc) {
-            throw new ArtipieIOException(exc);
-        }
-    }
-
-    /**
-     * Copy storage from src to dst.
-     * @param src Source storage
-     * @param dst Destination storage
-     * @param gem Key for gem
-     * @return Async result
-     */
-    private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
-        final String gem) {
-        return Single.fromFuture(src.list(Key.ROOT))
+    private CompletionStage<Key> getGemFile(final String gem) {
+        final CompletableFuture<Key> future = new CompletableFuture<>();
+        Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> key.string().contains(gem)
-                ).collect(Collectors.toList()))
-            .flatMapObservable(Observable::fromIterable)
-            .flatMapSingle(
-                key -> Single.fromFuture(
-                    src.value(key)
-                        .thenCompose(content -> dst.save(key, content))
-                        .thenApply(none -> true)
-                )
-            ).ignoreElements().to(CompletableInterop.await());
+                    key -> {
+                        System.out.println(String.format("Key: %s, gem: %s", key.string(), gem));
+                        return key.string().contains(gem);
+                    }
+                ).limit(1).collect(Collectors.toList()))
+            .flatMapObservable(Observable::fromIterable).forEach(future::complete);
+        return future;
+//        try {
+//            final Optional<String> filename = Files.walk(tmpdir).map(Path::toString)
+//                .filter(file -> file.contains(gem) && file.contains(".gem")).findFirst();
+//            if (filename.isPresent()) {
+//                return filename.get();
+//            } else {
+//                throw new ArtipieIOException(String.format("Gem %s not found", gem));
+//            }
+//        } catch (final IOException exc) {
+//            throw new ArtipieIOException(exc);
+//        }
     }
 }
+
