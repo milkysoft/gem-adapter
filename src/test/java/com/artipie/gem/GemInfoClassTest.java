@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasBody;
@@ -49,7 +50,7 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  * @since 0.7
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-public class GemInfoTest {
+public class GemInfoClassTest {
 
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
@@ -60,8 +61,9 @@ public class GemInfoTest {
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
+        final Storage storage = new FileStorage(tmp);
         MatcherAssert.assertThat(
-            new GemInfo(new FileStorage(tmp)),
+            new GemInfoClass(storage, new Gem(storage)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(

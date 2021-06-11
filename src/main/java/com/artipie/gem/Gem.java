@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,7 +44,9 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.json.JsonObject;
 import org.apache.commons.io.FileUtils;
+import org.jruby.RubyObject;
 
 /**
  * An SDK, which servers gem packages.
@@ -57,12 +60,22 @@ public final class Gem {
     /**
      * Gem indexer shared instance cache.
      */
+    private final AtomicReference<GemInfo> infocache;
+
+    /**
+     * Gem indexer shared instance cache.
+     */
     private final AtomicReference<GemIndex> cache;
 
     /**
      * Gem repository storage.
      */
     private final Storage storage;
+
+    /**
+     * Gem info extractor  supplier.
+     */
+    private final Supplier<GemInfo> extractor;
 
     /**
      * Gem indexer supplier.
@@ -74,7 +87,7 @@ public final class Gem {
      * @param storage Repository storage.
      */
     Gem(final Storage storage) {
-        this(storage, () -> RubyGemIndex.createNew());
+        this(storage, () -> RubyGemIndex.createNew(), () -> RubyObjJson.createNew());
     }
 
     /**
@@ -82,11 +95,14 @@ public final class Gem {
      *
      * @param storage Repository storage.
      * @param indexer Gem indexer supplier
+     * @param extractor Gem info supplier
      */
-    Gem(final Storage storage, final Supplier<GemIndex> indexer) {
+    Gem(final Storage storage, final Supplier<GemIndex> indexer, final Supplier<GemInfo> extractor) {
         this.storage = storage;
         this.indexer = indexer;
         this.cache = new AtomicReference<>();
+        this.infocache = new AtomicReference<>();
+        this.extractor = extractor;
     }
 
     /**
@@ -115,6 +131,34 @@ public final class Gem {
             tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), this.storage, gem)
                 .thenApply(ignore -> tmpdir)
         ).handle(Gem::removeTempDir);
+    }
+
+    /**
+     * Get info Ruby gem.
+     *
+     * @param gem Ruby gem to extract info
+     * @return Completable action
+     */
+    public CompletionStage<JsonObject> getInfo(final Key gem) {
+        return CompletableFuture.supplyAsync(
+            () -> {
+                try {
+                    return Files.createTempDirectory("gem");
+                } catch (final IOException exc) {
+                    throw new UncheckedIOException(exc);
+                }
+            }
+        ).thenCompose(
+            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem)
+                .thenApply(ignore -> tmpdir)
+        ).thenCompose(
+            tmpdir -> this.sharedInfo()
+                .thenApply(idx -> {
+                    JsonObject obj = idx.getinfo(Paths.get(tmpdir.toString(), gem.string()));
+                    removeTempDir(tmpdir, null);
+                    return obj;
+                })
+        );
     }
 
     /**
@@ -181,6 +225,24 @@ public final class Gem {
                 value -> {
                     if (value == null) {
                         return new GemIndex.Synchronized(this.indexer.get());
+                    }
+                    return value;
+                }
+            )
+        );
+    }
+
+    /**
+     * Get shared ruby info instance.
+     * @return Async result with gem index
+     * @checkstyle ReturnCountCheck (15 lines)
+     */
+    private CompletionStage<GemInfo> sharedInfo() {
+        return CompletableFuture.supplyAsync(
+            () -> this.infocache.updateAndGet(
+                value -> {
+                    if (value == null) {
+                        return new GemInfo.Synchronized(this.extractor.get());
                     }
                     return value;
                 }

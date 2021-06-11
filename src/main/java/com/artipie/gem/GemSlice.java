@@ -97,9 +97,9 @@ public final class GemSlice extends Slice.Wrap {
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath(GemInfo.PATH_PATTERN)
+                        new RtRule.ByPath(GemInfoClass.PATH_PATTERN)
                     ),
-                    new GemInfo(storage)
+                    new GemInfoClass(storage, new Gem(storage))
                 ),
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.GET),

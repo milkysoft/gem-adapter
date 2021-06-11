@@ -24,6 +24,7 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -31,6 +32,7 @@ import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.Variable;
 
 /**
@@ -38,7 +40,7 @@ import org.jruby.runtime.builtin.Variable;
  *
  * @since 1.0
  */
-final class RubyObjJson {
+public final class RubyObjJson implements GemInfo {
 
     /**
      * Ruby runtime.
@@ -65,7 +67,7 @@ final class RubyObjJson {
      * @param gempath Full path to gem file or null
      * @return JsonObjectBuilder result
      */
-    public JsonObject createJson(final Path gempath) {
+    public JsonObject getinfo(final Path gempath) {
         final List<Variable<Object>> vars = this.getSpecification(gempath)
             .getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();
@@ -92,5 +94,18 @@ final class RubyObjJson {
                 "require 'rubygems/package.rb'\nGem::Package.new('%s').spec", gempath.toString()
             )
         );
+    }
+
+    /**
+     * Create new gem indexer.
+     * @return A new ruby gem indexer.
+     */
+    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
+    public static RubyObjJson createNew() {
+        final RubyObjJson result = new RubyObjJson(
+            JavaEmbedUtils.newRuntimeAdapter(),
+            JavaEmbedUtils.initialize(Collections.emptyList())
+        );
+        return result;
     }
 }

@@ -62,17 +62,11 @@ public final class RubyGemIndex implements GemIndex {
         this.runtime.eval(
             this.ruby,
             String.format(
-                "Gem::Indexer.new('%s', {build_modern:true}).generate_index",
+                "require 'rubygems/indexer.rb'\n"
+                .concat("Gem::Indexer.new('%s', {build_modern:true}).generate_index"),
                 path.toAbsolutePath().toString()
             )
         );
-    }
-
-    /**
-     * Initialize indexer.
-     */
-    public void initialize() {
-        this.runtime.eval(this.ruby, "require 'rubygems/indexer.rb'");
     }
 
     /**
@@ -85,7 +79,6 @@ public final class RubyGemIndex implements GemIndex {
             JavaEmbedUtils.newRuntimeAdapter(),
             JavaEmbedUtils.initialize(Collections.emptyList())
         );
-        result.initialize();
         return result;
     }
 }
