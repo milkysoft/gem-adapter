@@ -23,17 +23,17 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.Key;
+import com.artipie.asto.fs.FileStorage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import wtf.g4s8.hamcrest.json.JsonHas;
@@ -47,7 +47,8 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
 public class RubyObjJsonTest {
 
     @Test
-    public void createJsonByPath(@TempDir final Path tmp) throws IOException {
+    public void createJsonByPath(@TempDir final Path tmp) throws IOException,
+        ExecutionException, InterruptedException {
         final String builderstr = "gviz-0.3.5.gem";
         final String gemattr = "homepage";
         final String attrval = "https://github.com/melborne/Gviz";
@@ -56,17 +57,15 @@ public class RubyObjJsonTest {
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
-//        MatcherAssert.assertThat(
-//            new RubyObjJson(
-//                JavaEmbedUtils.newRuntimeAdapter(),
-//                JavaEmbedUtils.initialize(Collections.emptyList())
-//            ).createJson(Paths.get(tmp.toString(), builderstr)),
-//            Matchers.allOf(
-//                new JsonHas(
-//                    gemattr,
-//                    new JsonValueIs(attrval)
-//                )
-//            )
-//        );
+        MatcherAssert.assertThat(
+            new Gem(new FileStorage(tmp)).getInfo(new Key.From("gviz")).toCompletableFuture().get(),
+            Matchers.allOf(
+                new JsonHas(
+                    gemattr,
+                    new JsonValueIs(attrval)
+                )
+            )
+        );
     }
 }
+

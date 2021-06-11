@@ -31,7 +31,6 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,14 +38,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.json.JsonObject;
 import org.apache.commons.io.FileUtils;
-import org.jruby.RubyObject;
 
 /**
  * An SDK, which servers gem packages.
@@ -97,7 +95,8 @@ public final class Gem {
      * @param indexer Gem indexer supplier
      * @param extractor Gem info supplier
      */
-    Gem(final Storage storage, final Supplier<GemIndex> indexer, final Supplier<GemInfo> extractor) {
+    Gem(final Storage storage, final Supplier<GemIndex> indexer,
+        final Supplier<GemInfo> extractor) {
         this.storage = storage;
         this.indexer = indexer;
         this.cache = new AtomicReference<>();
@@ -117,7 +116,7 @@ public final class Gem {
                 try {
                     return Files.createTempDirectory("gem");
                 } catch (final IOException exc) {
-                    throw new UncheckedIOException(exc);
+                    throw new ArtipieIOException(exc);
                 }
             }
         ).thenCompose(
@@ -140,12 +139,19 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<JsonObject> getInfo(final Key gem) {
+        Key thekey = null;
+        try {
+            thekey = this.getGemFile(gem).toCompletableFuture().get();
+        } catch (final InterruptedException | ExecutionException exc) {
+            throw new ArtipieIOException(exc);
+        }
+        final Key finalkey = thekey;
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
-                    return Files.createTempDirectory("gem");
+                    return Files.createTempDirectory("info");
                 } catch (final IOException exc) {
-                    throw new UncheckedIOException(exc);
+                    throw new ArtipieIOException(exc);
                 }
             }
         ).thenCompose(
@@ -153,11 +159,15 @@ public final class Gem {
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
             tmpdir -> this.sharedInfo()
-                .thenApply(idx -> {
-                    JsonObject obj = idx.getinfo(Paths.get(tmpdir.toString(), gem.string()));
-                    removeTempDir(tmpdir, null);
-                    return obj;
-                })
+                .thenApply(
+                    rubyjson -> {
+                        final JsonObject obj = rubyjson.getinfo(
+                            Paths.get(tmpdir.toString(), finalkey.string())
+                        );
+                        removeTempDir(tmpdir, null);
+                        return obj;
+                    }
+                )
         );
     }
 
@@ -173,10 +183,10 @@ public final class Gem {
                 FileUtils.deleteDirectory(new File(tmpdir.toString()));
             }
         } catch (final IOException exc) {
-            throw new UncheckedIOException(exc);
+            throw new ArtipieIOException(exc);
         }
         if (err != null) {
-            throw new CompletionException(err);
+            throw new ArtipieIOException(err);
         }
         return null;
     }
@@ -202,7 +212,7 @@ public final class Gem {
         return Single.fromFuture(src.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> vars.contains(key.string())
+                    key -> vars.contains(key.string()) || key.string().contains(gem.string())
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
@@ -249,4 +259,23 @@ public final class Gem {
             )
         );
     }
+
+    /**
+     * Find gem in a given path.
+     * @param gem Gem name to get info
+     * @return String full path to gem file
+     */
+    private CompletionStage<Key> getGemFile(final Key gem) {
+        final CompletableFuture<Key> future = new CompletableFuture<>();
+        Single.fromFuture(this.storage.list(Key.ROOT))
+            .map(
+                list -> list.stream().filter(
+                    key -> {
+                        return key.string().contains(gem.string());
+                    }
+                ).limit(1).collect(Collectors.toList()))
+            .flatMapObservable(Observable::fromIterable).forEach(future::complete);
+        return future;
+    }
 }
+

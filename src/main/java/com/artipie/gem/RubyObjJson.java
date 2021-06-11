@@ -84,6 +84,18 @@ public final class RubyObjJson implements GemInfo {
     }
 
     /**
+     * Create new ruby info.
+     * @return A new ruby gem indexer.
+     */
+    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
+    public static RubyObjJson createNew() {
+        return new RubyObjJson(
+            JavaEmbedUtils.newRuntimeAdapter(),
+            JavaEmbedUtils.initialize(Collections.emptyList())
+        );
+    }
+
+    /**
      * Get Ruby specification for arbitrary gem.
      * @param gempath Full path to gem file or null
      * @return RubyObject specification
@@ -94,18 +106,5 @@ public final class RubyObjJson implements GemInfo {
                 "require 'rubygems/package.rb'\nGem::Package.new('%s').spec", gempath.toString()
             )
         );
-    }
-
-    /**
-     * Create new gem indexer.
-     * @return A new ruby gem indexer.
-     */
-    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
-    public static RubyObjJson createNew() {
-        final RubyObjJson result = new RubyObjJson(
-            JavaEmbedUtils.newRuntimeAdapter(),
-            JavaEmbedUtils.initialize(Collections.emptyList())
-        );
-        return result;
     }
 }

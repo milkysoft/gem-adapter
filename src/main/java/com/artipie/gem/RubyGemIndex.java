@@ -75,10 +75,9 @@ public final class RubyGemIndex implements GemIndex {
      */
     @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
     public static RubyGemIndex createNew() {
-        final RubyGemIndex result = new RubyGemIndex(
+        return new RubyGemIndex(
             JavaEmbedUtils.newRuntimeAdapter(),
             JavaEmbedUtils.initialize(Collections.emptyList())
         );
-        return result;
     }
 }
