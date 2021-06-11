@@ -140,13 +140,6 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<JsonObject> getInfo(final Key gem) {
-        Key thekey = null;
-        try {
-            thekey = this.getGemFile(gem).toCompletableFuture().get();
-        } catch (final InterruptedException | ExecutionException exc) {
-            throw new ArtipieIOException(exc);
-        }
-        final Key finalkey = thekey;
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -162,10 +155,16 @@ public final class Gem {
             tmpdir -> this.sharedInfo()
                 .thenApply(
                     rubyjson -> {
-                        final JsonObject obj = rubyjson.getinfo(
-                            Paths.get(tmpdir.toString(), finalkey.string())
-                        );
-                        removeTempDir(tmpdir, null);
+                        final JsonObject obj;
+                        try {
+                            final Key thekey = this.getGemFile(gem).toCompletableFuture().get();
+                            obj = rubyjson.getinfo(
+                                Paths.get(tmpdir.toString(), thekey.string())
+                            );
+                            removeTempDir(tmpdir, null);
+                        } catch (final InterruptedException | ExecutionException exc) {
+                            throw new ArtipieIOException(exc);
+                        }
                         return obj;
                     }
                 )
