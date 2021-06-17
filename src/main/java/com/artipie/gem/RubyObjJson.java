@@ -93,19 +93,20 @@ public final class RubyObjJson implements GemInfo {
             .getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();
         for (final Variable<Object> var : vars) {
-            String name = var.getName();
+            final String name = var.getName();
             if (name.equals("@dependencies")) {
-                name = var.getName().substring(1);
-                String val = var.getValue().toString();
-                String[] dependencies = val.substring(1, val.length() - 1).split(",");
-                for( String dependency : dependencies) {
-                    int index1 = dependency.indexOf("name=\"") + 6;
-                    int index2 = dependency.indexOf("\" ", index1);
-                    String dependencyName = dependency.substring(index1, index2);
-                    index1 = dependency.indexOf("requirements=\"", index2) + 14;
-                    index2 = dependency.indexOf("\">", index1);
-                    String dependencyVer = dependency.substring(index1, index2);
-                    obj.add(dependencyName, dependencyVer);
+                final String val = var.getValue().toString();
+                final String[] dependencies = val.substring(1, val.length() - 1).split(",");
+                for (final String dependency : dependencies) {
+                    String srch = "name=\"";
+                    int indexs = dependency.indexOf(srch) + srch.length();
+                    int indexe = dependency.indexOf("\" ", indexs);
+                    final String thename = dependency.substring(indexs, indexe);
+                    srch = "requirements=\"";
+                    indexs = dependency.indexOf(srch, indexe) + srch.length();
+                    indexe = dependency.indexOf("\">", indexs);
+                    final String thever = dependency.substring(indexs, indexe);
+                    obj.add(thename, thever);
                 }
             }
         }

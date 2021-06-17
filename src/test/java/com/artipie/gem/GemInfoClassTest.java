@@ -51,13 +51,17 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public class GemInfoClassTest {
+    /**
+     * Path to upload gem file.
+     */
+    static final String BUILDER_STR = "gviz-0.3.5.gem";
 
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final String builderstr = "gviz-0.3.5.gem";
-        final Path target = repo.resolve(builderstr);
-        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
+        final Path target = repo.resolve(GemInfoClassTest.BUILDER_STR);
+        try (InputStream is = this.getClass()
+            .getResourceAsStream("/".concat(GemInfoClassTest.BUILDER_STR));
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
@@ -82,14 +86,13 @@ public class GemInfoClassTest {
         );
     }
 
-
     @Test
     public void queryResultsInOk(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final String builderstr = "gviz-0.3.5.gem";
-        final Path target = repo.resolve(builderstr);
-        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
-             OutputStream os = Files.newOutputStream(target)) {
+        final Path target = repo.resolve(GemInfoClassTest.BUILDER_STR);
+        try (InputStream is = this.getClass()
+            .getResourceAsStream("/".concat(GemInfoClassTest.BUILDER_STR));
+            OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         final Storage storage = new FileStorage(tmp);

@@ -181,7 +181,7 @@ public final class Gem {
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
-                    return Files.createTempDirectory("info");
+                    return Files.createTempDirectory("dependency");
                 } catch (final IOException exc) {
                     throw new ArtipieIOException(exc);
                 }
