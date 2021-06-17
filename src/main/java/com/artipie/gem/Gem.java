@@ -172,6 +172,44 @@ public final class Gem {
     }
 
     /**
+     * Get info Ruby gem.
+     *
+     * @param gem Ruby gem to extract info
+     * @return Completable action
+     */
+    public CompletionStage<JsonObject> getDependencies(final Key gem) {
+        return CompletableFuture.supplyAsync(
+            () -> {
+                try {
+                    return Files.createTempDirectory("info");
+                } catch (final IOException exc) {
+                    throw new ArtipieIOException(exc);
+                }
+            }
+        ).thenCompose(
+            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem)
+                .thenApply(ignore -> tmpdir)
+        ).thenCompose(
+            tmpdir -> this.sharedInfo()
+                .thenApply(
+                    rubyjson -> {
+                        final JsonObject obj;
+                        try {
+                            final Key thekey = this.getGemFile(gem).toCompletableFuture().get();
+                            obj = rubyjson.getDependencies(
+                                Paths.get(tmpdir.toString(), thekey.string())
+                            );
+                            removeTempDir(tmpdir, null);
+                        } catch (final InterruptedException | ExecutionException exc) {
+                            throw new ArtipieIOException(exc);
+                        }
+                        return obj;
+                    }
+                )
+        );
+    }
+
+    /**
      * Handle async result.
      * @param tmpdir Path directory to remove
      * @param err Error

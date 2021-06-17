@@ -29,10 +29,14 @@ import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsWithBody;
+import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
@@ -90,6 +94,18 @@ public final class GemInfoClass implements Slice {
                     .thenApply(
                         RsJson::new
                 )
+            );
+        } else if (line.contains("/api/v1/dependencies")) {
+            int index1 = line.indexOf("/api/v1/dependencies") + 21;
+            int index2 = line.indexOf("HTTP/1.1") - 1;
+            String[] gemnames = line.substring(index1, index2).split(",");
+
+            System.out.println(String.format("Gems: %s", gemnames));
+            return new AsyncResponse(
+                this.gem.getDependencies(new Key.From(gemnames[0]))
+                    .thenApply(
+                        RsJson::new
+                    )
             );
         } else {
             throw new IllegalStateException("Not expected path has been matched");

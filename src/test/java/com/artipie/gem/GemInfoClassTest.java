@@ -81,5 +81,36 @@ public class GemInfoClassTest {
             )
         );
     }
+
+
+    @Test
+    public void queryResultsInOk(@TempDir final Path tmp) throws IOException {
+        final Path repo = Paths.get(tmp.toString());
+        final String builderstr = "gviz-0.3.5.gem";
+        final Path target = repo.resolve(builderstr);
+        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
+             OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        final Storage storage = new FileStorage(tmp);
+        MatcherAssert.assertThat(
+            new GemInfoClass(storage, new Gem(storage)),
+            new SliceHasResponse(
+                Matchers.allOf(
+                    new RsHasBody(
+                        new IsJson(
+                            new JsonHas(
+                                "homepage",
+                                new JsonValueIs("https://github.com/melborne/Gviz")
+                            )
+                        )
+                    )
+                ),
+                new RequestLine(RqMethod.GET, "/api/v1/dependencies?gems=gviz,thor"),
+                Headers.EMPTY,
+                com.artipie.asto.Content.EMPTY
+            )
+        );
+    }
 }
 

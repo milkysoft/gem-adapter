@@ -84,6 +84,35 @@ public final class RubyObjJson implements GemInfo {
     }
 
     /**
+     * Create JSON info for gem.
+     * @param gempath Full path to gem file or null
+     * @return JsonObjectBuilder result
+     */
+    public JsonObject getDependencies(final Path gempath) {
+        final List<Variable<Object>> vars = this.getSpecification(gempath)
+            .getVariableList();
+        final JsonObjectBuilder obj = Json.createObjectBuilder();
+        for (final Variable<Object> var : vars) {
+            String name = var.getName();
+            if (name.equals("@dependencies")) {
+                name = var.getName().substring(1);
+                String val = var.getValue().toString();
+                String[] dependencies = val.substring(1, val.length() - 1).split(",");
+                for( String dependency : dependencies) {
+                    int index1 = dependency.indexOf("name=\"") + 6;
+                    int index2 = dependency.indexOf("\" ", index1);
+                    String dependencyName = dependency.substring(index1, index2);
+                    index1 = dependency.indexOf("requirements=\"", index2) + 14;
+                    index2 = dependency.indexOf("\">", index1);
+                    String dependencyVer = dependency.substring(index1, index2);
+                    obj.add(dependencyName, dependencyVer);
+                }
+            }
+        }
+        return obj.build();
+    }
+
+    /**
      * Create new ruby info.
      * @return A new ruby gem indexer.
      */

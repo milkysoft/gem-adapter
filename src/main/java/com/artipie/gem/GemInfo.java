@@ -42,6 +42,13 @@ public interface GemInfo {
     JsonObject getinfo(Path gempath);
 
     /**
+     * Get Ruby specification for arbitrary gem.
+     * @param gempath Full path to gem file or null
+     * @return RubyObject specification
+     */
+    JsonObject getDependencies(Path gempath);
+
+    /**
      * Synchronized decorator.
      * @since 1.0
      */
@@ -64,6 +71,13 @@ public interface GemInfo {
         public JsonObject getinfo(final Path path) {
             synchronized (this.origin) {
                 return this.origin.getinfo(path);
+            }
+        }
+
+        @Override
+        public JsonObject getDependencies(final Path path) {
+            synchronized (this.origin) {
+                return this.origin.getDependencies(path);
             }
         }
     }
