@@ -100,8 +100,8 @@ public class GemInfoClassTest {
                     new RsHasBody(
                         new IsJson(
                             new JsonHas(
-                                "homepage",
-                                new JsonValueIs("https://github.com/melborne/Gviz")
+                                "rspec",
+                                new JsonValueIs("~> 2.1")
                             )
                         )
                     )

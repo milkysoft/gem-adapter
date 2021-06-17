@@ -96,11 +96,9 @@ public final class GemInfoClass implements Slice {
                 )
             );
         } else if (line.contains("/api/v1/dependencies")) {
-            int index1 = line.indexOf("/api/v1/dependencies") + 21;
+            int index1 = line.indexOf("/api/v1/dependencies") + 26;
             int index2 = line.indexOf("HTTP/1.1") - 1;
             String[] gemnames = line.substring(index1, index2).split(",");
-
-            System.out.println(String.format("Gems: %s", gemnames));
             return new AsyncResponse(
                 this.gem.getDependencies(new Key.From(gemnames[0]))
                     .thenApply(
