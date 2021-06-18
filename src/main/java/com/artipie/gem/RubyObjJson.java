@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -93,8 +94,8 @@ public final class RubyObjJson implements GemInfo {
         final List<Variable<Object>> vars = this.getSpecification(gempath)
             .getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();
-        obj.add("name", gempath.toString());
-        JsonArrayBuilder builder = Json.createArrayBuilder();
+        obj.add("name", RubyObjJson.gemPathToName(gempath));
+        final JsonArrayBuilder builder = Json.createArrayBuilder();
         for (final Variable<Object> var : vars) {
             final String name = var.getName();
             if (name.equals("@dependencies")) {
@@ -102,15 +103,16 @@ public final class RubyObjJson implements GemInfo {
                 final String[] dependencies = val.substring(1, val.length() - 1).split(",");
                 for (final String dependency : dependencies) {
                     String srch = "name=\"";
-                    int indexs = dependency.indexOf(srch) + srch.length();
-                    int indexe = dependency.indexOf("\" ", indexs);
-                    final String thename = dependency.substring(indexs, indexe);
+                    final int indexs = dependency.indexOf(srch) + srch.length();
+                    final int indexe = dependency.indexOf("\" ", indexs);
                     srch = "requirements=\"";
-                    indexs = dependency.indexOf(srch, indexe) + srch.length();
-                    indexe = dependency.indexOf("\">", indexs);
-                    final String thever = dependency.substring(indexs, indexe);
+                    final int indexa = dependency.indexOf(srch, indexe) + srch.length();
+                    final int indexb = dependency.indexOf("\">", indexa);
                     final JsonObjectBuilder module = Json.createObjectBuilder();
-                    module.add(thename, thever);
+                    module.add(
+                        dependency.substring(indexs, indexe),
+                        dependency.substring(indexa, indexb)
+                    );
                     builder.add(module);
                 }
             }
@@ -142,5 +144,17 @@ public final class RubyObjJson implements GemInfo {
                 "require 'rubygems/package.rb'\nGem::Package.new('%s').spec", gempath.toString()
             )
         );
+    }
+
+    /**
+     * Get Ruby gem from Path.
+     * @param gempath Full path to gem file or null
+     * @return Gem name with version
+     */
+    private static String gemPathToName(final Path gempath) {
+        final String gemname = gempath.toString();
+        final int indexs = gemname.lastIndexOf(File.separator);
+        final int indexe = gemname.lastIndexOf('.');
+        return gemname.substring(indexs + 1, indexe);
     }
 }
