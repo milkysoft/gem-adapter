@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
@@ -92,6 +93,8 @@ public final class RubyObjJson implements GemInfo {
         final List<Variable<Object>> vars = this.getSpecification(gempath)
             .getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();
+        obj.add("name", gempath.toString());
+        JsonArrayBuilder builder = Json.createArrayBuilder();
         for (final Variable<Object> var : vars) {
             final String name = var.getName();
             if (name.equals("@dependencies")) {
@@ -106,10 +109,13 @@ public final class RubyObjJson implements GemInfo {
                     indexs = dependency.indexOf(srch, indexe) + srch.length();
                     indexe = dependency.indexOf("\">", indexs);
                     final String thever = dependency.substring(indexs, indexe);
-                    obj.add(thename, thever);
+                    final JsonObjectBuilder module = Json.createObjectBuilder();
+                    module.add(thename, thever);
+                    builder.add(module);
                 }
             }
         }
+        obj.add("dependencies", builder);
         return obj.build();
     }
 
