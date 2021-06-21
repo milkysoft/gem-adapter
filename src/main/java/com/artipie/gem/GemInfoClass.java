@@ -23,6 +23,7 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.http.Response;
@@ -33,8 +34,13 @@ import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
 import org.reactivestreams.Publisher;
 
 /**
@@ -97,12 +103,19 @@ public final class GemInfoClass implements Slice {
         } else if (line.contains(deproute)) {
             final int indexs = line.indexOf(deproute) + offset;
             final int indexe = line.indexOf("HTTP/1.1") - 1;
-            final String[] gemnames = line.substring(indexs, indexe).split(",");
+            final JsonArrayBuilder builder = Json.createArrayBuilder();
+            for (final String gemname : line.substring(indexs, indexe).split(",")) {
+                final JsonObject obj;
+                try {
+                    obj = this.gem.getDependencies(new Key.From(gemname))
+                        .toCompletableFuture().get();
+                } catch (final InterruptedException | ExecutionException exc) {
+                    throw new ArtipieIOException(exc);
+                }
+                builder.add(obj);
+            }
             res = new AsyncResponse(
-                this.gem.getDependencies(new Key.From(gemnames[0]))
-                    .thenApply(
-                        RsJson::new
-                    )
+                CompletableFuture.completedFuture(new RsJson(builder.build()))
             );
         } else {
             throw new IllegalStateException("Not expected path has been matched");
