@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +47,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.json.JsonObject;
 import org.apache.commons.io.FileUtils;
+import org.jruby.Ruby;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * An SDK, which servers gem packages.
@@ -55,6 +59,16 @@ import org.apache.commons.io.FileUtils;
  * @since 1.0
  */
 public final class Gem {
+
+    /**
+     * Ruby runtime.
+     */
+    private final RubyRuntimeAdapter runtime;
+
+    /**
+     * Ruby interpreter.
+     */
+    private final Ruby ruby;
 
     /**
      * Gem indexer shared instance cache.
@@ -86,23 +100,13 @@ public final class Gem {
      * @param storage Repository storage.
      */
     Gem(final Storage storage) {
-        this(storage, () -> RubyGemIndex.createNew(), () -> RubyObjJson.createNew());
-    }
-
-    /**
-     * New Gem SDK.
-     *
-     * @param storage Repository storage.
-     * @param indexer Gem indexer supplier
-     * @param extractor Gem info supplier
-     */
-    Gem(final Storage storage, final Supplier<GemIndex> indexer,
-        final Supplier<GemInfo> extractor) {
+        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
+        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
         this.storage = storage;
-        this.indexer = indexer;
+        this.indexer = () -> new RubyGemIndex(runtime, ruby);
         this.cache = new AtomicReference<>();
         this.infocache = new AtomicReference<>();
-        this.extractor = extractor;
+        this.extractor = () -> new RubyObjJson(runtime, ruby);
     }
 
     /**
@@ -177,7 +181,7 @@ public final class Gem {
      * @param gem Ruby gem to extract info
      * @return Completable action
      */
-    public CompletionStage<JsonObject> getDependencies(final Key gem) {
+    public CompletionStage<String> getDependencies(final Key gem) {
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -193,7 +197,7 @@ public final class Gem {
             tmpdir -> this.sharedInfo()
                 .thenApply(
                     rubyjson -> {
-                        final JsonObject obj;
+                        final String obj;
                         try {
                             final Key thekey = this.getGemFile(gem).toCompletableFuture().get();
                             obj = rubyjson.getDependencies(

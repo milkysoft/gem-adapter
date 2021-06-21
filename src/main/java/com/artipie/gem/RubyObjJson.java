@@ -24,7 +24,11 @@
 package com.artipie.gem;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import javax.json.Json;
@@ -86,51 +90,58 @@ public final class RubyObjJson implements GemInfo {
     }
 
     /**
-     * Create JSON info for gem.
+     * Create marshaled binary info for gem.
      * @param gempath Full path to gem file or null
-     * @return JsonObjectBuilder result
+     * @return String result
      */
-    public JsonObject getDependencies(final Path gempath) {
+    public String getDependencies(final Path gempath) {
         final List<Variable<Object>> vars = this.getSpecification(gempath)
             .getVariableList();
-        final JsonObjectBuilder obj = Json.createObjectBuilder();
-        obj.add("name", RubyObjJson.gemPathToName(gempath));
-        final JsonArrayBuilder builder = Json.createArrayBuilder();
+        String res = new StringBuilder().append((char) 4)
+            .append((char) 8).append('I').append('\"').append("a[{").toString();
         for (final Variable<Object> var : vars) {
             final String name = var.getName();
             if (name.equals("@dependencies")) {
+                res = res.concat(":name=>\"").concat(RubyObjJson.getGemName(vars))
+                    .concat("\", :number=>\"").concat(RubyObjJson.getGemVersion(vars))
+                    .concat("\"");
+                res = res.concat(", :platform=>\"ruby\", :dependencies=>[");
                 final String val = var.getValue().toString();
                 final String[] dependencies = val.substring(1, val.length() - 1).split(",");
                 for (final String dependency : dependencies) {
-                    String srch = "name=\"";
-                    final int indexs = dependency.indexOf(srch) + srch.length();
-                    final int indexe = dependency.indexOf("\" ", indexs);
+                    String srch = "type=";
+                    int indexs = dependency.indexOf(srch) + srch.length();
+                    srch = " name=\"";
+                    int indexe = dependency.indexOf(srch, indexs);
+                    if (":development".equals(dependency.substring(indexs, indexe))) {
+                        continue;
+                    }
+                    srch = " name=\"";
+                    indexs = dependency.indexOf(srch) + srch.length();
+                    indexe = dependency.indexOf("\" ", indexs);
+                    String depname = dependency.substring(indexs, indexe);
                     srch = "requirements=\"";
-                    final int indexa = dependency.indexOf(srch, indexe) + srch.length();
-                    final int indexb = dependency.indexOf("\">", indexa);
-                    final JsonObjectBuilder module = Json.createObjectBuilder();
-                    module.add(
-                        dependency.substring(indexs, indexe),
-                        dependency.substring(indexa, indexb)
-                    );
-                    builder.add(module);
+                    indexs = dependency.indexOf(srch, indexe) + srch.length();
+                    indexe = dependency.indexOf("\">", indexs);
+                    final String depver = dependency.substring(indexs, indexe);
+                    res = res.concat("[\"".concat(depname).concat("\", \"").concat(depver)
+                        .concat("\"]"));
                 }
+                res = res.concat("]}]");
+                res = res.concat(new StringBuilder().append((char) 6).append(':').append((char) 6)
+                    .append("ET").toString());
             }
-        }
-        obj.add("dependencies", builder);
-        return obj.build();
-    }
 
-    /**
-     * Create new ruby info.
-     * @return A new ruby gem indexer.
-     */
-    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
-    public static RubyObjJson createNew() {
-        return new RubyObjJson(
-            JavaEmbedUtils.newRuntimeAdapter(),
-            JavaEmbedUtils.initialize(Collections.emptyList())
-        );
+        }
+        Path path = Paths.get("D:\\Data\\Artipie\\kkk.data");
+        byte[] b = res.getBytes(StandardCharsets.US_ASCII);
+
+        try {
+            Files.write(path, b);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return res;
     }
 
     /**
@@ -148,13 +159,35 @@ public final class RubyObjJson implements GemInfo {
 
     /**
      * Get Ruby gem from Path.
-     * @param gempath Full path to gem file or null
+     * @param vars List of Variables
      * @return Gem name with version
      */
-    private static String gemPathToName(final Path gempath) {
-        final String gemname = gempath.toString();
-        final int indexs = gemname.lastIndexOf(File.separator);
-        final int indexe = gemname.lastIndexOf('.');
-        return gemname.substring(indexs + 1, indexe);
+    private static String getGemVersion(final List<Variable<Object>> vars) {
+        String res = "";
+        for (final Variable<Object> var : vars) {
+            final String name = var.getName();
+            if (name.equals("@version")) {
+                res = var.getValue().toString();
+                break;
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Get Ruby gem from Path.
+     * @param vars List of Variables
+     * @return Gem name with version
+     */
+    private static String getGemName(final List<Variable<Object>> vars) {
+        String res = "";
+        for (final Variable<Object> var : vars) {
+            final String name = var.getName();
+            if (name.equals("@name")) {
+                res = var.getValue().toString();
+                break;
+            }
+        }
+        return res;
     }
 }

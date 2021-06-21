@@ -68,16 +68,4 @@ public final class RubyGemIndex implements GemIndex {
             )
         );
     }
-
-    /**
-     * Create new gem indexer.
-     * @return A new ruby gem indexer.
-     */
-    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
-    public static RubyGemIndex createNew() {
-        return new RubyGemIndex(
-            JavaEmbedUtils.newRuntimeAdapter(),
-            JavaEmbedUtils.initialize(Collections.emptyList())
-        );
-    }
 }
