@@ -120,6 +120,11 @@ public final class RubyObjJson implements GemInfo {
         return res;
     }
 
+    /**
+     * Get Ruby specification for arbitrary gem.
+     * @param dependency Ruby specification dependency string
+     * @return Two strings for dependency name and version
+     */
     private static String[] parseDependency(final String dependency) {
         final String[] res = new String[2];
         res[0] = "";
