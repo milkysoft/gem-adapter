@@ -97,17 +97,17 @@ public class GemInfoClassTest {
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
-        InputStream data = this.getClass().getResourceAsStream("/test/dependencies.data");
-        StringWriter writer = new StringWriter();
+        final InputStream data = this.getClass().getResourceAsStream("/test/dependencies.data");
+        final StringWriter writer = new StringWriter();
         IOUtils.copy(data, writer, StandardCharsets.UTF_8);
-        String theString = writer.toString();
+        final String thestring = writer.toString();
         final Storage storage = new FileStorage(tmp);
         MatcherAssert.assertThat(
             new GemInfoClass(storage, new Gem(storage)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
-                        theString,
+                        thestring,
                         StandardCharsets.UTF_8
                     )
                 ),

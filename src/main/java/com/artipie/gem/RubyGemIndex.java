@@ -25,10 +25,8 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * Ruby runtime gem index implementation.

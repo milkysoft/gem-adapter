@@ -57,6 +57,7 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * Performes gem index update using specified indexer implementation.
  * </p>
  * @since 1.0
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class Gem {
 
@@ -103,10 +104,10 @@ public final class Gem {
         this.runtime = JavaEmbedUtils.newRuntimeAdapter();
         this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
         this.storage = storage;
-        this.indexer = () -> new RubyGemIndex(runtime, ruby);
+        this.indexer = () -> new RubyGemIndex(this.runtime, this.ruby);
         this.cache = new AtomicReference<>();
         this.infocache = new AtomicReference<>();
-        this.extractor = () -> new RubyObjJson(runtime, ruby);
+        this.extractor = () -> new RubyObjJson(this.runtime, this.ruby);
     }
 
     /**

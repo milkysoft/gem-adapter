@@ -23,22 +23,14 @@
  */
 package com.artipie.gem;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import javax.json.Json;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.Variable;
 
 /**
@@ -97,8 +89,11 @@ public final class RubyObjJson implements GemInfo {
     public String getDependencies(final Path gempath) {
         final List<Variable<Object>> vars = this.getSpecification(gempath)
             .getVariableList();
-        String res = new StringBuilder().append((char) 4)
-            .append((char) 8).append('I').append('\"').append("a[{").toString();
+        final char chara = 4;
+        final char charb = 8;
+        final char charc = 6;
+        String res = new StringBuilder().append(chara)
+            .append(charb).append('I').append('\"').append("a[{").toString();
         for (final Variable<Object> var : vars) {
             final String name = var.getName();
             if (name.equals("@dependencies")) {
@@ -109,29 +104,41 @@ public final class RubyObjJson implements GemInfo {
                 final String val = var.getValue().toString();
                 final String[] dependencies = val.substring(1, val.length() - 1).split(",");
                 for (final String dependency : dependencies) {
-                    String srch = "type=";
-                    int indexs = dependency.indexOf(srch) + srch.length();
-                    srch = " name=\"";
-                    int indexe = dependency.indexOf(srch, indexs);
-                    if (":development".equals(dependency.substring(indexs, indexe))) {
-                        continue;
+                    final String[] result = RubyObjJson.parseDependency(dependency);
+                    if (result[0].length() > 0) {
+                        res = res.concat("[\"".concat(result[0]).concat("\", \"").concat(result[1])
+                            .concat("\"]")
+                        );
                     }
-                    srch = " name=\"";
-                    indexs = dependency.indexOf(srch) + srch.length();
-                    indexe = dependency.indexOf("\" ", indexs);
-                    String depname = dependency.substring(indexs, indexe);
-                    srch = "requirements=\"";
-                    indexs = dependency.indexOf(srch, indexe) + srch.length();
-                    indexe = dependency.indexOf("\">", indexs);
-                    final String depver = dependency.substring(indexs, indexe);
-                    res = res.concat("[\"".concat(depname).concat("\", \"").concat(depver)
-                        .concat("\"]"));
                 }
                 res = res.concat("]}]");
-                res = res.concat(new StringBuilder().append((char) 6).append(':').append((char) 6)
-                    .append("ET").toString());
+                res = res.concat(new StringBuilder().append(charc).append(':').append(charc)
+                    .append("ET").toString()
+                );
             }
+        }
+        return res;
+    }
 
+    private static String[] parseDependency(final String dependency) {
+        final String[] res = new String[2];
+        res[0] = "";
+        res[1] = "";
+        String srch = "type=";
+        int indexs = dependency.indexOf(srch) + srch.length();
+        srch = " name=\"";
+        int indexe = dependency.indexOf(srch, indexs);
+        if (!":development".equals(dependency.substring(indexs, indexe))) {
+            srch = "name=\"";
+            indexs = dependency.indexOf(srch) + srch.length();
+            indexe = dependency.indexOf("\" ", indexs);
+            final String depname = dependency.substring(indexs, indexe);
+            srch = "requirements=\"";
+            indexs = dependency.indexOf(srch, indexe) + srch.length();
+            indexe = dependency.indexOf("\">", indexs);
+            final String depver = dependency.substring(indexs, indexe);
+            res[0] = depname;
+            res[1] = depver;
         }
         return res;
     }
