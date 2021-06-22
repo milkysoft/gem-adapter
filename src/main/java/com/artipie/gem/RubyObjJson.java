@@ -133,14 +133,6 @@ public final class RubyObjJson implements GemInfo {
             }
 
         }
-        Path path = Paths.get("D:\\Data\\Artipie\\kkk.data");
-        byte[] b = res.getBytes(StandardCharsets.US_ASCII);
-
-        try {
-            Files.write(path, b);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         return res;
     }
 

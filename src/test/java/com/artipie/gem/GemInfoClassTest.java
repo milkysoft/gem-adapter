@@ -33,6 +33,7 @@ import com.artipie.http.rq.RqMethod;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,15 +97,17 @@ public class GemInfoClassTest {
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
+        InputStream data = this.getClass().getResourceAsStream("/test/dependencies.data");
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(data, writer, StandardCharsets.UTF_8);
+        String theString = writer.toString();
         final Storage storage = new FileStorage(tmp);
         MatcherAssert.assertThat(
             new GemInfoClass(storage, new Gem(storage)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
-                        "[{\"name\":\"gviz-0.3.5\",\"dependencies\":[{\"rspec\":\"~> 2.1\"}"
-                        .concat(",{\"bundler\":\"~> 1.5\"},{\"rake\":\">= 0\"},")
-                        .concat("{\"thor\":\">= 0\"}]}]"),
+                        theString,
                         StandardCharsets.UTF_8
                     )
                 ),

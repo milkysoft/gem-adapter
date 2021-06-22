@@ -30,9 +30,11 @@ import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -103,19 +105,17 @@ public final class GemInfoClass implements Slice {
         } else if (line.contains(deproute)) {
             final int indexs = line.indexOf(deproute) + offset;
             final int indexe = line.indexOf("HTTP/1.1") - 1;
-            final JsonArrayBuilder builder = Json.createArrayBuilder();
+            String obj = "";
             for (final String gemname : line.substring(indexs, indexe).split(",")) {
-                final JsonObject obj;
                 try {
                     obj = this.gem.getDependencies(new Key.From(gemname))
                         .toCompletableFuture().get();
                 } catch (final InterruptedException | ExecutionException exc) {
                     throw new ArtipieIOException(exc);
                 }
-                builder.add(obj);
             }
             res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsJson(builder.build()))
+                CompletableFuture.completedFuture(new RsWithBody(obj, StandardCharsets.UTF_8))
             );
         } else {
             throw new IllegalStateException("Not expected path has been matched");
