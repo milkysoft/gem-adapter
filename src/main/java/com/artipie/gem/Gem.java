@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +47,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.json.JsonObject;
 import org.apache.commons.io.FileUtils;
+import org.jruby.Ruby;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * An SDK, which servers gem packages.
@@ -53,8 +57,19 @@ import org.apache.commons.io.FileUtils;
  * Performes gem index update using specified indexer implementation.
  * </p>
  * @since 1.0
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class Gem {
+
+    /**
+     * Ruby runtime.
+     */
+    private final RubyRuntimeAdapter runtime;
+
+    /**
+     * Ruby interpreter.
+     */
+    private final Ruby ruby;
 
     /**
      * Gem indexer shared instance cache.
@@ -86,23 +101,13 @@ public final class Gem {
      * @param storage Repository storage.
      */
     Gem(final Storage storage) {
-        this(storage, () -> RubyGemIndex.createNew(), () -> RubyObjJson.createNew());
-    }
-
-    /**
-     * New Gem SDK.
-     *
-     * @param storage Repository storage.
-     * @param indexer Gem indexer supplier
-     * @param extractor Gem info supplier
-     */
-    Gem(final Storage storage, final Supplier<GemIndex> indexer,
-        final Supplier<GemInfo> extractor) {
+        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
+        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
         this.storage = storage;
-        this.indexer = indexer;
+        this.indexer = () -> new RubyGemIndex(this.runtime, this.ruby);
         this.cache = new AtomicReference<>();
         this.infocache = new AtomicReference<>();
-        this.extractor = extractor;
+        this.extractor = () -> new RubyObjJson(this.runtime, this.ruby);
     }
 
     /**
@@ -278,4 +283,3 @@ public final class Gem {
         return future;
     }
 }
-

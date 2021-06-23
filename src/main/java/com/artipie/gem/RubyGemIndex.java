@@ -25,10 +25,8 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * Ruby runtime gem index implementation.
@@ -64,20 +62,8 @@ public final class RubyGemIndex implements GemIndex {
             String.format(
                 "require 'rubygems/indexer.rb'\n"
                 .concat("Gem::Indexer.new('%s', {build_modern:true}).generate_index"),
-                path.toAbsolutePath().toString()
+                path.toAbsolutePath()
             )
-        );
-    }
-
-    /**
-     * Create new gem indexer.
-     * @return A new ruby gem indexer.
-     */
-    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
-    public static RubyGemIndex createNew() {
-        return new RubyGemIndex(
-            JavaEmbedUtils.newRuntimeAdapter(),
-            JavaEmbedUtils.initialize(Collections.emptyList())
         );
     }
 }

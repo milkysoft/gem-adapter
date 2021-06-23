@@ -24,7 +24,6 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -32,7 +31,6 @@ import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.Variable;
 
 /**
@@ -81,18 +79,6 @@ public final class RubyObjJson implements GemInfo {
             }
         }
         return obj.build();
-    }
-
-    /**
-     * Create new ruby info.
-     * @return A new ruby gem indexer.
-     */
-    @SuppressWarnings("PMD.ProhibitPublicStaticMethods")
-    public static RubyObjJson createNew() {
-        return new RubyObjJson(
-            JavaEmbedUtils.newRuntimeAdapter(),
-            JavaEmbedUtils.initialize(Collections.emptyList())
-        );
     }
 
     /**
