@@ -51,6 +51,11 @@ public final class RubyObjJson implements GemInfo {
     private final Ruby ruby;
 
     /**
+     * Ruby initialization flag.
+     */
+    private boolean issetup;
+
+    /**
      * New Ruby object JSON converter.
      * @param runtime Is Ruby runtime
      * @param ruby Is Ruby system
@@ -58,6 +63,7 @@ public final class RubyObjJson implements GemInfo {
     RubyObjJson(final RubyRuntimeAdapter runtime, final Ruby ruby) {
         this.runtime = runtime;
         this.ruby = ruby;
+        this.issetup = false;
     }
 
     /**
@@ -87,9 +93,13 @@ public final class RubyObjJson implements GemInfo {
      * @return RubyObject specification
      */
     private RubyObject getSpecification(final Path gempath) {
+        if (!this.issetup) {
+            this.issetup = true;
+            this.runtime.eval(this.ruby, "require 'rubygems/package.rb'");
+        }
         return (RubyObject) this.runtime.eval(
             this.ruby, String.format(
-                "require 'rubygems/package.rb'\nGem::Package.new('%s').spec", gempath.toString()
+                "Gem::Package.new('%s').spec", gempath.toString()
             )
         );
     }
