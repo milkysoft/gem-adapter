@@ -50,7 +50,7 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  * @since 0.7
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-public class GemInfoClassTest {
+public class GetGemInfoTest {
 
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
@@ -63,7 +63,7 @@ public class GemInfoClassTest {
         }
         final Storage storage = new FileStorage(tmp);
         MatcherAssert.assertThat(
-            new GemInfoClass(storage, new Gem(storage)),
+            new GetGemInfo(storage, new Gem(storage)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(

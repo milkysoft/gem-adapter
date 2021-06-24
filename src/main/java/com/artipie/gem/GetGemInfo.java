@@ -44,7 +44,7 @@ import org.reactivestreams.Publisher;
  * @since 0.2
  */
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
-public final class GemInfoClass implements Slice {
+public final class GetGemInfo implements Slice {
 
     /**
      * Endpoint path pattern.
@@ -66,7 +66,7 @@ public final class GemInfoClass implements Slice {
      * @param storage Gems storage
      * @param gem Is Gem class
      */
-    public GemInfoClass(final Storage storage, final Gem gem) {
+    public GetGemInfo(final Storage storage, final Gem gem) {
         this.storage = storage;
         this.gem = gem;
     }
@@ -80,7 +80,7 @@ public final class GemInfoClass implements Slice {
             final String gemname = matcher.group(1);
             final String extension = matcher.group(2);
             Logger.info(
-                GemInfoClass.class,
+                GetGemInfo.class,
                 "Gem info for '%s' has been requested. Extension: '%s'",
                 gemname,
                 extension
