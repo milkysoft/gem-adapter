@@ -201,9 +201,8 @@ public final class Gem {
                         final String obj;
                         try {
                             final Key thekey = this.getGemFile(gem).toCompletableFuture().get();
-                            obj = rubyjson.getDependencies(
-                                Paths.get(tmpdir.toString(), thekey.string())
-                            );
+                            final Path[] paths = new Path[]{Paths.get(tmpdir.toString(), thekey.string())};
+                            obj = rubyjson.getDependencies(paths);
                             removeTempDir(tmpdir, null);
                         } catch (final InterruptedException | ExecutionException exc) {
                             throw new ArtipieIOException(exc);
