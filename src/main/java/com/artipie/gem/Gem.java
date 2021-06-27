@@ -35,9 +35,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -179,10 +181,10 @@ public final class Gem {
     /**
      * Get info Ruby gem.
      *
-     * @param gem Ruby gem to extract info
+     * @param gems Ruby gem to extract info
      * @return Completable action
      */
-    public CompletionStage<String> getDependencies(final Key gem) {
+    public CompletionStage<String> getDependencies(final List<Key> gems) {
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -192,16 +194,27 @@ public final class Gem {
                 }
             }
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem)
-                .thenApply(ignore -> tmpdir)
+            tmpdir -> {
+                final Storage newstorage = new FileStorage(tmpdir);
+                CompletionStage<Path> res = null;
+                for (final Key gem : gems) {
+                    res = Gem.copyStorage(this.storage, newstorage, gem)
+                        .thenApply(ignore -> tmpdir);
+                }
+                return res;
+            }
         ).thenCompose(
             tmpdir -> this.sharedInfo()
                 .thenApply(
                     rubyjson -> {
                         final String obj;
                         try {
-                            final Key thekey = this.getGemFile(gem).toCompletableFuture().get();
-                            final Path[] paths = new Path[]{Paths.get(tmpdir.toString(), thekey.string())};
+                            final List<Path> paths = new ArrayList<>(gems.size());
+                            for (final Key gem : gems) {
+                                final Key thekey = this.getGemFile(gem).toCompletableFuture().get();
+                                final Path path = Paths.get(tmpdir.toString(), thekey.string());
+                                paths.add(path);
+                            }
                             obj = rubyjson.getDependencies(paths);
                             removeTempDir(tmpdir, null);
                         } catch (final InterruptedException | ExecutionException exc) {

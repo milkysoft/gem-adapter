@@ -25,6 +25,7 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
+import java.util.List;
 import javax.json.JsonObject;
 
 /**
@@ -46,7 +47,7 @@ public interface GemInfo {
      * @param gempaths Full paths to gem files
      * @return RubyObject specification
      */
-    String getDependencies(Path[] gempaths);
+    String getDependencies(List<Path> gempaths);
 
     /**
      * Synchronized decorator.
@@ -75,7 +76,7 @@ public interface GemInfo {
         }
 
         @Override
-        public String getDependencies(final Path[] paths) {
+        public String getDependencies(final List<Path> paths) {
             synchronized (this.origin) {
                 return this.origin.getDependencies(paths);
             }

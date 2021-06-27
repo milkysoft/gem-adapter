@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,14 +56,19 @@ public class GemInfoClassTest {
     /**
      * Path to upload gem file.
      */
-    static final String BUILDER_STR = "gviz-0.3.5.gem";
+    static final String GVIZ_STR = "gviz-0.3.5.gem";
+
+    /**
+     * Path to upload gem file.
+     */
+    static final String THOR_STR = "thor-0.19.1.gem";
 
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final Path target = repo.resolve(GemInfoClassTest.BUILDER_STR);
+        final Path target = repo.resolve(GemInfoClassTest.GVIZ_STR);
         try (InputStream is = this.getClass()
-            .getResourceAsStream("/".concat(GemInfoClassTest.BUILDER_STR));
+            .getResourceAsStream("/".concat(GemInfoClassTest.GVIZ_STR));
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
@@ -90,16 +95,23 @@ public class GemInfoClassTest {
 
     @Test
     public void queryResultsInOk(@TempDir final Path tmp) throws IOException {
+        final Charset encoding = Charset.forName("ISO-8859-1");
         final Path repo = Paths.get(tmp.toString());
-        final Path target = repo.resolve(GemInfoClassTest.BUILDER_STR);
+        final Path target = repo.resolve(GemInfoClassTest.GVIZ_STR);
+        final Path ttarget = repo.resolve(GemInfoClassTest.THOR_STR);
         try (InputStream is = this.getClass()
-            .getResourceAsStream("/".concat(GemInfoClassTest.BUILDER_STR));
+            .getResourceAsStream("/".concat(GemInfoClassTest.GVIZ_STR));
             OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        try (InputStream is = this.getClass()
+            .getResourceAsStream("/".concat(GemInfoClassTest.THOR_STR));
+            OutputStream os = Files.newOutputStream(ttarget)) {
             IOUtils.copy(is, os);
         }
         final InputStream data = this.getClass().getResourceAsStream("/test/dependencies.data");
         final StringWriter writer = new StringWriter();
-        IOUtils.copy(data, writer, StandardCharsets.UTF_8);
+        IOUtils.copy(data, writer, encoding);
         final String thestring = writer.toString();
         final Storage storage = new FileStorage(tmp);
         MatcherAssert.assertThat(
@@ -108,10 +120,10 @@ public class GemInfoClassTest {
                 Matchers.allOf(
                     new RsHasBody(
                         thestring,
-                        StandardCharsets.UTF_8
+                        encoding
                     )
                 ),
-                new RequestLine(RqMethod.GET, "/api/v1/dependencies?gems=gviz"),
+                new RequestLine(RqMethod.GET, "/api/v1/dependencies?gems=gviz,thor"),
                 Headers.EMPTY,
                 com.artipie.asto.Content.EMPTY
             )

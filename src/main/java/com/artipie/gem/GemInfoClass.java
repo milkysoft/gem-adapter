@@ -34,7 +34,9 @@ import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -103,16 +105,20 @@ public final class GemInfoClass implements Slice {
             final int indexs = line.indexOf(deproute) + offset;
             final int indexe = line.indexOf("HTTP/1.1") - 1;
             String obj = "";
+            final List<Key> gemkeys = new ArrayList<>(0);
             for (final String gemname : line.substring(indexs, indexe).split(",")) {
-                try {
-                    obj = this.gem.getDependencies(new Key.From(gemname))
-                        .toCompletableFuture().get();
-                } catch (final InterruptedException | ExecutionException exc) {
-                    throw new ArtipieIOException(exc);
-                }
+                gemkeys.add(new Key.From(gemname));
+            }
+            try {
+                obj = this.gem.getDependencies(gemkeys)
+                    .toCompletableFuture().get();
+            } catch (final InterruptedException | ExecutionException exc) {
+                throw new ArtipieIOException(exc);
             }
             res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsWithBody(obj, StandardCharsets.UTF_8))
+                CompletableFuture.completedFuture(
+                    new RsWithBody(obj, Charset.forName("ISO-8859-1"))
+                )
             );
         } else {
             throw new IllegalStateException("Not expected path has been matched");

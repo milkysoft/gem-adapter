@@ -83,42 +83,49 @@ public final class RubyObjJson implements GemInfo {
 
     /**
      * Create marshaled binary info for gem.
+     * @param gempath Full path to gem file
+     * @return String result
+     */
+    public String getPathDependency(final Path gempath) {
+        String res = "";
+        res = res.concat("{");
+        final List<Variable<Object>> vars = this.getSpecification(gempath)
+            .getVariableList();
+        for (final Variable<Object> var : vars) {
+            final String name = var.getName();
+            if (name.equals("@dependencies")) {
+                res = res.concat(":name=>\"").concat(RubyObjJson.getGemName(vars))
+                    .concat("\", :number=>\"").concat(RubyObjJson.getGemVersion(vars))
+                    .concat("\"");
+                res = res.concat(", :platform=>\"ruby\", :dependencies=>[");
+                final String val = var.getValue().toString();
+                final String[] dependencies = val.substring(1, val.length() - 1).split(",");
+                for (final String dependency : dependencies) {
+                    final String[] result = RubyObjJson.parseDependency(dependency);
+                    if (result[0].length() > 0) {
+                        res = res.concat("[\"".concat(result[0]).concat("\", \"").concat(result[1])
+                            .concat("\"]")
+                        );
+                    }
+                }
+                res = res.concat("]");
+            }
+        }
+        return res.concat("}");
+    }
+
+    /**
+     * Create marshaled binary info for gem.
      * @param gempaths Full paths to gem files
      * @return String result
      */
-    public String getDependencies(final Path[] gempaths) {
-        final char chara = 4;
-        final char charb = 8;
-        final char charc = 6;
-        String res = new StringBuilder().append(chara)
-            .append(charb).append('I').append('\"').append("a[{").toString();
+    public String getDependencies(final List<Path> gempaths) {
+        String res = "[";
         for (final Path gempath : gempaths) {
-            final List<Variable<Object>> vars = this.getSpecification(gempath)
-                .getVariableList();
-            for (final Variable<Object> var : vars) {
-                final String name = var.getName();
-                if (name.equals("@dependencies")) {
-                    res = res.concat(":name=>\"").concat(RubyObjJson.getGemName(vars))
-                        .concat("\", :number=>\"").concat(RubyObjJson.getGemVersion(vars))
-                        .concat("\"");
-                    res = res.concat(", :platform=>\"ruby\", :dependencies=>[");
-                    final String val = var.getValue().toString();
-                    final String[] dependencies = val.substring(1, val.length() - 1).split(",");
-                    for (final String dependency : dependencies) {
-                        final String[] result = RubyObjJson.parseDependency(dependency);
-                        if (result[0].length() > 0) {
-                            res = res.concat("[\"".concat(result[0]).concat("\", \"").concat(result[1])
-                                .concat("\"]")
-                            );
-                        }
-                    }
-                    res = res.concat("]}]");
-                    res = res.concat(new StringBuilder().append(charc).append(':').append(charc)
-                        .append("ET").toString()
-                    );
-                }
-            }
+            res = res.concat(this.getPathDependency(gempath));
         }
+        res = res.concat("]");
+        res = this.getMarshal(res).toString();
         return res;
     }
 
@@ -159,6 +166,19 @@ public final class RubyObjJson implements GemInfo {
         return (RubyObject) this.runtime.eval(
             this.ruby, String.format(
                 "require 'rubygems/package.rb'\nGem::Package.new('%s').spec", gempath.toString()
+            )
+        );
+    }
+
+    /**
+     * Get Ruby specification for arbitrary gem.
+     * @param data Full path to gem file or null
+     * @return RubyObject specification
+     */
+    private RubyObject getMarshal(final String data) {
+        return (RubyObject) this.runtime.eval(
+            this.ruby, String.format(
+                "Marshal.dump('%s')", data
             )
         );
     }
