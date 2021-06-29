@@ -104,6 +104,20 @@ public final class GemSlice extends Slice.Wrap {
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/latest_specs.4.8.gz")
+                    ),
+                    new GemInfoClass(storage, new Gem(storage))
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/quick/Marshal.4.8/gviz-0.3.5.gemspec.rz")
+                    ),
+                    new GemInfoClass(storage, new Gem(storage))
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/api/v1/dependencies")
                     ),
                     new GemInfoClass(storage, new Gem(storage))
@@ -118,7 +132,8 @@ public final class GemSlice extends Slice.Wrap {
                 ),
                 new RtRulePath(
                     RtRule.FALLBACK,
-                    new SliceSimple(new RsWithStatus(RsStatus.NOT_FOUND))
+                    //new SliceSimple(new RsWithStatus(RsStatus.NOT_FOUND))
+                    new GemInfoClass(storage, new Gem(storage))
                 )
             )
         );

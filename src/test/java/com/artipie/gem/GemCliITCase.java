@@ -116,6 +116,39 @@ public class GemCliITCase {
         vertx.close();
     }
 
+    @Test
+    public void gemDependencies(@TempDir final Path temp, @TempDir final Path mount)
+        throws IOException, InterruptedException {
+        final String key = new Base64Encoded("usr:pwd").asString();
+        final Vertx vertx = Vertx.vertx();
+        final VertxSliceServer server = new VertxSliceServer(
+            vertx,
+            new GemSlice(new FileStorage(temp))
+        );
+        final int port = server.start();
+        final String host = String.format("http://host.testcontainers.internal:%d", port);
+        Testcontainers.exposeHostPorts(port);
+        final RubyContainer ruby = new RubyContainer()
+            .withCommand("tail", "-f", "/dev/null")
+            .withWorkingDirectory("/home/")
+            .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
+        ruby.start();
+        final Set<String> gems = new HashSet<>();
+        gems.add("thor-0.19.1.gem");
+        for (final String gem : gems) {
+            final Path target = mount.resolve(gem);
+            try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
+                 OutputStream os = Files.newOutputStream(target)) {
+                IOUtils.copy(is, os);
+            }
+        }
+        System.out.println(String.format("Sleeping. Host: %s, API_KEY: %s", host, key));
+        Thread.sleep(99999999);
+        ruby.stop();
+        server.close();
+        vertx.close();
+    }
+
     /**
      * Executes a bash command in a ruby container.
      * @param ruby The ruby container.

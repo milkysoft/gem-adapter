@@ -23,6 +23,34 @@
  */
 package com.artipie.gem;
 
+
+import com.artipie.asto.ArtipieIOException;
+import com.artipie.asto.Key;
+import com.artipie.asto.Storage;
+import com.artipie.http.Response;
+import com.artipie.http.Slice;
+import com.artipie.http.async.AsyncResponse;
+import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsStatus;
+import com.artipie.http.rs.RsWithBody;
+import com.artipie.http.rs.RsWithStatus;
+import com.artipie.http.rs.common.RsJson;
+import com.artipie.http.slice.SliceSimple;
+import com.jcabi.log.Logger;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.io.IOUtils;
+import org.reactivestreams.Publisher;
+
 import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
@@ -37,6 +65,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -103,7 +132,7 @@ public final class GemInfoClass implements Slice {
             );
         } else if (line.contains(deproute)) {
             final int indexs = line.indexOf(deproute) + offset;
-            final int indexe = line.indexOf("HTTP/1.1") - 1;
+            final int indexe = line.indexOf("HTTP") - 1;
             String obj = "";
             final List<Key> gemkeys = new ArrayList<>(0);
             for (final String gemname : line.substring(indexs, indexe).split(",")) {
@@ -120,8 +149,39 @@ public final class GemInfoClass implements Slice {
                     new RsWithBody(obj, Charset.forName("ISO-8859-1"))
                 )
             );
+        } else if (line.contains("latest")) {
+            System.out.println(line);
+            final Charset encoding = Charset.forName("ISO-8859-1");
+            final InputStream data = this.getClass().getResourceAsStream("/test/latest_specs.4.8.gz");
+            final StringWriter writer = new StringWriter();
+            try {
+                IOUtils.copy(data, writer, encoding);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            final String thestring = writer.toString();
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+            );
+        } else if (line.contains("Marsh")) {
+            System.out.println(line);
+            final Charset encoding = Charset.forName("ISO-8859-1");
+            final InputStream data = this.getClass().getResourceAsStream("/test/quick/Marshal.4.8/gviz-0.3.5.gemspec.rz");
+            final StringWriter writer = new StringWriter();
+            try {
+                IOUtils.copy(data, writer, encoding);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            final String thestring = writer.toString();
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+            );
         } else {
-            throw new IllegalStateException("Not expected path has been matched");
+            System.out.println(line);
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithBody("", StandardCharsets.UTF_8))
+            );
         }
         return res;
     }
