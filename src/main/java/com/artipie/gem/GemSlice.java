@@ -111,6 +111,13 @@ public final class GemSlice extends Slice.Wrap {
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/specs.4.8.gz")
+                    ),
+                    new GemInfoClass(storage, new Gem(storage))
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/quick/Marshal.4.8/gviz-0.3.5.gemspec.rz")
                     ),
                     new GemInfoClass(storage, new Gem(storage))

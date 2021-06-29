@@ -149,10 +149,24 @@ public final class GemInfoClass implements Slice {
                     new RsWithBody(obj, Charset.forName("ISO-8859-1"))
                 )
             );
-        } else if (line.contains("latest")) {
+        } else if (line.contains("/latest_specs.4.8.gz")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
             final InputStream data = this.getClass().getResourceAsStream("/test/latest_specs.4.8.gz");
+            final StringWriter writer = new StringWriter();
+            try {
+                IOUtils.copy(data, writer, encoding);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            final String thestring = writer.toString();
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+            );
+        } else if (line.contains("/specs.4.8.gz")) {
+            System.out.println(line);
+            final Charset encoding = Charset.forName("ISO-8859-1");
+            final InputStream data = this.getClass().getResourceAsStream("/test/specs.4.8.gz");
             final StringWriter writer = new StringWriter();
             try {
                 IOUtils.copy(data, writer, encoding);
