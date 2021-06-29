@@ -177,10 +177,63 @@ public final class GemInfoClass implements Slice {
             res = new AsyncResponse(
                 CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
             );
-        } else if (line.contains("Marsh")) {
+        } else if (line.contains("/quick/Marshal.4.8/")) {
+            System.out.println(line);
+            final int ar = line.lastIndexOf("/") + 1;
+            final int indexe = line.indexOf("HTTP") - 1;
+            final String spec = line.substring(ar, indexe);
+            final Charset encoding = Charset.forName("ISO-8859-1");
+            final InputStream data = this.getClass().getResourceAsStream("/test/quick/Marshal.4.8/".concat(spec));
+            final StringWriter writer = new StringWriter();
+            try {
+                IOUtils.copy(data, writer, encoding);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            final String thestring = writer.toString();
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+            );
+        } else if (line.contains("/versions")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            final InputStream data = this.getClass().getResourceAsStream("/test/quick/Marshal.4.8/gviz-0.3.5.gemspec.rz");
+            final InputStream data = this.getClass().getResourceAsStream("/test/versions");
+            final StringWriter writer = new StringWriter();
+            try {
+                IOUtils.copy(data, writer, encoding);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            final String thestring = writer.toString();
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+            );
+        } else if (line.contains("/info/")) {
+            System.out.println(line);
+            final int ar = line.lastIndexOf("/") + 1;
+            final int indexe = line.indexOf("HTTP") - 1;
+            final String spec = line.substring(ar, indexe);
+            final Charset encoding = Charset.forName("ISO-8859-1");
+            System.out.println("/test/info/".concat(spec));
+            final InputStream data = this.getClass().getResourceAsStream("/test/info/".concat(spec));
+            final StringWriter writer = new StringWriter();
+            try {
+                IOUtils.copy(data, writer, encoding);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            final String thestring = writer.toString();
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+            );
+        } else if (line.contains("/gems/")) {
+            System.out.println(line);
+            final int ar = line.lastIndexOf("/") + 1;
+            final int indexe = line.indexOf("HTTP") - 1;
+            final String spec = line.substring(ar, indexe);
+            final Charset encoding = Charset.forName("ISO-8859-1");
+            System.out.println("/test/gems/".concat(spec));
+            final InputStream data = this.getClass().getResourceAsStream("/test/gems/".concat(spec));
             final StringWriter writer = new StringWriter();
             try {
                 IOUtils.copy(data, writer, encoding);
