@@ -57,8 +57,10 @@ public class RubyObjJsonTest {
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
+        final Gem gem = new Gem(new FileStorage(tmp));
+        gem.initialize();
         MatcherAssert.assertThat(
-            new Gem(new FileStorage(tmp)).info(new Key.From("gviz")).toCompletableFuture().get(),
+            gem.info(new Key.From("gviz")).toCompletableFuture().get(),
             Matchers.allOf(
                 new JsonHas(
                     gemattr,

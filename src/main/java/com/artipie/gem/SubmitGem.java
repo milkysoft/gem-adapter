@@ -77,6 +77,7 @@ public final class SubmitGem implements Slice {
         final Publisher<ByteBuffer> body) {
         final String gemstr = UUID.randomUUID().toString().replace("-", "").concat(".gem");
         final Key folder = new Key.From("gems", gemstr);
+        gem.initialize();
         return new AsyncResponse(
             this.storage.save(
                 folder, new ContentWithSize(body, headers)
