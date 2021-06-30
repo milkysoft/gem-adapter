@@ -64,12 +64,17 @@ public final class Gem {
     /**
      * Ruby runtime.
      */
-    private final RubyRuntimeAdapter runtime;
+    private static final String GEM_STR = ".gem";
+
+    /**
+     * Ruby runtime.
+     */
+    private RubyRuntimeAdapter runtime;
 
     /**
      * Ruby interpreter.
      */
-    private final Ruby ruby;
+    private Ruby ruby;
 
     /**
      * Gem indexer shared instance cache.
@@ -101,8 +106,6 @@ public final class Gem {
      * @param storage Repository storage.
      */
     Gem(final Storage storage) {
-        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
-        this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
         this.storage = storage;
         this.indexer = () -> new RubyGemIndex(this.runtime, this.ruby);
         this.cache = new AtomicReference<>();
@@ -144,7 +147,7 @@ public final class Gem {
      * @param gem Ruby gem to extract info
      * @return Completable action
      */
-    public CompletionStage<JsonObject> getInfo(final Key gem) {
+    public CompletionStage<JsonObject> info(final Key gem) {
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -166,14 +169,27 @@ public final class Gem {
                             obj = rubyjson.getinfo(
                                 Paths.get(tmpdir.toString(), thekey.string())
                             );
-                            removeTempDir(tmpdir, null);
                         } catch (final InterruptedException | ExecutionException exc) {
                             throw new ArtipieIOException(exc);
+                        } finally {
+                            removeTempDir(tmpdir, null);
                         }
                         return obj;
                     }
                 )
         );
+    }
+
+    /**
+     * Initialize ruby.
+     */
+    public void initialize() {
+        if (this.runtime == null) {
+            this.runtime = JavaEmbedUtils.newRuntimeAdapter();
+        }
+        if (this.ruby == null) {
+            this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
+        }
     }
 
     /**
@@ -217,7 +233,9 @@ public final class Gem {
         return Single.fromFuture(src.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> vars.contains(key.string()) || key.string().contains(gem.string())
+                    key -> vars.contains(key.string())
+                        || key.string().startsWith(gem.string())
+                            && key.string().endsWith(Gem.GEM_STR) && !key.string().contains("/")
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
@@ -275,9 +293,8 @@ public final class Gem {
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> {
-                        return key.string().contains(gem.string());
-                    }
+                    key -> key.string().contains(gem.string()) && key.string().endsWith(Gem.GEM_STR)
+                        && !key.string().contains("/")
                 ).limit(1).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable).forEach(future::complete);
         return future;

@@ -58,7 +58,7 @@ public class RubyObjJsonTest {
             IOUtils.copy(is, os);
         }
         MatcherAssert.assertThat(
-            new Gem(new FileStorage(tmp)).getInfo(new Key.From("gviz")).toCompletableFuture().get(),
+            new Gem(new FileStorage(tmp)).info(new Key.From("gviz")).toCompletableFuture().get(),
             Matchers.allOf(
                 new JsonHas(
                     gemattr,

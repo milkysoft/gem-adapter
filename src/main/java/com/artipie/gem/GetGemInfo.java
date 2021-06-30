@@ -76,6 +76,7 @@ public final class GetGemInfo implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
+        this.gem.initialize();
         if (matcher.find()) {
             final String gemname = matcher.group(1);
             final String extension = matcher.group(2);
@@ -86,7 +87,7 @@ public final class GetGemInfo implements Slice {
                 extension
             );
             return new AsyncResponse(
-                this.gem.getInfo(new Key.From(gemname))
+                this.gem.info(new Key.From(gemname))
                     .thenApply(
                         RsJson::new
                 )
