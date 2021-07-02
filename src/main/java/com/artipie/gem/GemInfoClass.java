@@ -185,15 +185,21 @@ public final class GemInfoClass implements Slice {
             final Charset encoding = Charset.forName("ISO-8859-1");
             final InputStream data = this.getClass().getResourceAsStream("/test/quick/Marshal.4.8/".concat(spec));
             final StringWriter writer = new StringWriter();
-            try {
-                IOUtils.copy(data, writer, encoding);
-            } catch (IOException e) {
-                e.printStackTrace();
+            if( data == null) {
+                res = new AsyncResponse(
+                    CompletableFuture.completedFuture(new RsWithBody("", encoding))
+                );
+            } else {
+                try {
+                    IOUtils.copy(data, writer, encoding);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                final String thestring = writer.toString();
+                res = new AsyncResponse(
+                    CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+                );
             }
-            final String thestring = writer.toString();
-            res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
-            );
         } else if (line.contains("/versions")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
@@ -214,7 +220,6 @@ public final class GemInfoClass implements Slice {
             final int indexe = line.indexOf("HTTP") - 1;
             final String spec = line.substring(ar, indexe);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            System.out.println("/test/info/".concat(spec));
             final InputStream data = this.getClass().getResourceAsStream("/test/info/".concat(spec));
             final StringWriter writer = new StringWriter();
             try {
@@ -232,7 +237,6 @@ public final class GemInfoClass implements Slice {
             final int indexe = line.indexOf("HTTP") - 1;
             final String spec = line.substring(ar, indexe);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            System.out.println("/test/gems/".concat(spec));
             final InputStream data = this.getClass().getResourceAsStream("/test/gems/".concat(spec));
             final StringWriter writer = new StringWriter();
             try {
