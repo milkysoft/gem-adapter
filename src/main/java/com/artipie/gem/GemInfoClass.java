@@ -171,7 +171,8 @@ public final class GemInfoClass implements Slice {
             final Charset encoding = Charset.forName("ISO-8859-1");
             res = new AsyncResponse(
                     this.gem.getRubyFile(new Key.From(spec))
-                            .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+                            .thenApply( out -> out == null ? new RsWithBody("", StandardCharsets.UTF_8)
+                                :new RsWithBody(ByteBuffer.wrap(out)))
             );
         } else if (line.contains("/versions")) {
             System.out.println(line);

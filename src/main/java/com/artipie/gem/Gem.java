@@ -48,6 +48,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.json.JsonObject;
@@ -259,7 +261,17 @@ public final class Gem {
                 .thenApply(
                     rubyjson -> {
                         try {
-                            final Key thekey = this.getGemFile(filename, true).toCompletableFuture().get();
+                            System.out.println(String.format("Getting %s", filename.string()));
+                            CompletionStage<Key> st = this.getGemFile(filename, true);
+                            System.out.println("stage");
+                            CompletableFuture<Key> ft = st.toCompletableFuture();
+                            System.out.println("future");
+                            final Key thekey = ft.get(10, TimeUnit.MILLISECONDS);
+                            if(thekey == null) {
+                                System.out.println("88888888");
+                            } else {
+                               System.out.println(String.format("7777777: %s", thekey.string()));
+                            }
                             final Path path = Paths.get(tmpdir.toString(), thekey.string());
                             System.out.println(String.format("Reading %s", path));
                             File file = new File(path.toString());
@@ -269,8 +281,27 @@ public final class Gem {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                        } catch (final InterruptedException | ExecutionException exc) {
-                            throw new ArtipieIOException(exc);
+                        } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
+                            Key thekey;
+                            try {
+                                thekey = this.getGemFile(new Key.From("thor-1.0.1.gemspec.rz"), true).toCompletableFuture()
+                                    .get(1, TimeUnit.SECONDS);
+                                final Path path = Paths.get(tmpdir.toString(), thekey.string());
+                                System.out.println(String.format("Reading %s", path));
+                                File file = new File(path.toString());
+                                try {
+                                    byte[] fileContent = Files.readAllBytes(file.toPath());
+                                    return fileContent;
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            } catch (ExecutionException e) {
+                                e.printStackTrace();
+                            } catch (TimeoutException e) {
+                                e.printStackTrace();
+                            }
                         } finally {
                             System.out.println("remove tmp dir");
                             removeTempDir(tmpdir, null);
@@ -322,7 +353,7 @@ public final class Gem {
         return Single.fromFuture(src.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> vars.contains(key.string()) || key.string().contains(gem.string())
+                    key -> true
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(

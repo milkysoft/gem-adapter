@@ -199,6 +199,24 @@ public class GemCliITCase {
              OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
+        fileA = "thor-1.0.1.gemspec.rz";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/quick/Marshal.4.8/".concat(fileA));
+             OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        fileA = "thor-1.1.0.gem";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/gems/".concat(fileA));
+             OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        fileA = "gviz-0.3.5.gem";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/gems/".concat(fileA));
+             OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
 
         String content = "# frozen_string_literal: true\n\n".concat(String.format("source \"%s\"\n\n", host))
                 .concat("git_source(:github) {|repo_name| \"https://github.com/#{repo_name}\" }\n\n")
@@ -210,7 +228,7 @@ public class GemCliITCase {
                 String.format("'gem versions %s ", host),
                 this.bash(
                         ruby,
-                        String.format("gem sources -r https://rubygems.org/; gem sources -a %s; bundle init; mv yyy Gemfile", host)
+                        String.format("gem sources -r https://rubygems.org/; gem sources -a %s; bundle init; mv yyy Gemfile; bundle install", host)
                 ),
                 Matchers.equalTo(0)
         );
