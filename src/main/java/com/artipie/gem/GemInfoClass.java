@@ -152,30 +152,16 @@ public final class GemInfoClass implements Slice {
         } else if (line.contains("/latest_specs.4.8.gz")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            final InputStream data = this.getClass().getResourceAsStream("/test/latest_specs.4.8.gz");
-            final StringWriter writer = new StringWriter();
-            try {
-                IOUtils.copy(data, writer, encoding);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            final String thestring = writer.toString();
             res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+                    this.gem.getRubyFile(new Key.From("latest_specs.4.8.gz"))
+                            .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
             );
         } else if (line.contains("/specs.4.8.gz")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            final InputStream data = this.getClass().getResourceAsStream("/test/specs.4.8.gz");
-            final StringWriter writer = new StringWriter();
-            try {
-                IOUtils.copy(data, writer, encoding);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            final String thestring = writer.toString();
             res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+                    this.gem.getRubyFile(new Key.From("specs.4.8.gz"))
+                            .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
             );
         } else if (line.contains("/quick/Marshal.4.8/")) {
             System.out.println(line);
@@ -183,36 +169,16 @@ public final class GemInfoClass implements Slice {
             final int indexe = line.indexOf("HTTP") - 1;
             final String spec = line.substring(ar, indexe);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            final InputStream data = this.getClass().getResourceAsStream("/test/quick/Marshal.4.8/".concat(spec));
-            final StringWriter writer = new StringWriter();
-            if( data == null) {
-                res = new AsyncResponse(
-                    CompletableFuture.completedFuture(new RsWithBody("", encoding))
-                );
-            } else {
-                try {
-                    IOUtils.copy(data, writer, encoding);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                final String thestring = writer.toString();
-                res = new AsyncResponse(
-                    CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
-                );
-            }
+            res = new AsyncResponse(
+                    this.gem.getRubyFile(new Key.From(spec))
+                            .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+            );
         } else if (line.contains("/versions")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            final InputStream data = this.getClass().getResourceAsStream("/test/versions");
-            final StringWriter writer = new StringWriter();
-            try {
-                IOUtils.copy(data, writer, encoding);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            final String thestring = writer.toString();
             res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+                this.gem.getRubyFile(new Key.From("versions"))
+                    .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
             );
         } else if (line.contains("/info/")) {
             System.out.println(line);
@@ -220,16 +186,9 @@ public final class GemInfoClass implements Slice {
             final int indexe = line.indexOf("HTTP") - 1;
             final String spec = line.substring(ar, indexe);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            final InputStream data = this.getClass().getResourceAsStream("/test/info/".concat(spec));
-            final StringWriter writer = new StringWriter();
-            try {
-                IOUtils.copy(data, writer, encoding);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            final String thestring = writer.toString();
             res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+                this.gem.getRubyFile(new Key.From(spec))
+                    .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
             );
         } else if (line.contains("/gems/")) {
             System.out.println(line);
@@ -237,16 +196,9 @@ public final class GemInfoClass implements Slice {
             final int indexe = line.indexOf("HTTP") - 1;
             final String spec = line.substring(ar, indexe);
             final Charset encoding = Charset.forName("ISO-8859-1");
-            final InputStream data = this.getClass().getResourceAsStream("/test/gems/".concat(spec));
-            final StringWriter writer = new StringWriter();
-            try {
-                IOUtils.copy(data, writer, encoding);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            final String thestring = writer.toString();
             res = new AsyncResponse(
-                CompletableFuture.completedFuture(new RsWithBody(thestring, encoding))
+                    this.gem.getRubyFile(new Key.From(spec))
+                            .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
             );
         } else {
             System.out.println(line);
