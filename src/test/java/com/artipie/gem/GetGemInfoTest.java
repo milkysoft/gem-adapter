@@ -33,8 +33,6 @@ import com.artipie.http.rq.RqMethod;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,24 +50,20 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  * @since 0.7
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-public class GemInfoClassTest {
-    /**
-     * Path to upload gem file.
-     */
-    static final String BUILDER_STR = "gviz-0.3.5.gem";
+public class GetGemInfoTest {
 
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final Path target = repo.resolve(GemInfoClassTest.BUILDER_STR);
-        try (InputStream is = this.getClass()
-            .getResourceAsStream("/".concat(GemInfoClassTest.BUILDER_STR));
+        final String builderstr = "gviz-0.3.5.gem";
+        final Path target = repo.resolve(builderstr);
+        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         final Storage storage = new FileStorage(tmp);
         MatcherAssert.assertThat(
-            new GemInfoClass(storage, new Gem(storage)),
+            new GetGemInfo(storage, new Gem(storage)),
             new SliceHasResponse(
                 Matchers.allOf(
                     new RsHasBody(
@@ -82,36 +76,6 @@ public class GemInfoClassTest {
                     )
                 ),
                 new RequestLine(RqMethod.GET, "/api/v1/gems/gviz.json"),
-                Headers.EMPTY,
-                com.artipie.asto.Content.EMPTY
-            )
-        );
-    }
-
-    @Test
-    public void queryResultsInOk(@TempDir final Path tmp) throws IOException {
-        final Path repo = Paths.get(tmp.toString());
-        final Path target = repo.resolve(GemInfoClassTest.BUILDER_STR);
-        try (InputStream is = this.getClass()
-            .getResourceAsStream("/".concat(GemInfoClassTest.BUILDER_STR));
-            OutputStream os = Files.newOutputStream(target)) {
-            IOUtils.copy(is, os);
-        }
-        final InputStream data = this.getClass().getResourceAsStream("/test/dependencies.data");
-        final StringWriter writer = new StringWriter();
-        IOUtils.copy(data, writer, StandardCharsets.UTF_8);
-        final String thestring = writer.toString();
-        final Storage storage = new FileStorage(tmp);
-        MatcherAssert.assertThat(
-            new GemInfoClass(storage, new Gem(storage)),
-            new SliceHasResponse(
-                Matchers.allOf(
-                    new RsHasBody(
-                        thestring,
-                        StandardCharsets.UTF_8
-                    )
-                ),
-                new RequestLine(RqMethod.GET, "/api/v1/dependencies?gems=gviz"),
                 Headers.EMPTY,
                 com.artipie.asto.Content.EMPTY
             )

@@ -51,6 +51,11 @@ public final class RubyObjJson implements GemInfo {
     private final Ruby ruby;
 
     /**
+     * Ruby initialization flag.
+     */
+    private boolean issetup;
+
+    /**
      * New Ruby object JSON converter.
      * @param runtime Is Ruby runtime
      * @param ruby Is Ruby system
@@ -58,6 +63,7 @@ public final class RubyObjJson implements GemInfo {
     RubyObjJson(final RubyRuntimeAdapter runtime, final Ruby ruby) {
         this.runtime = runtime;
         this.ruby = ruby;
+        this.issetup = false;
     }
 
     /**
@@ -82,116 +88,19 @@ public final class RubyObjJson implements GemInfo {
     }
 
     /**
-     * Create marshaled binary info for gem.
-     * @param gempath Full path to gem file or null
-     * @return String result
-     */
-    public String getDependencies(final Path gempath) {
-        final List<Variable<Object>> vars = this.getSpecification(gempath)
-            .getVariableList();
-        final char chara = 4;
-        final char charb = 8;
-        final char charc = 6;
-        String res = new StringBuilder().append(chara)
-            .append(charb).append('I').append('\"').append("a[{").toString();
-        for (final Variable<Object> var : vars) {
-            final String name = var.getName();
-            if (name.equals("@dependencies")) {
-                res = res.concat(":name=>\"").concat(RubyObjJson.getGemName(vars))
-                    .concat("\", :number=>\"").concat(RubyObjJson.getGemVersion(vars))
-                    .concat("\"");
-                res = res.concat(", :platform=>\"ruby\", :dependencies=>[");
-                final String val = var.getValue().toString();
-                final String[] dependencies = val.substring(1, val.length() - 1).split(",");
-                for (final String dependency : dependencies) {
-                    final String[] result = RubyObjJson.parseDependency(dependency);
-                    if (result[0].length() > 0) {
-                        res = res.concat("[\"".concat(result[0]).concat("\", \"").concat(result[1])
-                            .concat("\"]")
-                        );
-                    }
-                }
-                res = res.concat("]}]");
-                res = res.concat(new StringBuilder().append(charc).append(':').append(charc)
-                    .append("ET").toString()
-                );
-            }
-        }
-        return res;
-    }
-
-    /**
-     * Get Ruby specification for arbitrary gem.
-     * @param dependency Ruby specification dependency string
-     * @return Two strings for dependency name and version
-     */
-    private static String[] parseDependency(final String dependency) {
-        final String[] res = new String[2];
-        res[0] = "";
-        res[1] = "";
-        String srch = "type=";
-        int indexs = dependency.indexOf(srch) + srch.length();
-        srch = " name=\"";
-        int indexe = dependency.indexOf(srch, indexs);
-        if (!":development".equals(dependency.substring(indexs, indexe))) {
-            srch = "name=\"";
-            indexs = dependency.indexOf(srch) + srch.length();
-            indexe = dependency.indexOf("\" ", indexs);
-            final String depname = dependency.substring(indexs, indexe);
-            srch = "requirements=\"";
-            indexs = dependency.indexOf(srch, indexe) + srch.length();
-            indexe = dependency.indexOf("\">", indexs);
-            final String depver = dependency.substring(indexs, indexe);
-            res[0] = depname;
-            res[1] = depver;
-        }
-        return res;
-    }
-
-    /**
      * Get Ruby specification for arbitrary gem.
      * @param gempath Full path to gem file or null
      * @return RubyObject specification
      */
     private RubyObject getSpecification(final Path gempath) {
+        if (!this.issetup) {
+            this.issetup = true;
+            this.runtime.eval(this.ruby, "require 'rubygems/package.rb'");
+        }
         return (RubyObject) this.runtime.eval(
             this.ruby, String.format(
-                "require 'rubygems/package.rb'\nGem::Package.new('%s').spec", gempath.toString()
+                "Gem::Package.new('%s').spec", gempath.toString()
             )
         );
-    }
-
-    /**
-     * Get Ruby gem from Path.
-     * @param vars List of Variables
-     * @return Gem name with version
-     */
-    private static String getGemVersion(final List<Variable<Object>> vars) {
-        String res = "";
-        for (final Variable<Object> var : vars) {
-            final String name = var.getName();
-            if (name.equals("@version")) {
-                res = var.getValue().toString();
-                break;
-            }
-        }
-        return res;
-    }
-
-    /**
-     * Get Ruby gem from Path.
-     * @param vars List of Variables
-     * @return Gem name with version
-     */
-    private static String getGemName(final List<Variable<Object>> vars) {
-        String res = "";
-        for (final Variable<Object> var : vars) {
-            final String name = var.getName();
-            if (name.equals("@name")) {
-                res = var.getValue().toString();
-                break;
-            }
-        }
-        return res;
     }
 }

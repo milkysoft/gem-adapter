@@ -46,6 +46,11 @@ public final class RubyGemIndex implements GemIndex {
     private final Ruby ruby;
 
     /**
+     * Ruby initialization flag.
+     */
+    private boolean issetup;
+
+    /**
      * New gem indexer.
      * @param runtime Ruby runtime
      * @param ruby Interpreter
@@ -53,16 +58,20 @@ public final class RubyGemIndex implements GemIndex {
     public RubyGemIndex(final RubyRuntimeAdapter runtime, final Ruby ruby) {
         this.runtime = runtime;
         this.ruby = ruby;
+        this.issetup = false;
     }
 
     @Override
     public void update(final Path path) {
+        if (!this.issetup) {
+            this.issetup = true;
+            this.runtime.eval(this.ruby, "require 'rubygems/indexer.rb'");
+        }
         this.runtime.eval(
             this.ruby,
             String.format(
-                "require 'rubygems/indexer.rb'\n"
-                .concat("Gem::Indexer.new('%s', {build_modern:true}).generate_index"),
-                path.toAbsolutePath().toString()
+                "Gem::Indexer.new('%s', {build_modern:true}).generate_index",
+                path.toAbsolutePath()
             )
         );
     }
