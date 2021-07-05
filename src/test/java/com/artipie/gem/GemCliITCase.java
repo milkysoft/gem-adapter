@@ -181,6 +181,12 @@ public class GemCliITCase {
              OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
+        fileA = "prerelease_specs.4.8.gz";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/".concat(fileA));
+             OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
         fileA = "latest_specs.4.8.gz";
         target = mount.resolve(fileA);
         try (InputStream is = this.getClass().getResourceAsStream("/test/".concat(fileA));

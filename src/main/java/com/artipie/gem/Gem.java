@@ -134,14 +134,14 @@ public final class Gem {
                 }
             }
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem)
+            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem, new Key.From(""))
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
             tmpdir -> this.sharedIndexer()
                 .thenAccept(idx -> idx.update(tmpdir))
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), this.storage, gem)
+            tmpdir -> Gem.copyStorage(new FileStorage(tmpdir), this.storage, gem, new Key.From(""))
                 .thenApply(ignore -> tmpdir)
         ).handle(Gem::removeTempDir);
     }
@@ -162,7 +162,7 @@ public final class Gem {
                 }
             }
         ).thenCompose(
-            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem)
+            tmpdir -> Gem.copyStorage(this.storage, new FileStorage(tmpdir), gem, new Key.From(""))
                 .thenApply(ignore -> tmpdir)
         ).thenCompose(
             tmpdir -> this.sharedInfo()
@@ -170,7 +170,7 @@ public final class Gem {
                     rubyjson -> {
                         final JsonObject obj;
                         try {
-                            final Key thekey = this.getGemFile(gem, false).toCompletableFuture().get();
+                            final Key thekey = this.getGemFile(gem, false, null).toCompletableFuture().get();
                             obj = rubyjson.getinfo(
                                 Paths.get(tmpdir.toString(), thekey.string())
                             );
@@ -204,7 +204,7 @@ public final class Gem {
                 final Storage newstorage = new FileStorage(tmpdir);
                 CompletionStage<Path> res = null;
                 for (final Key gem : gems) {
-                    res = Gem.copyStorage(this.storage, newstorage, gem)
+                    res = Gem.copyStorage(this.storage, newstorage, gem, new Key.From(""))
                         .thenApply(ignore -> tmpdir);
                 }
                 return res;
@@ -217,7 +217,7 @@ public final class Gem {
                         try {
                             final List<Path> paths = new ArrayList<>(gems.size());
                             for (final Key gem : gems) {
-                                final Key thekey = this.getGemFile(gem, false).toCompletableFuture().get();
+                                final Key thekey = this.getGemFile(gem, false, null).toCompletableFuture().get();
                                 final Path path = Paths.get(tmpdir.toString(), thekey.string());
                                 paths.add(path);
                             }
@@ -253,7 +253,7 @@ public final class Gem {
                 tmpdir -> {
                     final Storage newstorage = new FileStorage(tmpdir);
                     CompletionStage<Path> res = null;
-                    return Gem.copyStorage(this.storage, newstorage, filename)
+                    return Gem.copyStorage(this.storage, newstorage, filename, new Key.From("thor-1.0.1.gemspec.rz"))
                                 .thenApply(ignore -> tmpdir);
                 }
         ).thenCompose(
@@ -262,7 +262,7 @@ public final class Gem {
                     rubyjson -> {
                         try {
                             System.out.println(String.format("Getting %s", filename.string()));
-                            CompletionStage<Key> st = this.getGemFile(filename, true);
+                            CompletionStage<Key> st = this.getGemFile(filename, true, new Key.From("thor-1.0.1.gemspec.rz"));
                             System.out.println("stage");
                             CompletableFuture<Key> ft = st.toCompletableFuture();
                             System.out.println("future");
@@ -282,26 +282,7 @@ public final class Gem {
                                 e.printStackTrace();
                             }
                         } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
-                            Key thekey;
-                            try {
-                                thekey = this.getGemFile(new Key.From("thor-1.0.1.gemspec.rz"), true).toCompletableFuture()
-                                    .get(1, TimeUnit.SECONDS);
-                                final Path path = Paths.get(tmpdir.toString(), thekey.string());
-                                System.out.println(String.format("Reading %s", path));
-                                File file = new File(path.toString());
-                                try {
-                                    byte[] fileContent = Files.readAllBytes(file.toPath());
-                                    return fileContent;
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            } catch (ExecutionException e) {
-                                e.printStackTrace();
-                            } catch (TimeoutException e) {
-                                e.printStackTrace();
-                            }
+                            System.out.println("ERRRRRRRRRRR!!!!!");
                         } finally {
                             System.out.println("remove tmp dir");
                             removeTempDir(tmpdir, null);
@@ -340,7 +321,7 @@ public final class Gem {
      * @return Async result
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
-        final Key gem) {
+        final Key gem, final Key fallout) {
         final Set<String> vars = new HashSet<>(
             Arrays.asList(
                 "latest_specs.4.8", "latest_specs.4.8.gz", "prerelease_specs.4.8",
@@ -353,7 +334,8 @@ public final class Gem {
         return Single.fromFuture(src.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> true
+                    key -> vars.contains(key.string()) || key.string().contains(gem.string())
+                        || (fallout.string().length() > 0 && key.string().contains(fallout.string()))
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
@@ -406,15 +388,29 @@ public final class Gem {
      * @param gem Gem name to get info
      * @return String full path to gem file
      */
-    private CompletionStage<Key> getGemFile(final Key gem, final boolean exact) {
+    private CompletionStage<Key> getGemFile(final Key gem, final boolean exact, final Key fallout) {
         final CompletableFuture<Key> future = new CompletableFuture<>();
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
                     key -> {
-                        return (!exact && key.string().contains(gem.string())) || (exact && key.string().equals(gem.string()));
+                        return (!exact && key.string().contains(gem.string())) ||
+                                (exact && (key.string().equals(gem.string())));
                     }
-                ).limit(1).collect(Collectors.toList()))
+                ).count() > 0 ?
+                        list.stream().filter(
+                                key -> {
+                                    return (!exact && key.string().contains(gem.string())) ||
+                                            (exact && (key.string().equals(gem.string())));
+                                }
+                        ).limit(1).collect(Collectors.toList()) :
+                        list.stream().filter(
+                                key -> {
+                                    return (!exact && key.string().contains(gem.string())) || (exact && (key.string().equals(gem.string())
+                                            || (fallout != null && (key.string().equals(fallout.string())))));
+                                }
+                        ).limit(1).collect(Collectors.toList())
+            )
             .flatMapObservable(Observable::fromIterable).forEach(future::complete);
         return future;
     }

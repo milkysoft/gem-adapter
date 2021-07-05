@@ -156,6 +156,13 @@ public final class GemInfoClass implements Slice {
                     this.gem.getRubyFile(new Key.From("latest_specs.4.8.gz"))
                             .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
             );
+        } else if (line.contains("/prerelease_specs.4.8.gz")) {
+            System.out.println(line);
+            final Charset encoding = Charset.forName("ISO-8859-1");
+            res = new AsyncResponse(
+                    this.gem.getRubyFile(new Key.From("prerelease_specs.4.8.gz"))
+                            .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+            );
         } else if (line.contains("/specs.4.8.gz")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
