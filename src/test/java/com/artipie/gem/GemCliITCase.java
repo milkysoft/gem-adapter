@@ -278,7 +278,7 @@ public class GemCliITCase {
      */
     private static class RubyContainer extends GenericContainer<RubyContainer> {
         RubyContainer() {
-            super("ruby:2.7");
+            super("ruby:2.7.0");
         }
     }
 }

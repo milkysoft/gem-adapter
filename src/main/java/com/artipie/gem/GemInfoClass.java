@@ -183,10 +183,8 @@ public final class GemInfoClass implements Slice {
             );
         } else if (line.contains("/versions")) {
             System.out.println(line);
-            final Charset encoding = Charset.forName("ISO-8859-1");
             res = new AsyncResponse(
-                this.gem.getRubyFile(new Key.From("versions"))
-                    .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+                    CompletableFuture.completedFuture(new RsWithStatus(RsStatus.NOT_FOUND))
             );
         } else if (line.contains("/info/")) {
             System.out.println(line);
