@@ -66,8 +66,8 @@ public class GetGemInfoTest {
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final Path target = repo.resolve(this.BUILDER_STR);
-        try (InputStream is = this.getClass().getResourceAsStream(this.GVIZ_STR);
+        final Path target = repo.resolve(GetGemInfoTest.BUILDER_STR);
+        try (InputStream is = this.getClass().getResourceAsStream(GetGemInfoTest.GVIZ_STR);
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
@@ -95,8 +95,8 @@ public class GetGemInfoTest {
     @Test
     public void queryResultsNotImplemented(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final Path target = repo.resolve(this.BUILDER_STR);
-        try (InputStream is = this.getClass().getResourceAsStream(this.GVIZ_STR);
+        final Path target = repo.resolve(GetGemInfoTest.BUILDER_STR);
+        try (InputStream is = this.getClass().getResourceAsStream(GetGemInfoTest.GVIZ_STR);
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
