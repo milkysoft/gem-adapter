@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -164,11 +164,11 @@ public final class Gem {
                     rubyjson -> {
                         JsonObject obj = Json.createObjectBuilder().build();
                         try {
-                            final Optional<Key> thekey = this.getGemFile(gem).toCompletableFuture()
+                            final List<Key> thekey = this.getGemFile(gem).toCompletableFuture()
                                 .get();
                             if (!thekey.isEmpty()) {
                                 obj = rubyjson.info(
-                                    Paths.get(tmpdir.toString(), thekey.get().string())
+                                    Paths.get(tmpdir.toString(), thekey.get(0).string())
                                 );
                             }
                         } catch (final InterruptedException | ExecutionException exc) {
@@ -290,13 +290,13 @@ public final class Gem {
      * @param gem Gem name to get info
      * @return String full path to gem file
      */
-    private CompletionStage<Optional<Key>> getGemFile(final Key gem) {
+    private CompletionStage<List<Key>> getGemFile(final Key gem) {
         return Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
                     key -> key.string().contains(gem.string()) && key.string().endsWith(Gem.GEM_STR)
                         && !key.string().contains("/")
-                ).findFirst())
+                ).collect(Collectors.toList()))
             .to(SingleInterop.get()).toCompletableFuture();
     }
 }
