@@ -29,10 +29,13 @@ import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsStatus;
+import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rs.common.RsJson;
 import com.jcabi.log.Logger;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
@@ -77,6 +80,7 @@ public final class GetGemInfo implements Slice {
         final Publisher<ByteBuffer> body) {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
         this.gem.initialize();
+        final AsyncResponse res;
         if (matcher.find()) {
             final String gemname = matcher.group(1);
             final String extension = matcher.group(2);
@@ -86,12 +90,19 @@ public final class GetGemInfo implements Slice {
                 gemname,
                 extension
             );
-            return new AsyncResponse(
-                this.gem.info(new Key.From(gemname))
-                    .thenApply(
-                        RsJson::new
-                )
-            );
+            if ("json".equals(extension)) {
+                res = new AsyncResponse(
+                    this.gem.info(new Key.From(gemname))
+                        .thenApply(
+                            RsJson::new
+                        )
+                );
+            } else {
+                res = new AsyncResponse(
+                    CompletableFuture.completedFuture(new RsWithStatus(RsStatus.NOT_IMPLEMENTED))
+                );
+            }
+            return res;
         } else {
             throw new IllegalStateException("Not expected path has been matched");
         }

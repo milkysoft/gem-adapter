@@ -39,7 +39,7 @@ public interface GemInfo {
      * @param gempath Full path to gem file or null
      * @return RubyObject specification
      */
-    JsonObject getinfo(Path gempath);
+    JsonObject info(Path gempath);
 
     /**
      * Synchronized decorator.
@@ -61,9 +61,9 @@ public interface GemInfo {
         }
 
         @Override
-        public JsonObject getinfo(final Path path) {
+        public JsonObject info(final Path path) {
             synchronized (this.origin) {
-                return this.origin.getinfo(path);
+                return this.origin.info(path);
             }
         }
     }
