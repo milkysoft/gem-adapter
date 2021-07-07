@@ -38,31 +38,4 @@ public interface GemIndex {
      * @param path Repository index path
      */
     void update(Path path);
-
-    /**
-     * Synchronized decorator.
-     * @since 1.0
-     */
-    final class Synchronized implements GemIndex {
-
-        /**
-         * Origin gem index instance.
-         */
-        private final GemIndex origin;
-
-        /**
-         * Wrap origin with synchronized decoradtor.
-         * @param origin Gem index
-         */
-        public Synchronized(final GemIndex origin) {
-            this.origin = origin;
-        }
-
-        @Override
-        public void update(final Path path) {
-            synchronized (this.origin) {
-                this.origin.update(path);
-            }
-        }
-    }
 }

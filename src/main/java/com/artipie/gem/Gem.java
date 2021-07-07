@@ -57,7 +57,6 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * Performes gem index update using specified indexer implementation.
  * </p>
  * @since 1.0
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class Gem {
 
@@ -257,7 +256,7 @@ public final class Gem {
             () -> this.cache.updateAndGet(
                 value -> {
                     if (value == null) {
-                        return new GemIndex.Synchronized(this.indexer.get());
+                        return this.indexer.get();
                     }
                     return value;
                 }
@@ -275,7 +274,7 @@ public final class Gem {
             () -> this.infocache.updateAndGet(
                 value -> {
                     if (value == null) {
-                        return new GemInfo.Synchronized(this.extractor.get());
+                        return this.extractor.get();
                     }
                     return value;
                 }

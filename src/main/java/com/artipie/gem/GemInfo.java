@@ -40,31 +40,4 @@ public interface GemInfo {
      * @return RubyObject specification
      */
     JsonObject getinfo(Path gempath);
-
-    /**
-     * Synchronized decorator.
-     * @since 1.0
-     */
-    final class Synchronized implements GemInfo {
-
-        /**
-         * Origin gem info instance.
-         */
-        private final GemInfo origin;
-
-        /**
-         * Wrap origin with synchronized decoradtor.
-         * @param origin Gem info
-         */
-        public Synchronized(final GemInfo origin) {
-            this.origin = origin;
-        }
-
-        @Override
-        public JsonObject getinfo(final Path path) {
-            synchronized (this.origin) {
-                return this.origin.getinfo(path);
-            }
-        }
-    }
 }
