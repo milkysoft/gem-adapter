@@ -120,12 +120,57 @@ public final class RubyObjJson implements GemInfo {
      * @return String result
      */
     public String getDependencies(final List<Path> gempaths) {
-        String res = "[";
+        final char chara = 4;
+        final char charb = 8;
+        final char charc = 6;
+        final char chard = 9;
+        final char chare = 11;
+        final char charf = 10;
+        final char charg = 13;
+        final char chari = 7;
+        final char charh = 0;
+        String res = new StringBuilder().append(chara)
+                .append(charb).append("[").append(charc).append('{').toString();
         for (final Path gempath : gempaths) {
-            res = res.concat(this.getPathDependency(gempath));
+            final List<Variable<Object>> vars = this.getSpecification(gempath)
+                    .getVariableList();
+            res = res.concat(String.valueOf(chard)).concat(":").concat(String.valueOf(chard))
+                    .concat("name").concat("I\"").concat(String.valueOf(chard))
+                    .concat(RubyObjJson.getGemName(vars))
+                    .concat(String.valueOf(charc)).concat(":").concat(String.valueOf(charc))
+                    .concat("ET:").concat(String.valueOf(chare))
+                    .concat("number").concat("I\"").concat(String.valueOf(charf))
+                    .concat(RubyObjJson.getGemVersion(vars))
+                    .concat(String.valueOf(charc)).concat(";").concat(String.valueOf(charc)).concat("T:")
+                    .concat(String.valueOf(charg)).concat("platform").concat("I\"")
+                    .concat(String.valueOf(chard)).concat("ruby").concat(String.valueOf(charc)).concat(";")
+                    .concat(String.valueOf(charc)).concat("T:").concat(String.valueOf(chare))
+                    .concat("dependencies[");
+            boolean bdep = false;
+            for (final Variable<Object> var : vars) {
+                final String name = var.getName();
+                if (name.equals("@dependencies")) {
+                    res = res.concat(String.valueOf(charc)).concat("[")
+                            .concat(String.valueOf(chari)).concat("I\"").concat(String.valueOf(chard));
+                    final String val = var.getValue().toString();
+                    final String[] dependencies = val.substring(1, val.length() - 1).split(",");
+                    for (final String dependency : dependencies) {
+                        bdep = true;
+                        final String[] result = RubyObjJson.parseDependency(dependency);
+                        if (result[0].length() > 0) {
+                            res = res.concat(result[0]).concat(String.valueOf(charc)).concat(";")
+                                    .concat(String.valueOf(charc)).concat("TI\"")
+                                    .concat(String.valueOf(chard)).concat(result[1])
+                                    .concat(String.valueOf(charc)).concat(";").concat(String.valueOf(charc))
+                                    .concat("T");
+                        }
+                    }
+                }
+            }
+            if (!bdep) {
+                res = res.concat(String.valueOf(charh));
+            }
         }
-        res = res.concat("]");
-        res = this.getMarshal(res).toString();
         return res;
     }
 
