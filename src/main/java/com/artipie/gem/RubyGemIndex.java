@@ -63,9 +63,11 @@ public final class RubyGemIndex implements GemIndex {
 
     @Override
     public void update(final Path path) {
-        if (!this.issetup) {
-            this.issetup = true;
-            this.runtime.eval(this.ruby, "require 'rubygems/indexer.rb'");
+        synchronized (RubyGemIndex.class) {
+            if (!this.issetup) {
+                this.issetup = true;
+                this.runtime.eval(this.ruby, "require 'rubygems/indexer.rb'");
+            }
         }
         this.runtime.eval(
             this.ruby,

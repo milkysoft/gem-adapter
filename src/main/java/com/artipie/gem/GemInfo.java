@@ -39,5 +39,5 @@ public interface GemInfo {
      * @param gempath Full path to gem file or null
      * @return RubyObject specification
      */
-    JsonObject getinfo(Path gempath);
+    JsonObject info(Path gempath);
 }

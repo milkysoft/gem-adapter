@@ -28,6 +28,7 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.io.File;
@@ -35,16 +36,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.json.Json;
 import javax.json.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.jruby.Ruby;
@@ -162,12 +161,15 @@ public final class Gem {
             tmpdir -> this.sharedInfo()
                 .thenApply(
                     rubyjson -> {
-                        final JsonObject obj;
+                        JsonObject obj = Json.createObjectBuilder().build();
                         try {
-                            final Key thekey = this.getGemFile(gem).toCompletableFuture().get();
-                            obj = rubyjson.getinfo(
-                                Paths.get(tmpdir.toString(), thekey.string())
-                            );
+                            final List<Key> thekey = this.getGemFile(gem).toCompletableFuture()
+                                .get();
+                            if (!thekey.isEmpty()) {
+                                obj = rubyjson.info(
+                                    Paths.get(tmpdir.toString(), thekey.get(0).string())
+                                );
+                            }
                         } catch (final InterruptedException | ExecutionException exc) {
                             throw new ArtipieIOException(exc);
                         } finally {
@@ -187,7 +189,7 @@ public final class Gem {
             this.runtime = JavaEmbedUtils.newRuntimeAdapter();
         }
         if (this.ruby == null) {
-            this.ruby = JavaEmbedUtils.initialize(Collections.emptyList());
+            this.ruby = JavaEmbedUtils.initialize(java.util.Collections.emptyList());
         }
     }
 
@@ -220,8 +222,8 @@ public final class Gem {
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
         final Key gem) {
-        final Set<String> vars = new HashSet<>(
-            Arrays.asList(
+        final java.util.Set<String> vars = new java.util.HashSet<>(
+            java.util.Arrays.asList(
                 "latest_specs.4.8", "latest_specs.4.8.gz", "prerelease_specs.4.8",
                 "prerelease_specs.4.8.gz", "specs.4.8", "specs.4.8.gz"
             )
@@ -287,15 +289,13 @@ public final class Gem {
      * @param gem Gem name to get info
      * @return String full path to gem file
      */
-    private CompletionStage<Key> getGemFile(final Key gem) {
-        final CompletableFuture<Key> future = new CompletableFuture<>();
-        Single.fromFuture(this.storage.list(Key.ROOT))
+    private CompletionStage<List<Key>> getGemFile(final Key gem) {
+        return Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
                     key -> key.string().contains(gem.string()) && key.string().endsWith(Gem.GEM_STR)
                         && !key.string().contains("/")
-                ).limit(1).collect(Collectors.toList()))
-            .flatMapObservable(Observable::fromIterable).forEach(future::complete);
-        return future;
+                ).collect(Collectors.toList()))
+            .to(SingleInterop.get()).toCompletableFuture();
     }
 }

@@ -71,7 +71,7 @@ public final class RubyObjJson implements GemInfo {
      * @param gempath Full path to gem file or null
      * @return JsonObjectBuilder result
      */
-    public JsonObject getinfo(final Path gempath) {
+    public JsonObject info(final Path gempath) {
         final List<Variable<Object>> vars = this.getSpecification(gempath)
             .getVariableList();
         final JsonObjectBuilder obj = Json.createObjectBuilder();

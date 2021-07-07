@@ -27,9 +27,11 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasBody;
+import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
+import com.artipie.http.rs.RsStatus;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -51,13 +53,21 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public class GetGemInfoTest {
+    /**
+     * Gem to test.
+     */
+    static final String BUILDER_STR = "gviz-0.3.5.gem";
+
+    /**
+     * Gem to test.
+     */
+    static final String GVIZ_STR = "/gviz-0.3.5.gem";
 
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path repo = Paths.get(tmp.toString());
-        final String builderstr = "gviz-0.3.5.gem";
-        final Path target = repo.resolve(builderstr);
-        try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
+        final Path target = repo.resolve(GetGemInfoTest.BUILDER_STR);
+        try (InputStream is = this.getClass().getResourceAsStream(GetGemInfoTest.GVIZ_STR);
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
@@ -76,6 +86,28 @@ public class GetGemInfoTest {
                     )
                 ),
                 new RequestLine(RqMethod.GET, "/api/v1/gems/gviz.json"),
+                Headers.EMPTY,
+                com.artipie.asto.Content.EMPTY
+            )
+        );
+    }
+
+    @Test
+    public void queryResultsNotImplemented(@TempDir final Path tmp) throws IOException {
+        final Path repo = Paths.get(tmp.toString());
+        final Path target = repo.resolve(GetGemInfoTest.BUILDER_STR);
+        try (InputStream is = this.getClass().getResourceAsStream(GetGemInfoTest.GVIZ_STR);
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        final Storage storage = new FileStorage(tmp);
+        MatcherAssert.assertThat(
+            new GetGemInfo(storage, new Gem(storage)),
+            new SliceHasResponse(
+                Matchers.allOf(
+                    new RsHasStatus(RsStatus.NOT_IMPLEMENTED)
+                ),
+                new RequestLine(RqMethod.GET, "/api/v1/gems/gviz.yml"),
                 Headers.EMPTY,
                 com.artipie.asto.Content.EMPTY
             )

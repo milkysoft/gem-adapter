@@ -25,12 +25,10 @@ package com.artipie.gem;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -47,8 +45,7 @@ import wtf.g4s8.hamcrest.json.JsonValueIs;
 public class RubyObjJsonTest {
 
     @Test
-    public void createJsonByPath(@TempDir final Path tmp) throws IOException,
-        ExecutionException, InterruptedException {
+    public void createJsonByPath(@TempDir final Path tmp) throws Exception {
         final String builderstr = "gviz-0.3.5.gem";
         final String gemattr = "homepage";
         final String attrval = "https://github.com/melborne/Gviz";
