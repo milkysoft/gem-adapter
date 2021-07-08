@@ -23,6 +23,8 @@
  */
 package com.artipie.gem;
 
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
@@ -51,6 +53,7 @@ import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.jruby.specialized.RubyArrayTwoObject;
 
 /**
  * An SDK, which servers gem packages.
@@ -176,10 +179,18 @@ public class Gem {
             runtime,
             evaler.eval(runtime, "Ex"),
             "new",
-            new Object[]{10},
+            new Object[]{"gviz-0.3.5.gem"},
             Example.class
         );
-        System.out.printf("val=%d\n", ex.sum(4));
+        System.out.println("8776786");
+        //org.jruby.RubyArray<IRubyObject> deps = ex.dependencies();
+        //RubyArrayTwoObject obj = (RubyArrayTwoObject) deps.get(0);
+        //String name = (String) obj.get(0);
+        //String version = (String) obj.get(1);
+        //System.out.printf("val=%s  %s\n", name, version);
+        org.jruby.RubyString obj = ex.dependencies();
+        FileUtils.writeByteArrayToFile(new File("yyyy.data"), obj.getBytes());
+        System.out.printf("val=%s\n", obj);
     }
     /**
      * Lookup an instance of slice, implemented with JRuby.

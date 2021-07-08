@@ -12,7 +12,15 @@ class Ex
         @val = val
     end
 
-    def sum(x)
-        return @val + x
+    def dependencies()
+        resdep = []
+        spec = Gem::Package.new(@val).spec
+        deps = spec.dependencies
+        deps.each do |item|
+            if item.type == :runtime
+                resdep.append([item.name, item.requirements_list()[0]])
+            end
+        end
+        return Marshal.dump([{:name => spec.name, :number=>spec.version.version, :platform=>"ruby", :dependencies=>resdep}])
     end
 end
