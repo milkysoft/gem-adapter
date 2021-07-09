@@ -133,7 +133,7 @@ public final class GemInfoClass implements Slice {
         } else if (line.contains(deproute)) {
             final int indexs = line.indexOf(deproute) + offset;
             final int indexe = line.indexOf("HTTP") - 1;
-            String obj = "";
+            byte obj[];
             final List<Key> gemkeys = new ArrayList<>(0);
             for (final String gemname : line.substring(indexs, indexe).split(",")) {
                 gemkeys.add(new Key.From(gemname));
@@ -146,7 +146,7 @@ public final class GemInfoClass implements Slice {
             }
             res = new AsyncResponse(
                 CompletableFuture.completedFuture(
-                    new RsWithBody(obj, Charset.forName("ISO-8859-1"))
+                    new RsWithBody(ByteBuffer.wrap(obj))
                 )
             );
         } else if (line.contains("/latest_specs.4.8.gz")) {
