@@ -47,7 +47,7 @@ public interface GemInfo {
      * @param gempaths Full paths to gem files
      * @return RubyObject specification
      */
-    String getDependencies(List<Path> gempaths);
+    byte[] getDependencies(List<Path> gempaths);
 
     /**
      * Synchronized decorator.
@@ -76,7 +76,7 @@ public interface GemInfo {
         }
 
         @Override
-        public String getDependencies(final List<Path> paths) {
+        public byte[] getDependencies(final List<Path> paths) {
             synchronized (this.origin) {
                 return this.origin.getDependencies(paths);
             }

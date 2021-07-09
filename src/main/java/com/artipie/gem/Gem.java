@@ -190,7 +190,7 @@ public final class Gem {
      * @param gems Ruby gem to extract info
      * @return Completable action
      */
-    public CompletionStage<String> getDependencies(final List<Key> gems) {
+    public CompletionStage<byte[]> getDependencies(final List<Key> gems) {
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -213,7 +213,7 @@ public final class Gem {
             tmpdir -> this.sharedInfo()
                 .thenApply(
                     rubyjson -> {
-                        final String obj;
+                        final byte[] obj;
                         try {
                             final List<Path> paths = new ArrayList<>(gems.size());
                             for (final Key gem : gems) {

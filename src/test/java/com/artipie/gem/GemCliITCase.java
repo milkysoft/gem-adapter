@@ -136,10 +136,11 @@ public class GemCliITCase {
             .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
         ruby.start();
         final Set<String> gems = new HashSet<>();
-        gems.add("thor-0.19.1.gem");
+        gems.add("thor-1.1.0.gem");
+        gems.add("gviz-0.3.5.gem");
         for (final String gem : gems) {
             final Path target = mount.resolve(gem);
-            try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
+            try (InputStream is = this.getClass().getResourceAsStream("/test/gems/".concat(gem));
                  OutputStream os = Files.newOutputStream(target)) {
                 IOUtils.copy(is, os);
             }

@@ -78,89 +78,9 @@ public final class GemSlice extends Slice.Wrap {
             new SliceRoute(
                 new RtRulePath(
                     new RtRule.All(
-                        new ByMethodsRule(RqMethod.POST),
-                        new RtRule.ByPath("/api/v1/gems")
-                    ),
-                    new AuthSlice(
-                        new SubmitGem(storage, new Gem(storage)),
-                        new GemApiKeyAuth(auth),
-                        new Permission.ByName(permissions, Action.Standard.WRITE)
-                    )
-                ),
-                new RtRulePath(
-                    new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/api/v1/api_key")
+                        new RtRule.ByPath("/.*")
                     ),
-                    new ApiKeySlice(auth)
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath(GemInfoClass.PATH_PATTERN)
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/latest_specs.4.8.gz")
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/specs.4.8.gz")
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/quick/Marshal.4.8/.*")
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/versions")
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/info/.*")
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/gems/.*")
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new RtRule.All(
-                        new ByMethodsRule(RqMethod.GET),
-                        new RtRule.ByPath("/api/v1/dependencies")
-                    ),
-                    new GemInfoClass(storage, new Gem(storage))
-                ),
-                new RtRulePath(
-                    new ByMethodsRule(RqMethod.GET),
-                    new AuthSlice(
-                        new SliceDownload(storage),
-                        new GemApiKeyAuth(auth),
-                        new Permission.ByName(permissions, Action.Standard.READ)
-                    )
-                ),
-                new RtRulePath(
-                    RtRule.FALLBACK,
-                    //new SliceSimple(new RsWithStatus(RsStatus.NOT_FOUND))
                     new GemInfoClass(storage, new Gem(storage))
                 )
             )
