@@ -394,13 +394,13 @@ public final class Gem {
             .map(
                 list -> list.stream().filter(
                     key -> {
-                        return (!exact && key.string().contains(gem.string())) ||
+                        return (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
                                 (exact && (key.string().equals(gem.string())));
                     }
                 ).count() > 0 ?
                         list.stream().filter(
                                 key -> {
-                                    return (!exact && key.string().contains(gem.string())) ||
+                                    return (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
                                             (exact && (key.string().equals(gem.string())));
                                 }
                         ).limit(1).collect(Collectors.toList()) :
