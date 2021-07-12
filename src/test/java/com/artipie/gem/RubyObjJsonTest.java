@@ -55,7 +55,6 @@ public class RubyObjJsonTest {
             IOUtils.copy(is, os);
         }
         final Gem gem = new Gem(new FileStorage(tmp));
-        gem.initialize();
         MatcherAssert.assertThat(
             gem.info(new Key.From("gviz")).toCompletableFuture().get(),
             Matchers.allOf(

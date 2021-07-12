@@ -79,7 +79,6 @@ public final class GetGemInfo implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
-        this.gem.initialize();
         final AsyncResponse res;
         if (matcher.find()) {
             final String gemname = matcher.group(1);

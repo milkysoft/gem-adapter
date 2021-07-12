@@ -118,6 +118,7 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<Void> batchUpdate(final Key gem) {
+        this.initialize();
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -146,6 +147,7 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<JsonObject> info(final Key gem) {
+        this.initialize();
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -184,7 +186,7 @@ public final class Gem {
     /**
      * Initialize ruby.
      */
-    public void initialize() {
+    private void initialize() {
         if (this.runtime == null) {
             this.runtime = JavaEmbedUtils.newRuntimeAdapter();
         }
