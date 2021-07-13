@@ -27,13 +27,11 @@ package com.artipie.gem;
 import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.http.Response;
-import com.artipie.http.Slice;
+import com.artipie.http.*;
 import com.artipie.http.async.AsyncResponse;
+import com.artipie.http.headers.Header;
 import com.artipie.http.rq.RequestLineFrom;
-import com.artipie.http.rs.RsStatus;
-import com.artipie.http.rs.RsWithBody;
-import com.artipie.http.rs.RsWithStatus;
+import com.artipie.http.rs.*;
 import com.artipie.http.rs.common.RsJson;
 import com.artipie.http.slice.SliceSimple;
 import com.jcabi.log.Logger;
@@ -131,24 +129,45 @@ public final class GemInfoClass implements Slice {
                 )
             );
         } else if (line.contains(deproute)) {
+            System.out.println(line);
             final int indexs = line.indexOf(deproute) + offset;
             final int indexe = line.indexOf("HTTP") - 1;
             byte obj[];
-            final List<Key> gemkeys = new ArrayList<>(0);
-            for (final String gemname : line.substring(indexs, indexe).split(",")) {
-                gemkeys.add(new Key.From(gemname));
+            if (!line.contains("?gems=")) {
+                res = new AsyncResponse(
+                    CompletableFuture.completedFuture(
+                        new RsWithHeaders(
+                            new RsWithStatus(RsStatus.OK),
+                            new Header("Content-Type", "text/html;charset=utf-8"),
+                            new Header("X-XSS-Protection", "1; mode=block"),
+                            new Header("X-Content-Type-Options", "nosniff"),
+                            new Header("X-Frame-Options", "SAMEORIGIN"),
+                            new Header("Content-Length", "0")
+                        )
+                    )
+                );
+            } else {
+                final List<Key> gemkeys = new ArrayList<>(0);
+                for (final String gemname : line.substring(indexs, indexe).split(",")) {
+                    gemkeys.add(new Key.From(gemname));
+                }
+                try {
+                    obj = this.gem.getDependencies(gemkeys)
+                        .toCompletableFuture().get();
+                } catch (final InterruptedException | ExecutionException exc) {
+                    throw new ArtipieIOException(exc);
+                }
+                res = new AsyncResponse(
+                    CompletableFuture.completedFuture(
+                        new RsWithHeaders(
+                            new RsWithBody(ByteBuffer.wrap(obj)),
+                            new Header("Content-Type", "application/octet-stream"),
+                            new Header("X-Content-Type-Options", "anosniff"),
+                            new Header("Vary", "Accept-Encoding")
+                        )
+                    )
+                );
             }
-            try {
-                obj = this.gem.getDependencies(gemkeys)
-                    .toCompletableFuture().get();
-            } catch (final InterruptedException | ExecutionException exc) {
-                throw new ArtipieIOException(exc);
-            }
-            res = new AsyncResponse(
-                CompletableFuture.completedFuture(
-                    new RsWithBody(ByteBuffer.wrap(obj))
-                )
-            );
         } else if (line.contains("/latest_specs.4.8.gz")) {
             System.out.println(line);
             final Charset encoding = Charset.forName("ISO-8859-1");
@@ -184,17 +203,38 @@ public final class GemInfoClass implements Slice {
         } else if (line.contains("/versions")) {
             System.out.println(line);
             res = new AsyncResponse(
-                    CompletableFuture.completedFuture(new RsWithStatus(RsStatus.NOT_FOUND))
+                    CompletableFuture.completedFuture(new RsWithHeaders(
+                        new RsWithStatus(RsStatus.FOUND),
+                        new Header("Location", "https://index.rubygems.org/versions"),
+                        new Header("Content-Type", "text/html;charset=utf-8"),
+                        new Header("X-XSS-Protection", "1; mode=block"),
+                        new Header("X-Content-Type-Options", "nosniff"),
+                        new Header("X-Frame-Options", "SAMEORIGIN"),
+                        new Header("Content-Length", "0")
+                    ))
             );
         } else if (line.contains("/info/")) {
             System.out.println(line);
-            final int ar = line.lastIndexOf("/") + 1;
-            final int indexe = line.indexOf("HTTP") - 1;
-            final String spec = line.substring(ar, indexe);
-            final Charset encoding = Charset.forName("ISO-8859-1");
+//            final int ar = line.lastIndexOf("/") + 1;
+//            final int indexe = line.indexOf("HTTP") - 1;
+//            final String spec = line.substring(ar, indexe);
+//            final Charset encoding = Charset.forName("ISO-8859-1");
+//            res = new AsyncResponse(
+//                this.gem.getRubyFile(new Key.From(spec))
+//                    .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+//            );
             res = new AsyncResponse(
-                this.gem.getRubyFile(new Key.From(spec))
-                    .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+                CompletableFuture.completedFuture(new RsWithHeaders(
+                    new RsWithStatus(
+                        new RsWithBody("Not yet supported", StandardCharsets.UTF_8),
+                        RsStatus.FORBIDDEN
+                    ),   
+                    new Header("Content-Type", "text/html;charset=utf-8"),
+                    new Header("X-XSS-Protection", "1; mode=block"),
+                    new Header("X-Content-Type-Options", "nosniff"),
+                    new Header("X-Frame-Options", "SAMEORIGIN"),
+                    new Header("Content-Length", "0")
+                ))
             );
         } else if (line.contains("/gems/")) {
             System.out.println(line);
@@ -215,3 +255,4 @@ public final class GemInfoClass implements Slice {
         return res;
     }
 }
+
