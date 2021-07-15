@@ -112,8 +112,6 @@ public class GemCliITCase {
             ),
             Matchers.equalTo(0)
         );
-        System.out.println(String.format("Sleeping. Host: %s, API_KEY: %s", host, key));
-        Thread.sleep(99999999);
         ruby.stop();
         server.close();
         vertx.close();

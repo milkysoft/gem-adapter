@@ -31,11 +31,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import wtf.g4s8.hamcrest.json.JsonHas;
-import wtf.g4s8.hamcrest.json.JsonValueIs;
 
 /**
  * A test for extract JSON info from gem .
@@ -47,7 +45,7 @@ public class RubyObjJsonTest {
     @Test
     public void createJsonByPath(@TempDir final Path tmp) throws Exception {
         final String builderstr = "gviz-0.3.5.gem";
-        final String gemattr = "homepage";
+        final String gemattr = "homepage_uri";
         final String attrval = "https://github.com/melborne/Gviz";
         final Path target = tmp.resolve(builderstr);
         try (InputStream is = this.getClass().getResourceAsStream("/".concat(builderstr));
@@ -56,13 +54,8 @@ public class RubyObjJsonTest {
         }
         final Gem gem = new Gem(new FileStorage(tmp));
         MatcherAssert.assertThat(
-            gem.info(new Key.From("gviz")).toCompletableFuture().get(),
-            Matchers.allOf(
-                new JsonHas(
-                    gemattr,
-                    new JsonValueIs(attrval)
-                )
-            )
+            gem.info(new Key.From(builderstr)).toCompletableFuture().get().getString(gemattr),
+            new IsEqual<>(attrval)
         );
     }
 }
