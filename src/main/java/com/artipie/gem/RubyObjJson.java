@@ -23,15 +23,18 @@
  */
 package com.artipie.gem;
 
+import com.artipie.asto.ArtipieIOException;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.List;
 import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
-import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
-import org.jruby.runtime.builtin.Variable;
+import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
  * Returns some basic information about the given gem.
@@ -72,35 +75,33 @@ public final class RubyObjJson implements GemInfo {
      * @return JsonObjectBuilder result
      */
     public JsonObject info(final Path gempath) {
-        final List<Variable<Object>> vars = this.getSpecification(gempath)
-            .getVariableList();
-        final JsonObjectBuilder obj = Json.createObjectBuilder();
-        for (final Variable<Object> var : vars) {
-            String name = var.getName();
-            if (name.charAt(0) == '@') {
-                name = var.getName().substring(1);
-            }
-            if (var.getValue() != null) {
-                obj.add(name, var.getValue().toString());
-            }
-        }
-        return obj.build();
-    }
-
-    /**
-     * Get Ruby specification for arbitrary gem.
-     * @param gempath Full path to gem file or null
-     * @return RubyObject specification
-     */
-    private RubyObject getSpecification(final Path gempath) {
+        final String script;
+        JsonObject object = null;
         if (!this.issetup) {
             this.issetup = true;
             this.runtime.eval(this.ruby, "require 'rubygems/package.rb'");
         }
-        return (RubyObject) this.runtime.eval(
-            this.ruby, String.format(
-                "Gem::Package.new('%s').spec", gempath.toString()
-            )
-        );
+        try {
+            script = IOUtils.toString(
+                Gem.class.getResourceAsStream("/info.rb"),
+                StandardCharsets.UTF_8
+            );
+            this.runtime.eval(this.ruby, script);
+            final IRubyInfo info = (IRubyInfo) JavaEmbedUtils.invokeMethod(
+                this.ruby,
+                this.runtime.eval(this.ruby, "Ex"),
+                "new",
+                new Object[]{gempath},
+                IRubyInfo.class
+            );
+            final org.jruby.RubyString obj = info.info();
+            final ByteArrayInputStream bis = new ByteArrayInputStream(obj.getBytes());
+            final JsonReader jsonreader = Json.createReader(bis);
+            object = jsonreader.readObject();
+            jsonreader.close();
+        } catch (final IOException exc) {
+            throw new ArtipieIOException(exc);
+        }
+        return object;
     }
 }
