@@ -91,7 +91,7 @@ public final class RubyObjJson implements GemInfo {
                 this.ruby,
                 this.runtime.eval(this.ruby, "Ex"),
                 "new",
-                new Object[]{gempath},
+                new Object[]{gempath.toString()},
                 IRubyInfo.class
             );
             final org.jruby.RubyString obj = info.info();

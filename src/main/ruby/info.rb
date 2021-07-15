@@ -5,14 +5,16 @@ require 'time'
 require 'tmpdir'
 require 'digest'
 require 'json'
+require 'java'
 
 class Ex
+    include com.artipie.gem.IRubyInfo
 
     def initialize(val)
         @val = val
     end
 
-    def dependencies()
+    def info()
         sha = Digest::SHA2.new
         File.open(@val) do |f|
             while chunk = f.read(256)

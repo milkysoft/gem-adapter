@@ -76,6 +76,7 @@ public class GemCliITCase {
         final Set<String> gems = new HashSet<>();
         gems.add("builder-3.2.4.gem");
         gems.add("rails-6.0.2.2.gem");
+        gems.add("gviz-0.3.5.gem");
         for (final String gem : gems) {
             final Path target = mount.resolve(gem);
             try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
@@ -111,6 +112,8 @@ public class GemCliITCase {
             ),
             Matchers.equalTo(0)
         );
+        System.out.println(String.format("Sleeping. Host: %s, API_KEY: %s", host, key));
+        Thread.sleep(99999999);
         ruby.stop();
         server.close();
         vertx.close();
