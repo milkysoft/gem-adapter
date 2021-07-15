@@ -26,7 +26,6 @@ package com.artipie.gem;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.http.Headers;
-import com.artipie.http.hm.RsHasBody;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.hm.SliceHasResponse;
 import com.artipie.http.rq.RequestLine;
@@ -43,8 +42,6 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import wtf.g4s8.hamcrest.json.JsonHas;
-import wtf.g4s8.hamcrest.json.JsonValueIs;
 
 /**
  * A test for gem submit operation.
