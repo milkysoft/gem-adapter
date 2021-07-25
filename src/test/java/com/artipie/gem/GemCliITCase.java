@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.io.IOUtils;
@@ -114,6 +115,71 @@ public class GemCliITCase {
         );
         ruby.stop();
         ruby.close();
+        server.close();
+        vertx.close();
+    }
+
+    @Test
+    public void gemBundleInstall(@TempDir final Path temp, @TempDir final Path mount)
+        throws IOException, InterruptedException {
+        final Vertx vertx = Vertx.vertx();
+        final VertxSliceServer server = new VertxSliceServer(
+            vertx,
+            new GemSlice(new FileStorage(temp))
+        );
+        final int port = server.start();
+        final String host = String.format("http://host.testcontainers.internal:%d", port);
+        Testcontainers.exposeHostPorts(port);
+        final RubyContainer ruby = new RubyContainer()
+            .withCommand("tail", "-f", "/dev/null")
+            .withWorkingDirectory("/home/")
+            .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
+        ruby.start();
+        String fileA = "specs.4.8.gz";
+        Path target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/".concat(fileA));
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        fileA = "prerelease_specs.4.8.gz";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/".concat(fileA));
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        fileA = "latest_specs.4.8.gz";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/".concat(fileA));
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        fileA = "thor-1.1.0.gem";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/gems/".concat(fileA));
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        fileA = "gviz-0.3.5.gem";
+        target = mount.resolve(fileA);
+        try (InputStream is = this.getClass().getResourceAsStream("/test/gems/".concat(fileA));
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        String content = "# frozen_string_literal: true\n\n".concat(String.format("source \"%s\"\n\n", host))
+            .concat("git_source(:github) {|repo_name| \"https://github.com/#{repo_name}\" }\n\n")
+            .concat("gem 'gviz', '0.3.5'\n");
+        Path j = Paths.get(temp.toString(), "yyy");
+        byte[] strToBytes = content.getBytes();
+        Files.write(j, strToBytes);
+        MatcherAssert.assertThat(
+            String.format("'gem versions %s ", host),
+            this.bash(
+                ruby,
+                String.format("gem sources -r https://rubygems.org/; gem sources -a %s; bundle init; mv yyy Gemfile; bundle install", host)
+            ),
+            Matchers.equalTo(0)
+        );
+        ruby.stop();
         server.close();
         vertx.close();
     }

@@ -25,6 +25,7 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -58,10 +59,10 @@ public interface GemMeta {
 
     /**
      * Extract Gem dependencies.
-     * @param gem Path to gem
+     * @param gempath Path to gem
      * @return Bytes object
      */
-    byte[] dependencies(Path gem);
+    byte[] dependencies(final Path gempath);
 
     /**
      * Gem info format.

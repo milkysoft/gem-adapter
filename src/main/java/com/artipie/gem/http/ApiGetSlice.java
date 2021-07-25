@@ -31,10 +31,15 @@ import com.artipie.gem.GemMeta;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
+import com.artipie.http.headers.Header;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithBody;
+import com.artipie.http.rs.RsWithHeaders;
+import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rs.common.RsJson;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +85,7 @@ public final class ApiGetSlice implements Slice {
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final String deproute = "/api/v1/dependencies";
-        AsyncResponse res = null;
+        AsyncResponse res;
         final int offset = 26;
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
         if (line.contains(deproute)) {
@@ -90,7 +95,7 @@ public final class ApiGetSlice implements Slice {
             for (final String gemname : line.substring(indexs, indexe).split(",")) {
                 gemkeys.add(new Key.From(gemname));
             }
-            byte[] obj = new byte[0];
+            byte[] obj;
             try {
                 obj = this.sdk.getDependencies(gemkeys)
                     .toCompletableFuture().get();
@@ -101,6 +106,31 @@ public final class ApiGetSlice implements Slice {
                 CompletableFuture.completedFuture(
                     new RsWithBody(ByteBuffer.wrap(obj))
                 )
+            );
+        } else if (line.contains("/gems/")) {
+            final int ar = line.lastIndexOf("/") + 1;
+            final int indexe = line.indexOf("HTTP") - 1;
+            final String spec = line.substring(ar, indexe);
+            res = new AsyncResponse(
+                this.sdk.getRubyFile(new Key.From(spec))
+                    .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+            );
+        } else if (line.contains("/specs.4.8.gz")) {
+            res = new AsyncResponse(
+                this.sdk.getRubyFile(new Key.From("specs.4.8.gz"))
+                    .thenApply( out -> new RsWithBody(ByteBuffer.wrap(out)))
+            );
+        } else if (line.contains("/versions")) {
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(new RsWithHeaders(
+                    new RsWithStatus(RsStatus.FOUND),
+                    new Header("Location", "https://index.rubygems.org/versions"),
+                    new Header("Content-Type", "text/html;charset=utf-8"),
+                    new Header("X-XSS-Protection", "1; mode=block"),
+                    new Header("X-Content-Type-Options", "nosniff"),
+                    new Header("X-Frame-Options", "SAMEORIGIN"),
+                    new Header("Content-Length", "0")
+                ))
             );
         } else if (matcher.find()) {
             res = new AsyncResponse(

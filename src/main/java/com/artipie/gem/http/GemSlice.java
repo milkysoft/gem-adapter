@@ -133,6 +133,13 @@ public final class GemSlice extends Slice.Wrap {
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/api/v1/dependencies")
+                    ),
+                    new ApiGetSlice(storage)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/gems/.*")
                     ),
                     new ApiGetSlice(storage)

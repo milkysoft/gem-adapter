@@ -39,13 +39,22 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -188,6 +197,128 @@ public final class Gem {
             }
             return res;
         };
+    }
+
+    /**
+     * Copy storage from src to dst.
+     * @param src Source storage
+     * @param dst Destination storage
+     * @param gem Key for gem
+     * @return Async result
+     */
+    private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
+                                                     final Key gem, final Key fallout) {
+        final Set<String> vars = new HashSet<>(
+            Arrays.asList(
+                "latest_specs.4.8", "latest_specs.4.8.gz", "prerelease_specs.4.8",
+                "prerelease_specs.4.8.gz", "specs.4.8", "specs.4.8.gz"
+            )
+        );
+        vars.add(gem.string());
+        final String tmp = gem.string().substring(gem.string().indexOf('/') + 1);
+        vars.add(String.format("quick/Marshal.4.8/%sspec.rz", tmp));
+        return Single.fromFuture(src.list(Key.ROOT))
+            .map(
+                list -> list.stream().filter(
+                    key -> vars.contains(key.string()) || key.string().contains(gem.string())
+                        || (fallout.string().length() > 0 && key.string().contains(fallout.string()))
+                ).collect(Collectors.toList()))
+            .flatMapObservable(Observable::fromIterable)
+            .flatMapSingle(
+                key -> Single.fromFuture(
+                    src.value(key)
+                        .thenCompose(content -> dst.save(key, content))
+                        .thenApply(none -> true)
+                )
+            ).ignoreElements().to(CompletableInterop.await());
+    }
+
+    /**
+     * Get info Ruby gem.
+     *
+     * @param filename Ruby file to return
+     * @return Completable action
+     */
+    public CompletionStage<byte[]> getRubyFile(final Key filename) {
+        System.out.println(String.format("In getRubyFile for %s", filename.string()));
+        return CompletableFuture.supplyAsync(
+            () -> {
+                try {
+                    return Files.createTempDirectory("statics");
+                } catch (final IOException exc) {
+                    throw new ArtipieIOException(exc);
+                }
+            }
+        ).thenCompose(
+            tmpdir -> {
+                final Storage newstorage = new FileStorage(tmpdir);
+                CompletionStage<Path> res = null;
+                return Gem.copyStorage(this.storage, newstorage, filename, new Key.From("thor-1.0.1.gemspec.rz"))
+                    .thenApply(ignore -> tmpdir);
+            }
+        ).thenApply(
+            tmpdir  -> {
+                        try {
+                            System.out.println(String.format("Getting %s", filename.string()));
+                            CompletionStage<Key> st = this.getGemFile(filename, true, new Key.From("thor-1.0.1.gemspec.rz"));
+                            System.out.println("stage");
+                            CompletableFuture<Key> ft = st.toCompletableFuture();
+                            System.out.println("future");
+                            final Key thekey = ft.get(10, TimeUnit.MILLISECONDS);
+                            if(thekey == null) {
+                                System.out.println("88888888");
+                            } else {
+                                System.out.println(String.format("7777777: %s", thekey.string()));
+                            }
+                            final Path path = Paths.get(tmpdir.toString(), thekey.string());
+                            System.out.println(String.format("Reading %s", path));
+                            File file = new File(path.toString());
+                            try {
+                                byte[] fileContent = Files.readAllBytes(file.toPath());
+                                return fileContent;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
+                            System.out.println("ERRRRRRRRRRR!!!!!");
+                        } finally {
+                            System.out.println("remove tmp dir");
+                        }
+                        return null;
+                    }
+                );
+    }
+
+    /**
+     * Find gem in a given path.
+     * @param gem Gem name to get info
+     * @return String full path to gem file
+     */
+    private CompletionStage<Key> getGemFile(final Key gem, final boolean exact, final Key fallout) {
+        final CompletableFuture<Key> future = new CompletableFuture<>();
+        Single.fromFuture(this.storage.list(Key.ROOT))
+            .map(
+                list -> list.stream().filter(
+                    key -> {
+                        return (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
+                            (exact && (key.string().equals(gem.string())));
+                    }
+                ).count() > 0 ?
+                    list.stream().filter(
+                        key -> {
+                            return (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
+                                (exact && (key.string().equals(gem.string())));
+                        }
+                    ).limit(1).collect(Collectors.toList()) :
+                    list.stream().filter(
+                        key -> {
+                            return (!exact && key.string().contains(gem.string())) || (exact && (key.string().equals(gem.string())
+                                || (fallout != null && (key.string().equals(fallout.string())))));
+                        }
+                    ).limit(1).collect(Collectors.toList())
+            )
+            .flatMapObservable(Observable::fromIterable).forEach(future::complete);
+        return future;
     }
 
     /**
