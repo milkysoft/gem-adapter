@@ -25,7 +25,6 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import javax.json.Json;
 import javax.json.JsonObject;

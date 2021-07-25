@@ -26,20 +26,17 @@ package com.artipie.gem.ruby;
 
 import com.artipie.ArtipieException;
 import com.artipie.gem.GemMeta;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import com.artipie.gem.IDependencies;
 import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
-import org.jruby.runtime.builtin.IRubyObject;
 
 /**
  * JRuby implementation of GemInfo metadata parser.

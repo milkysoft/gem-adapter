@@ -39,7 +39,6 @@ import com.artipie.http.rs.RsWithHeaders;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rs.common.RsJson;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -89,24 +88,7 @@ public final class ApiGetSlice implements Slice {
         final int offset = 26;
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
         if (line.contains(deproute)) {
-            final int indexs = line.indexOf(deproute) + offset;
-            final int indexe = line.indexOf("HTTP") - 1;
-            final List<Key> gemkeys = new ArrayList<>(0);
-            for (final String gemname : line.substring(indexs, indexe).split(",")) {
-                gemkeys.add(new Key.From(gemname));
-            }
-            byte[] obj;
-            try {
-                obj = this.sdk.getDependencies(gemkeys)
-                    .toCompletableFuture().get();
-            } catch (final InterruptedException | ExecutionException exc) {
-                throw new ArtipieIOException(exc);
-            }
-            res = new AsyncResponse(
-                CompletableFuture.completedFuture(
-                    new RsWithBody(ByteBuffer.wrap(obj))
-                )
-            );
+            res = processdeproute(line, deproute, offset);
         } else if (line.contains("/gems/")) {
             final int ar = line.lastIndexOf("/") + 1;
             final int indexe = line.indexOf("HTTP") - 1;
@@ -141,5 +123,27 @@ public final class ApiGetSlice implements Slice {
             throw new IllegalStateException("Invalid routing schema");
         }
         return res;
+    }
+
+    AsyncResponse processdeproute(final String line, final String deproute,
+        final int offset) {
+        final int indexs = line.indexOf(deproute) + offset;
+        final int indexe = line.indexOf("HTTP") - 1;
+        final List<Key> gemkeys = new ArrayList<>(0);
+        for (final String gemname : line.substring(indexs, indexe).split(",")) {
+            gemkeys.add(new Key.From(gemname));
+        }
+        byte[] obj;
+        try {
+            obj = this.sdk.getDependencies(gemkeys)
+                .toCompletableFuture().get();
+        } catch (final InterruptedException | ExecutionException exc) {
+            throw new ArtipieIOException(exc);
+        }
+        return new AsyncResponse(
+            CompletableFuture.completedFuture(
+                new RsWithBody(ByteBuffer.wrap(obj))
+            )
+        );
     }
 }

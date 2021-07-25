@@ -51,7 +51,6 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -204,7 +203,8 @@ public final class Gem {
      * @param src Source storage
      * @param dst Destination storage
      * @param gem Key for gem
-     * @return Async result
+     * @param fallout Key for default gem
+     * @return CompletionStage
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
                                                      final Key gem, final Key fallout) {
@@ -240,7 +240,6 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<byte[]> getRubyFile(final Key filename) {
-        System.out.println(String.format("In getRubyFile for %s", filename.string()));
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -258,35 +257,25 @@ public final class Gem {
             }
         ).thenApply(
             tmpdir  -> {
-                        try {
-                            System.out.println(String.format("Getting %s", filename.string()));
-                            CompletionStage<Key> st = this.getGemFile(filename, true, new Key.From("thor-1.0.1.gemspec.rz"));
-                            System.out.println("stage");
-                            CompletableFuture<Key> ft = st.toCompletableFuture();
-                            System.out.println("future");
-                            final Key thekey = ft.get(10, TimeUnit.MILLISECONDS);
-                            if(thekey == null) {
-                                System.out.println("88888888");
-                            } else {
-                                System.out.println(String.format("7777777: %s", thekey.string()));
-                            }
-                            final Path path = Paths.get(tmpdir.toString(), thekey.string());
-                            System.out.println(String.format("Reading %s", path));
-                            File file = new File(path.toString());
-                            try {
-                                byte[] fileContent = Files.readAllBytes(file.toPath());
-                                return fileContent;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
-                            System.out.println("ERRRRRRRRRRR!!!!!");
-                        } finally {
-                            System.out.println("remove tmp dir");
-                        }
-                        return null;
+                byte[] fileContent;
+                try {
+                    final Key thekey = this.getGemFile(
+                        filename, true, new Key.From("thor-1.0.1.gemspec.rz")
+                    ).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
+                    final Path path = Paths.get(tmpdir.toString(), thekey.string());
+                    File file = new File(path.toString());
+                    try {
+                        fileContent = Files.readAllBytes(file.toPath());
+                    } catch (IOException e) {
+                        fileContent = new byte[0];
                     }
-                );
+                } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
+                    fileContent = new byte[0];
+                } finally {
+                    removeTempDir(tmpdir);
+                }
+                return fileContent;
+            });
     }
 
     /**
