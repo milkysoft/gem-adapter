@@ -57,6 +57,13 @@ public interface GemMeta {
     <T> T info(Path gem, InfoFormat<T> format);
 
     /**
+     * Extract Gem dependencies.
+     * @param gem Path to gem
+     * @return Bytes object
+     */
+    byte[] dependencies(Path gem);
+
+    /**
      * Gem info format.
      * @param <T> Format type
      * @since 1.0

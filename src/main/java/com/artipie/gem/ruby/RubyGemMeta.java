@@ -70,4 +70,9 @@ public final class RubyGemMeta implements GemMeta {
             );
         return fmt.print(data);
     }
+
+    @Override
+    public byte[] dependencies(final Path gem) {
+        return new byte[0];
+    }
 }

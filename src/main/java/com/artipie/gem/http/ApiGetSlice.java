@@ -23,6 +23,8 @@
  */
 package com.artipie.gem.http;
 
+import com.artipie.asto.ArtipieIOException;
+import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.gem.Gem;
 import com.artipie.gem.GemMeta;
@@ -30,9 +32,14 @@ import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsWithBody;
 import com.artipie.http.rs.common.RsJson;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
@@ -72,12 +79,37 @@ public final class ApiGetSlice implements Slice {
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
+        final String deproute = "/api/v1/dependencies";
+        AsyncResponse res = null;
+        final int offset = 26;
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
-        if (!matcher.find()) {
+        if (line.contains(deproute)) {
+            final int indexs = line.indexOf(deproute) + offset;
+            final int indexe = line.indexOf("HTTP") - 1;
+            final List<Key> gemkeys = new ArrayList<>(0);
+            for (final String gemname : line.substring(indexs, indexe).split(",")) {
+                gemkeys.add(new Key.From(gemname));
+            }
+            byte[] obj = new byte[0];
+            try {
+                obj = this.sdk.getDependencies(gemkeys)
+                    .toCompletableFuture().get();
+            } catch (final InterruptedException | ExecutionException exc) {
+                throw new ArtipieIOException(exc);
+            }
+            res = new AsyncResponse(
+                CompletableFuture.completedFuture(
+                    new RsWithBody(ByteBuffer.wrap(obj))
+                )
+            );
+        } else if (matcher.find()) {
+            res = new AsyncResponse(
+                this.sdk.info(matcher.group(1), GemMeta.FMT_JSON)
+                    .thenApply(json -> new RsJson(json))
+            );
+        } else {
             throw new IllegalStateException("Invalid routing schema");
         }
-        return new AsyncResponse(
-            this.sdk.info(matcher.group(1), GemMeta.FMT_JSON).thenApply(json -> new RsJson(json))
-        );
+        return res;
     }
 }

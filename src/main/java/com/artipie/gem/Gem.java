@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -102,6 +103,30 @@ public final class Gem {
                 .thenAccept(index -> index.update(tmp))
                 .thenCompose(none -> new Copy(new FileStorage(tmp)).copy(this.storage))
                 .handle(removeTempDir(tmp))
+        );
+    }
+
+    /**
+     * Get info Ruby gem.
+     *
+     * @param gems Ruby gem to extract info
+     * @return Completable action
+     */
+    public CompletionStage<byte[]> getDependencies(final List<Key> gems) {
+        return newTempDir().thenCompose(
+            tmp -> new Copy(this.storage, new IsGemKey(gems.get(0).string()))
+                .copy(new FileStorage(tmp))
+                .thenApply(ignore -> tmp)
+        ).thenCompose(
+            tmp -> this.shared.apply(RubyGemMeta::new)
+                .thenCompose(
+                    info -> new FileStorage(tmp).list(Key.ROOT).thenApply(
+                        items -> items.stream().findFirst()
+                            .map(first -> Paths.get(tmp.toString(), first.string()))
+                            .map(path -> info.dependencies(path))
+                            .orElseThrow(() -> new ArtipieIOException("gem did not found"))
+                    )
+                ).handle(removeTempDir(tmp))
         );
     }
 
