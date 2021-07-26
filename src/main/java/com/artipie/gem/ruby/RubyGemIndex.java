@@ -57,31 +57,16 @@ public final class RubyGemIndex implements GemIndex {
         adapter.eval(
             this.ruby,
             String.format(
-                "Gem::Indexer.new('%s', {build_modern:true}).generate_index",
-                path.toAbsolutePath().toString()
-            )
-        );
-    }
-
-    /**
-     * Renames local file.
-     *
-     * @param path Full path too gem file.
-     */
-    public void rename(final Path path) {
-        final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
-        adapter.eval(this.ruby, "require 'rubygems/package.rb'");
-        adapter.eval(
-            this.ruby,
-            String.format(
                 "ind='%s'.rindex('/')\n"
                     .concat("dir='' if ind == nil \n")
                     .concat("dir='%s'[0,ind+1] if ind != nil \n")
                     .concat("spec=Gem::Package.new('%s').spec \n")
                     .concat("File.rename('%s', dir + spec.name + '-'")
-                    .concat("+ spec.version.version + '.gem')"),
+                    .concat("+ spec.version.version + '.gem') if ")
+                    .concat("!File.file?(dir + spec.name + '-' + spec.version.version + '.gem')\n")
+                    .concat("Gem::Indexer.new('%s', {build_modern:true}).generate_index"),
                 path.toAbsolutePath(), path.toAbsolutePath(), path.toAbsolutePath(),
-                path.toAbsolutePath()
+                path.toAbsolutePath(), path.getParent().getParent().toAbsolutePath()
             )
         );
     }

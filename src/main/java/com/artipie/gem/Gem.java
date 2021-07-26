@@ -102,8 +102,7 @@ public final class Gem {
                 .thenAccept(
                     index -> {
                         final Path dir = Paths.get(tmp.toString(), gem.string());
-                        index.rename(dir);
-                        index.update(tmp);
+                        index.update(dir);
                     })
                 .thenCompose(none -> new Copy(new FileStorage(tmp)).copy(this.storage))
                 .handle(removeTempDir(tmp))
