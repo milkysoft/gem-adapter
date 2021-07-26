@@ -61,6 +61,7 @@ import org.reactivestreams.Publisher;
  */
 public final class ApiGetSlice implements Slice {
 
+    final static String HTTP = "HTTP";
     /**
      * Endpoint path pattern.
      */
@@ -90,8 +91,8 @@ public final class ApiGetSlice implements Slice {
         if (line.contains(deproute)) {
             res = processdeproute(line, deproute, offset);
         } else if (line.contains("/gems/")) {
-            final int ar = line.lastIndexOf("/") + 1;
-            final int indexe = line.indexOf("HTTP") - 1;
+            final int ar = line.lastIndexOf('/') + 1;
+            final int indexe = line.indexOf(ApiGetSlice.HTTP) - 1;
             final String spec = line.substring(ar, indexe);
             res = new AsyncResponse(
                 this.sdk.getRubyFile(new Key.From(spec))
@@ -128,7 +129,7 @@ public final class ApiGetSlice implements Slice {
     AsyncResponse processdeproute(final String line, final String deproute,
         final int offset) {
         final int indexs = line.indexOf(deproute) + offset;
-        final int indexe = line.indexOf("HTTP") - 1;
+        final int indexe = line.indexOf(ApiGetSlice.HTTP) - 1;
         final List<Key> gemkeys = new ArrayList<>(0);
         for (final String gemname : line.substring(indexs, indexe).split(",")) {
             gemkeys.add(new Key.From(gemname));

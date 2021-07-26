@@ -65,14 +65,21 @@ import org.apache.commons.io.FileUtils;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class Gem {
+     static final String LSP = "latest_specs.4.8";
+     static final String LSG = "latest_specs.4.8.gz";
+     static final String PSP = "prerelease_specs.4.8";
+     static final String PSG = "prerelease_specs.4.8.gz";
+     static final String SPC = "specs.4.8";
+     static final String SPG = "specs.4.8.gz";
+     static final String THOR = "thor-1.0.1.gemspec.rz";
+     static final String DGEM = ".gem";
 
     /**
      * Read only set of metadata item names.
      */
     private static final Set<Key> META_NAMES = Collections.unmodifiableSet(
         Stream.of(
-            "latest_specs.4.8", "latest_specs.4.8.gz", "prerelease_specs.4.8",
-            "prerelease_specs.4.8.gz", "specs.4.8", "specs.4.8.gz"
+            Gem.LSP, Gem.LSG, Gem.PSP, Gem.PSG, Gem.SPC, Gem.SPG
         ).map(Key.From::new).collect(Collectors.toSet())
     );
 
@@ -210,8 +217,7 @@ public final class Gem {
                                                      final Key gem, final Key fallout) {
         final Set<String> vars = new HashSet<>(
             Arrays.asList(
-                "latest_specs.4.8", "latest_specs.4.8.gz", "prerelease_specs.4.8",
-                "prerelease_specs.4.8.gz", "specs.4.8", "specs.4.8.gz"
+                Gem.LSP, Gem.LSG, Gem.PSP, Gem.PSG, Gem.SPC, Gem.SPG
             )
         );
         vars.add(gem.string());
@@ -221,7 +227,7 @@ public final class Gem {
             .map(
                 list -> list.stream().filter(
                     key -> vars.contains(key.string()) || key.string().contains(gem.string())
-                        || (fallout.string().length() > 0 && key.string().contains(fallout.string()))
+                        || fallout.string().length() > 0 && key.string().contains(fallout.string())
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
@@ -251,8 +257,7 @@ public final class Gem {
         ).thenCompose(
             tmpdir -> {
                 final Storage newstorage = new FileStorage(tmpdir);
-                CompletionStage<Path> res = null;
-                return Gem.copyStorage(this.storage, newstorage, filename, new Key.From("thor-1.0.1.gemspec.rz"))
+                return Gem.copyStorage(this.storage, newstorage, filename, new Key.From(Gem.THOR))
                     .thenApply(ignore -> tmpdir);
             }
         ).thenApply(
@@ -260,10 +265,9 @@ public final class Gem {
                 byte[] fileContent;
                 try {
                     final Key thekey = this.getGemFile(
-                        filename, true, new Key.From("thor-1.0.1.gemspec.rz")
-                    ).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
+                        filename, true).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
                     final Path path = Paths.get(tmpdir.toString(), thekey.string());
-                    File file = new File(path.toString());
+                    final File file = new File(path.toString());
                     try {
                         fileContent = Files.readAllBytes(file.toPath());
                     } catch (IOException e) {
@@ -283,26 +287,14 @@ public final class Gem {
      * @param gem Gem name to get info
      * @return String full path to gem file
      */
-    private CompletionStage<Key> getGemFile(final Key gem, final boolean exact, final Key fallout) {
+    private CompletionStage<Key> getGemFile(final Key gem, final boolean exact) {
         final CompletableFuture<Key> future = new CompletableFuture<>();
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> {
-                        return (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
-                            (exact && (key.string().equals(gem.string())));
-                    }
-                ).count() > 0 ?
-                    list.stream().filter(
                         key -> {
-                            return (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
-                                (exact && (key.string().equals(gem.string())));
-                        }
-                    ).limit(1).collect(Collectors.toList()) :
-                    list.stream().filter(
-                        key -> {
-                            return (!exact && key.string().contains(gem.string())) || (exact && (key.string().equals(gem.string())
-                                || (fallout != null && (key.string().equals(fallout.string())))));
+                            return !exact && key.string().contains(gem.string()) && key.string().endsWith(Gem.DGEM) ||
+                                exact && key.string().equals(gem.string());
                         }
                     ).limit(1).collect(Collectors.toList())
             )
