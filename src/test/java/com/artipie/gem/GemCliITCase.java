@@ -58,6 +58,31 @@ import org.testcontainers.containers.GenericContainer;
 @DisabledIfSystemProperty(named = "os.name", matches = "Windows.*")
 public class GemCliITCase {
 
+    /**
+     * Endpoint path pattern.
+     */
+    private static String homes = "/home/";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String homep = "/home";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String devnull = "/dev/null";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String tails = "tail";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String testg = "/test/gems/";
+
     @Test
     public void gemPushAndInstallWorks(@TempDir final Path temp, @TempDir final Path mount)
         throws IOException, InterruptedException {
@@ -71,9 +96,9 @@ public class GemCliITCase {
         final String host = String.format("http://host.testcontainers.internal:%d", port);
         Testcontainers.exposeHostPorts(port);
         final RubyContainer ruby = new RubyContainer()
-            .withCommand("tail", "-f", "/dev/null")
-            .withWorkingDirectory("/home/")
-            .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
+            .withCommand(GemCliITCase.tails, "-f", GemCliITCase.devnull)
+            .withWorkingDirectory(GemCliITCase.homes)
+            .withFileSystemBind(mount.toAbsolutePath().toString(), GemCliITCase.homep);
         ruby.start();
         final Set<String> gems = new HashSet<>();
         gems.add("builder-3.2.4.gem");
@@ -131,9 +156,9 @@ public class GemCliITCase {
         final String host = String.format("http://host.testcontainers.internal:%d", port);
         Testcontainers.exposeHostPorts(port);
         final RubyContainer ruby = new RubyContainer()
-            .withCommand("tail", "-f", "/dev/null")
-            .withWorkingDirectory("/home/")
-            .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
+            .withCommand(GemCliITCase.tails, "-f", GemCliITCase.devnull)
+            .withWorkingDirectory(GemCliITCase.homes)
+            .withFileSystemBind(mount.toAbsolutePath().toString(), GemCliITCase.homep);
         ruby.start();
         String fileA = "specs.4.8.gz";
         Path target = mount.resolve(fileA);
@@ -155,22 +180,29 @@ public class GemCliITCase {
         }
         fileA = "thor-1.1.0.gem";
         target = mount.resolve(fileA);
-        try (InputStream is = this.getClass().getResourceAsStream("/test/gems/".concat(fileA));
+        try (
+            InputStream is = this.getClass().getResourceAsStream(
+                GemCliITCase.testg.concat(fileA)
+            );
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
         fileA = "gviz-0.3.5.gem";
         target = mount.resolve(fileA);
-        try (InputStream is = this.getClass().getResourceAsStream("/test/gems/".concat(fileA));
+        try (
+            InputStream is = this.getClass().getResourceAsStream(
+                GemCliITCase.testg.concat(fileA)
+            );
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
         }
-        String content = "# frozen_string_literal: true\n\n".concat(String.format("source \"%s\"\n\n", host))
+        final String content = "# frozen_string_literal: true\n\n"
+            .concat(String.format("source \"%s\"\n\n", host))
             .concat("git_source(:github) {|repo_name| \"https://github.com/#{repo_name}\" }\n\n")
             .concat("gem 'gviz', '0.3.5'\n");
-        Path j = Paths.get(temp.toString(), "yyy");
-        byte[] strToBytes = content.getBytes();
-        Files.write(j, strToBytes);
+        final Path jpath = Paths.get(temp.toString(), "yyy");
+        final byte[] strToBytes = content.getBytes();
+        Files.write(jpath, strToBytes);
         MatcherAssert.assertThat(
             String.format("'gem versions %s ", host),
             this.bash(

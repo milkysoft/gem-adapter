@@ -65,14 +65,45 @@ import org.apache.commons.io.FileUtils;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class Gem {
-     static final String LSP = "latest_specs.4.8";
-     static final String LSG = "latest_specs.4.8.gz";
-     static final String PSP = "prerelease_specs.4.8";
-     static final String PSG = "prerelease_specs.4.8.gz";
-     static final String SPC = "specs.4.8";
-     static final String SPG = "specs.4.8.gz";
-     static final String THOR = "thor-1.0.1.gemspec.rz";
-     static final String DGEM = ".gem";
+    /**
+     * Latest spec var.
+     */
+    static final String LSP = "latest_specs.4.8";
+
+    /**
+     * Latest spec var.
+     */
+    static final String LSG = "latest_specs.4.8.gz";
+
+    /**
+     * Prerelease var.
+     */
+    static final String PSP = "prerelease_specs.4.8";
+
+    /**
+     * Prerelease var.
+     */
+    static final String PSG = "prerelease_specs.4.8.gz";
+
+    /**
+     * Spec var.
+     */
+    static final String SPC = "specs.4.8";
+
+    /**
+     * Spec var.
+     */
+    static final String SPG = "specs.4.8.gz";
+
+    /**
+     * Thor var.
+     */
+    static final String THOR = "thor-1.0.1.gemspec.rz";
+
+    /**
+     * Gem var.
+     */
+    static final String DGEM = ".gem";
 
     /**
      * Read only set of metadata item names.
@@ -214,7 +245,7 @@ public final class Gem {
      * @return CompletionStage
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
-                                                     final Key gem, final Key fallout) {
+        final Key gem, final Key fallout) {
         final Set<String> vars = new HashSet<>(
             Arrays.asList(
                 Gem.LSP, Gem.LSG, Gem.PSP, Gem.PSG, Gem.SPC, Gem.SPG
@@ -262,29 +293,31 @@ public final class Gem {
             }
         ).thenApply(
             tmpdir  -> {
-                byte[] fileContent;
+                byte[] filecontent;
                 try {
                     final Key thekey = this.getGemFile(
-                        filename, true).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
+                        filename, true
+                    ).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
                     final Path path = Paths.get(tmpdir.toString(), thekey.string());
                     final File file = new File(path.toString());
                     try {
-                        fileContent = Files.readAllBytes(file.toPath());
-                    } catch (IOException e) {
-                        fileContent = new byte[0];
+                        filecontent = Files.readAllBytes(file.toPath());
+                    } catch (final IOException exc) {
+                        filecontent = new byte[0];
                     }
                 } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
-                    fileContent = new byte[0];
+                    filecontent = new byte[0];
                 } finally {
                     removeTempDir(tmpdir);
                 }
-                return fileContent;
+                return filecontent;
             });
     }
 
     /**
      * Find gem in a given path.
      * @param gem Gem name to get info
+     * @param exact Match name exactly
      * @return String full path to gem file
      */
     private CompletionStage<Key> getGemFile(final Key gem, final boolean exact) {
@@ -292,11 +325,11 @@ public final class Gem {
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                        key -> {
-                            return !exact && key.string().contains(gem.string()) && key.string().endsWith(Gem.DGEM) ||
-                                exact && key.string().equals(gem.string());
-                        }
-                    ).limit(1).collect(Collectors.toList())
+                    key -> {
+                        return !exact && key.string().contains(gem.string()) && key.string().endsWith(Gem.DGEM) ||
+                            exact && key.string().equals(gem.string());
+                    }
+                ).limit(1).collect(Collectors.toList())
             )
             .flatMapObservable(Observable::fromIterable).forEach(future::complete);
         return future;
