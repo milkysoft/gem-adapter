@@ -32,6 +32,8 @@ import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,19 +43,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import io.reactivex.Observable;
-import io.reactivex.Single;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -108,7 +104,7 @@ public final class Gem {
     /**
      * Read only set of metadata item names.
      */
-    private static final Set<Key> META_NAMES = Collections.unmodifiableSet(
+    private static final Set<Key> META_NAMES = java.util.Collections.unmodifiableSet(
         Stream.of(
             Gem.LSP, Gem.LSG, Gem.PSP, Gem.PSG, Gem.SPC, Gem.SPG
         ).map(Key.From::new).collect(Collectors.toSet())
@@ -194,7 +190,7 @@ public final class Gem {
         ).thenCompose(
             tmpdir -> {
                 final Storage newstorage = new FileStorage(tmpdir);
-                return Gem.copyStorage(this.storage, newstorage, filename, new Key.From(Gem.THOR))
+                return Gem.copyStorage(this.storage, newstorage, filename)
                     .thenApply(ignore -> tmpdir);
             }
         ).thenApply(
@@ -203,7 +199,7 @@ public final class Gem {
                 try {
                     final Key thekey = this.getGemFile(
                         filename, true
-                    ).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
+                    ).toCompletableFuture().get(10, java.util.concurrent.TimeUnit.MILLISECONDS);
                     final Path path = Paths.get(tmpdir.toString(), thekey.string());
                     final File file = new File(path.toString());
                     try {
@@ -211,7 +207,8 @@ public final class Gem {
                     } catch (final IOException exc) {
                         filecontent = new byte[0];
                     }
-                } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
+                } catch (final java.util.concurrent.TimeoutException | InterruptedException
+                    | ExecutionException exc) {
                     filecontent = new byte[0];
                 } finally {
                     removeTempDir(tmpdir);
@@ -274,7 +271,7 @@ public final class Gem {
                 throw new ArtipieIOException(iox);
             }
             if (err != null) {
-                throw new CompletionException(err);
+                throw new java.util.concurrent.CompletionException(err);
             }
             return res;
         };
@@ -285,11 +282,10 @@ public final class Gem {
      * @param src Source storage
      * @param dst Destination storage
      * @param gem Key for gem
-     * @param fallout Key for default gem
      * @return CompletionStage
      */
     private static CompletionStage<Void> copyStorage(final Storage src, final Storage dst,
-        final Key gem, final Key fallout) {
+        final Key gem) {
         final Set<String> vars = new HashSet<>(
             Arrays.asList(
                 Gem.LSP, Gem.LSG, Gem.PSP, Gem.PSG, Gem.SPC, Gem.SPG
@@ -302,7 +298,6 @@ public final class Gem {
             .map(
                 list -> list.stream().filter(
                     key -> vars.contains(key.string()) || key.string().contains(gem.string())
-                        || fallout.string().length() > 0 && key.string().contains(fallout.string())
                 ).collect(Collectors.toList()))
             .flatMapObservable(Observable::fromIterable)
             .flatMapSingle(
@@ -325,9 +320,16 @@ public final class Gem {
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> !exact && key.string().contains(gem.string())
-                        && key.string().endsWith(Gem.DGEM)
-                        || exact && key.string().equals(gem.string())
+                    key -> {
+                        final boolean res;
+                        if (exact) {
+                            res = key.string().equals(gem.string());
+                        } else {
+                            res = key.string().contains(gem.string())
+                                && key.string().endsWith(Gem.DGEM);
+                        }
+                        return res;
+                    }
                 ).limit(1).collect(Collectors.toList())
             )
             .flatMapObservable(Observable::fromIterable).forEach(future::complete);
