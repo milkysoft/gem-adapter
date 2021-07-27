@@ -95,14 +95,6 @@ public final class ApiGetSlice implements Slice {
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
         if (line.contains(deproute)) {
             res = this.processdeproute(line, deproute, offset);
-        } else if (line.contains("/gems/")) {
-            final int arc = line.lastIndexOf('/') + 1;
-            final int indexe = line.indexOf(ApiGetSlice.HTTP) - 1;
-            final String spec = line.substring(arc, indexe);
-            res = new AsyncResponse(
-                this.sdk.getRubyFile(new Key.From(spec))
-                    .thenApply(out -> new RsWithBody(ByteBuffer.wrap(out)))
-            );
         } else if (line.contains("/specs.4.8.gz")) {
             res = new AsyncResponse(
                 this.sdk.getRubyFile(new Key.From("specs.4.8.gz"))
