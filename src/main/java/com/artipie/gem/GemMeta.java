@@ -61,7 +61,7 @@ public interface GemMeta {
      * @param gempath Path to gem
      * @return Bytes object
      */
-    byte[] dependencies(final Path gempath);
+    byte[] dependencies(Path gempath);
 
     /**
      * Gem info format.

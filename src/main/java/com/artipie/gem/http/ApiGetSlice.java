@@ -67,14 +67,14 @@ public final class ApiGetSlice implements Slice {
     public static final Pattern PATH_PATTERN = Pattern.compile("/api/v1/gems/([\\w]+).(json|yml)");
 
     /**
-     * Gem SDK.
-     */
-    private final Gem sdk;
-
-    /**
      * HTTP var.
      */
     private static final String HTTP = "HTTP";
+
+    /**
+     * Gem SDK.
+     */
+    private final Gem sdk;
 
     /**
      * New slice for handling Get API requests.

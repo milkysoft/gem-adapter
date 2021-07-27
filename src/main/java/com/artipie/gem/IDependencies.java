@@ -24,6 +24,11 @@
 
 package com.artipie.gem;
 
+/**
+ * Dependencies Ruby script.
+ *
+ * @since 1.0
+ */
 public interface IDependencies {
 
     /**

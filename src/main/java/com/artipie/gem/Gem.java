@@ -31,16 +31,17 @@ import com.artipie.asto.fs.FileStorage;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -51,7 +52,6 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import org.apache.commons.io.FileUtils;
@@ -177,6 +177,50 @@ public final class Gem {
     }
 
     /**
+     * Get info Ruby gem.
+     *
+     * @param filename Ruby file to return
+     * @return Completable action
+     */
+    public CompletionStage<byte[]> getRubyFile(final Key filename) {
+        return CompletableFuture.supplyAsync(
+            () -> {
+                try {
+                    return Files.createTempDirectory("statics");
+                } catch (final IOException exc) {
+                    throw new ArtipieIOException(exc);
+                }
+            }
+        ).thenCompose(
+            tmpdir -> {
+                final Storage newstorage = new FileStorage(tmpdir);
+                return Gem.copyStorage(this.storage, newstorage, filename, new Key.From(Gem.THOR))
+                    .thenApply(ignore -> tmpdir);
+            }
+        ).thenApply(
+            tmpdir  -> {
+                byte[] filecontent;
+                try {
+                    final Key thekey = this.getGemFile(
+                        filename, true
+                    ).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
+                    final Path path = Paths.get(tmpdir.toString(), thekey.string());
+                    final File file = new File(path.toString());
+                    try {
+                        filecontent = Files.readAllBytes(file.toPath());
+                    } catch (final IOException exc) {
+                        filecontent = new byte[0];
+                    }
+                } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
+                    filecontent = new byte[0];
+                } finally {
+                    removeTempDir(tmpdir);
+                }
+                return filecontent;
+            });
+    }
+
+    /**
      * Gem info data.
      * @param gem Gem name
      * @param fmt Info format
@@ -271,50 +315,6 @@ public final class Gem {
     }
 
     /**
-     * Get info Ruby gem.
-     *
-     * @param filename Ruby file to return
-     * @return Completable action
-     */
-    public CompletionStage<byte[]> getRubyFile(final Key filename) {
-        return CompletableFuture.supplyAsync(
-            () -> {
-                try {
-                    return Files.createTempDirectory("statics");
-                } catch (final IOException exc) {
-                    throw new ArtipieIOException(exc);
-                }
-            }
-        ).thenCompose(
-            tmpdir -> {
-                final Storage newstorage = new FileStorage(tmpdir);
-                return Gem.copyStorage(this.storage, newstorage, filename, new Key.From(Gem.THOR))
-                    .thenApply(ignore -> tmpdir);
-            }
-        ).thenApply(
-            tmpdir  -> {
-                byte[] filecontent;
-                try {
-                    final Key thekey = this.getGemFile(
-                        filename, true
-                    ).toCompletableFuture().get(10, TimeUnit.MILLISECONDS);
-                    final Path path = Paths.get(tmpdir.toString(), thekey.string());
-                    final File file = new File(path.toString());
-                    try {
-                        filecontent = Files.readAllBytes(file.toPath());
-                    } catch (final IOException exc) {
-                        filecontent = new byte[0];
-                    }
-                } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
-                    filecontent = new byte[0];
-                } finally {
-                    removeTempDir(tmpdir);
-                }
-                return filecontent;
-            });
-    }
-
-    /**
      * Find gem in a given path.
      * @param gem Gem name to get info
      * @param exact Match name exactly
@@ -325,10 +325,9 @@ public final class Gem {
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> list.stream().filter(
-                    key -> {
-                        return !exact && key.string().contains(gem.string()) && key.string().endsWith(Gem.DGEM) ||
-                            exact && key.string().equals(gem.string());
-                    }
+                    key -> !exact && key.string().contains(gem.string())
+                        && key.string().endsWith(Gem.DGEM)
+                        || exact && key.string().equals(gem.string())
                 ).limit(1).collect(Collectors.toList())
             )
             .flatMapObservable(Observable::fromIterable).forEach(future::complete);
