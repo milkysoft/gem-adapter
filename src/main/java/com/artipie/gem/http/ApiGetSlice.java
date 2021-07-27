@@ -119,6 +119,14 @@ public final class ApiGetSlice implements Slice {
                 this.sdk.info(matcher.group(1), GemMeta.FMT_JSON)
                     .thenApply(json -> new RsJson(json))
             );
+        } else if (line.contains("/gems/")) {
+            final int indexe = line.indexOf(ApiGetSlice.HTTP) - 1;
+            final int arc = line.substring(0, indexe - 1).lastIndexOf('/') + 1;
+            final String spec = line.substring(arc, indexe);
+            res = new AsyncResponse(
+                this.sdk.getRubyFile(new Key.From(spec))
+                    .thenApply(out -> new RsWithBody(ByteBuffer.wrap(out)))
+            );
         } else {
             throw new IllegalStateException("Invalid routing schema");
         }
