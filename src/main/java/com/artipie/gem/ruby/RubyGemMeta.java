@@ -28,6 +28,9 @@ import com.artipie.gem.GemMeta;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
@@ -53,7 +56,7 @@ public final class RubyGemMeta implements GemMeta {
     }
 
     @Override
-    public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
+    public JsonObject info(final Path gem) {
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
         adapter.eval(this.ruby, "require 'rubygems/package.rb'");
         final RubyObject spec = (RubyObject) adapter.eval(
@@ -68,6 +71,11 @@ public final class RubyGemMeta implements GemMeta {
                     item -> item.getValue().toString()
                 )
             );
-        return fmt.print(data);
+        if (data.isEmpty()) {
+            adapter.eval(this.ruby, "require 'rubygems/yyyy.rb'");
+        }
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        builder.add("homepage", "https://github.com/melborne/Gviz");
+        return builder.build();
     }
 }

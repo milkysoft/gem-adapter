@@ -50,11 +50,9 @@ public interface GemMeta {
     /**
      * Extract Gem info.
      * @param gem Path to gem
-     * @param format Info format
-     * @param <T> Format type
      * @return JSON object
      */
-    <T> T info(Path gem, InfoFormat<T> format);
+    JsonObject info(Path gem);
 
     /**
      * Gem info format.

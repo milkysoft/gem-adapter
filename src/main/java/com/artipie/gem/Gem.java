@@ -108,11 +108,9 @@ public final class Gem {
     /**
      * Gem info data.
      * @param gem Gem name
-     * @param fmt Info format
-     * @param <T> Format type
      * @return Future
      */
-    public <T> CompletionStage<T> info(final String gem, final GemMeta.InfoFormat<T> fmt) {
+    public CompletionStage<javax.json.JsonObject> info(final String gem) {
         return newTempDir().thenCompose(
             tmp -> new Copy(this.storage, new IsGemKey(gem))
                 .copy(new FileStorage(tmp))
@@ -123,7 +121,7 @@ public final class Gem {
                     info -> new FileStorage(tmp).list(Key.ROOT).thenApply(
                         items -> items.stream().findFirst()
                             .map(first -> Paths.get(tmp.toString(), first.string()))
-                            .map(path -> info.info(path, fmt))
+                            .map(path -> info.info(path))
                             .orElseThrow(() -> new ArtipieIOException("gem not found"))
                     )
                 ).handle(removeTempDir(tmp))
