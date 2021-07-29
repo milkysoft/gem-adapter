@@ -24,15 +24,18 @@
 
 package com.artipie.gem.ruby;
 
+import com.artipie.asto.ArtipieIOException;
 import com.artipie.gem.GemMeta;
+import com.artipie.gem.IRubyInfo;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
+import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
-import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
 
@@ -57,25 +60,31 @@ public final class RubyGemMeta implements GemMeta {
 
     @Override
     public JsonObject info(final Path gem) {
+        final String script;
+        final JsonObject object;
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
         adapter.eval(this.ruby, "require 'rubygems/package.rb'");
-        final RubyObject spec = (RubyObject) adapter.eval(
-            this.ruby, String.format(
-                "Gem::Package.new('%s').spec", gem.toString()
-            )
-        );
-        final Map<String, String> data = spec.getVariableList().stream()
-            .filter(item -> item.getValue() != null).collect(
-                Collectors.toMap(
-                    item -> item.getName().substring(1),
-                    item -> item.getValue().toString()
-                )
+        try {
+            script = IOUtils.toString(
+                RubyGemMeta.class.getResourceAsStream("/info.rb"),
+                StandardCharsets.UTF_8
             );
-        if (data.isEmpty()) {
-            adapter.eval(this.ruby, "require 'rubygems/yyyy.rb'");
+            adapter.eval(this.ruby, script);
+            final IRubyInfo info = (IRubyInfo) JavaEmbedUtils.invokeMethod(
+                this.ruby,
+                adapter.eval(this.ruby, "Ex"),
+                "new",
+                new Object[]{gem.toString()},
+                IRubyInfo.class
+            );
+            final org.jruby.RubyString obj = info.info();
+            final ByteArrayInputStream bis = new ByteArrayInputStream(obj.getBytes());
+            final JsonReader jsonreader = Json.createReader(bis);
+            object = jsonreader.readObject();
+            jsonreader.close();
+        } catch (final IOException exc) {
+            throw new ArtipieIOException(exc);
         }
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
-        builder.add("homepage", "https://github.com/melborne/Gviz");
-        return builder.build();
+        return object;
     }
 }
