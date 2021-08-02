@@ -44,7 +44,10 @@ public class GemTest {
     @Test
     public void updateRepoIndex() throws Exception {
         final Storage repo = new InMemoryStorage();
-        final Key target = new Key.From("gems", UUID.randomUUID().toString());
+        final Key target = new Key.From(
+            "gems", UUID.randomUUID().toString()
+            .concat(".gem")
+        );
         new TestResource("builder-3.2.4.gem").saveTo(repo, target);
         final Gem gem = new Gem(repo);
         gem.update(target).toCompletableFuture().join();
