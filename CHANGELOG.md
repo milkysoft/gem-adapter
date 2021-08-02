@@ -1,3 +1,7 @@
+# v1.1 version includes:
+
+ - fix: corrected gem naming on index #104
+
 # v1.0 version includes:
 
  - Gem API service #3

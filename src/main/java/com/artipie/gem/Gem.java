@@ -28,6 +28,7 @@ import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
+import com.artipie.asto.misc.UncheckedConsumer;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
@@ -97,6 +98,21 @@ public final class Gem {
             tmp -> new Copy(this.storage, key -> META_NAMES.contains(key) || key.equals(gem))
                 .copy(new FileStorage(tmp))
                 .thenApply(ignore -> tmp)
+        ).thenCompose(
+            tmp -> this.shared.apply(RubyGemMeta::new)
+                .thenApply(
+                    meta -> meta.info(
+                        Paths.get(tmp.toString(), gem.string()),
+                        spec -> String.format("%s-%s.gem", spec.get("name"), spec.get("version"))
+                    )
+                ).thenAccept(
+                    new UncheckedConsumer<>(
+                        name -> {
+                            final Path path = Paths.get(tmp.toString(), gem.string());
+                            Files.move(path, path.getParent().resolve(name));
+                        }
+                    )
+                ).thenApply(none -> tmp)
         ).thenCompose(
             tmp -> this.shared.apply(RubyGemIndex::new)
                 .thenAccept(index -> index.update(tmp))
