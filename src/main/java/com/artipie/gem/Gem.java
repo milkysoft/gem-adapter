@@ -102,19 +102,16 @@ public final class Gem {
             tmp -> this.shared.apply(RubyGemMeta::new)
                 .thenApply(
                     meta -> meta.info(
-                        Paths.get(tmp.toString(), gem.string())
+                        Paths.get(tmp.toString(), gem.string()),
+                        spec -> String.format(
+                            "%s-%s.gem", spec.getString("name"), spec.getString("version")
+                        )
                     )
                 ).thenAccept(
                     new UncheckedConsumer<>(
                         name -> {
                             final Path path = Paths.get(tmp.toString(), gem.string());
-                            Files.move(
-                                path, path.getParent().resolve(
-                                    name.getString("name")
-                                    .concat("-").concat(name.getString("version"))
-                                    .concat(".gem")
-                                )
-                            );
+                            Files.move(path, path.getParent().resolve(name));
                         }
                     )
                 ).thenApply(none -> tmp)
@@ -129,9 +126,11 @@ public final class Gem {
     /**
      * Gem info data.
      * @param gem Gem name
+     * @param fmt Info format
+     * @param <T> format type
      * @return Future
      */
-    public CompletionStage<javax.json.JsonObject> info(final String gem) {
+    public <T> CompletionStage<T> info(final String gem, final GemMeta.InfoFormat<T> fmt) {
         return newTempDir().thenCompose(
             tmp -> new Copy(this.storage, new IsGemKey(gem))
                 .copy(new FileStorage(tmp))
@@ -142,7 +141,7 @@ public final class Gem {
                     info -> new FileStorage(tmp).list(Key.ROOT).thenApply(
                         items -> items.stream().findFirst()
                             .map(first -> Paths.get(tmp.toString(), first.string()))
-                            .map(path -> info.info(path))
+                            .map(path -> info.info(path, fmt))
                             .orElseThrow(() -> new ArtipieIOException("gem not found"))
                     )
                 ).handle(removeTempDir(tmp))

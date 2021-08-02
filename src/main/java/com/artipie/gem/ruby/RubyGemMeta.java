@@ -59,7 +59,7 @@ public final class RubyGemMeta implements GemMeta {
     }
 
     @Override
-    public JsonObject info(final Path gem) {
+    public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
         final String script;
         final JsonObject object;
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
@@ -85,6 +85,6 @@ public final class RubyGemMeta implements GemMeta {
         } catch (final IOException exc) {
             throw new ArtipieIOException(exc);
         }
-        return object;
+        return fmt.print(object);
     }
 }

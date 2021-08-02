@@ -25,10 +25,7 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
-import java.util.Map;
-import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 
 /**
  * Gem metadata parser.
@@ -39,20 +36,16 @@ public interface GemMeta {
     /**
      * Json Gem info format.
      */
-    InfoFormat<JsonObject> FMT_JSON = data -> {
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
-        for (final Map.Entry<String, String> entry : data.entrySet()) {
-            builder.add(entry.getKey(), entry.getValue());
-        }
-        return builder.build();
-    };
+    InfoFormat<JsonObject> FMT_JSON = data -> data;
 
     /**
      * Extract Gem info.
      * @param gem Path to gem
+     * @param format Info format
+     * @param <T> Format type
      * @return JSON object
      */
-    JsonObject info(Path gem);
+    <T> T info(Path gem, InfoFormat<T> format);
 
     /**
      * Gem info format.
@@ -67,6 +60,6 @@ public interface GemMeta {
          * @param data Gem info data
          * @return Formatted info
          */
-        T print(Map<String, String> data);
+        T print(JsonObject data);
     }
 }
