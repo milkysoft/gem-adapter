@@ -72,8 +72,11 @@ public final class SubmitGemSlice implements Slice {
         return new AsyncResponse(
             this.storage.save(
                 key, new ContentWithSize(body, headers)
-            ).thenCompose(none -> this.gem.update(key))
-                .thenApply(none -> new RsWithStatus(RsStatus.CREATED))
+            ).thenCompose(none -> this.gem.update(key)).thenApply(
+                none -> {
+                    this.storage.delete(key);
+                    return new RsWithStatus(RsStatus.CREATED);
+                })
         );
     }
 }
