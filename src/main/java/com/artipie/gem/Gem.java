@@ -95,9 +95,10 @@ public final class Gem {
      */
     public CompletionStage<Void> update(final Key gem) {
         return newTempDir().thenCompose(
-            tmp -> new Copy(this.storage, key -> META_NAMES.contains(key) || key.equals(gem))
-                .copy(new FileStorage(tmp))
-                .thenApply(ignore -> tmp)
+            tmp -> new Copy(
+                this.storage, key -> META_NAMES.contains(key)
+                || key.string().contains(".gem")
+            ).copy(new FileStorage(tmp)).thenApply(ignore -> tmp)
         ).thenCompose(
             tmp -> this.shared.apply(RubyGemMeta::new)
                 .thenApply(
