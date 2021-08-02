@@ -102,14 +102,19 @@ public final class Gem {
             tmp -> this.shared.apply(RubyGemMeta::new)
                 .thenApply(
                     meta -> meta.info(
-                        Paths.get(tmp.toString(), gem.string()),
-                        spec -> String.format("%s-%s.gem", spec.get("name"), spec.get("version"))
+                        Paths.get(tmp.toString(), gem.string())
                     )
                 ).thenAccept(
                     new UncheckedConsumer<>(
                         name -> {
                             final Path path = Paths.get(tmp.toString(), gem.string());
-                            Files.move(path, path.getParent().resolve(name));
+                            Files.move(
+                                path, path.getParent().resolve(
+                                    name.getString("name")
+                                    .concat("-").concat(name.getString("version"))
+                                    .concat(".gem")
+                                )
+                            );
                         }
                     )
                 ).thenApply(none -> tmp)

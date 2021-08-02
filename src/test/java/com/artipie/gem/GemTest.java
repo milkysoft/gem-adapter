@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test;
 public class GemTest {
 
     @Test
-    public void updateRepoIndex() throws Exception {
+    public void updateRepoIndex() {
         final Storage repo = new InMemoryStorage();
         final Key target = new Key.From("gems", UUID.randomUUID().toString());
         new TestResource("builder-3.2.4.gem").saveTo(repo, target);
