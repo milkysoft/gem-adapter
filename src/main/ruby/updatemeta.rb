@@ -15,31 +15,23 @@ class Ex
     end
 
     def info()
-        sha = Digest::SHA2.new
-        File.open(@val) do |f|
-            while chunk = f.read(256)
-                sha << chunk
-            end
-        end
         spec = Gem::Package.new(@val).spec
-        authors = ""
-        spec.authors.each do |author|
-            if authors.length > 0
-                authors = authors + ", "
-            end
-            authors = authors + author
-        end
-        deps = spec.dependencies
-        development = []
-        runtime = []
-        deps.each do |item|
-            if item.type == :runtime
-                runtime.push({'name' => item.name, 'requirements' => item.requirements_list()[0]})
-            else
-                development.push({'name' => item.name, 'requirements' => item.requirements_list()[0]})
+        metas = Marshal.load(File.open("latest_specs.4.8").read)
+        found = false
+        metas.each do |item|
+            if item[0] == spec.name && item[1].version == spec.version.version
+                found = true
+                puts 'Found specification'
             end
         end
-        info = {'name' => spec.name, 'version' => spec.version.version, 'sha' => sha.hexdigest, 'info' => spec.description, 'authors' => authors, 'homepage_uri' => spec.homepage, 'dependencies' => {'development' => development, 'runtime' => runtime}}
-        return info.to_json
+        if found == false
+            puts 'Did not found specification'
+            metas.push([spec.name, Gem::Version.create(spec.version.version), "ruby"])
+            data = Marshal.dump(metas)
+            File.write('latest_specs.4.8', data)
+            Zlib::GzipWriter.open('latest_specs.4.8.gz') do |gz|
+                gz.write data
+            end
+        end
     end
 end
