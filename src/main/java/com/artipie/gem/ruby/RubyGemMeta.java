@@ -72,18 +72,21 @@ public final class RubyGemMeta implements GemMeta {
         );
         List<Variable<Object>> vars = spec.getVariableList();
         for (Variable<Object> dt : vars) {
-            System.out.println(String.format("Class: %s; Name: %s; Value: %s",
-                dt.getValue().getClass().toString(),
-                dt.getName(),
-                dt.getValue().toString()));
             if ("@name".equals(dt.getName())) {
                 builder.add("name", this.getVar(vars, "@name"));
             } else if ("@authors".equals(dt.getName())) {
-                JsonArrayBuilder authors = Json.createArrayBuilder();
-                for (int i =0; i< ((RubyObject) dt).convertToArray().getLength(); i++) {
-                    authors.add(((RubyObject) dt).convertToArray().get(i).toString());
+                JsonArrayBuilder jsonauthors = Json.createArrayBuilder();
+                final RubyObject authors = (RubyObject) adapter.eval(
+                    this.ruby, String.format(
+                        "Gem::Package.new('%s').spec.authors", gem
+                    )
+                );
+                for (int i =0; i< authors.convertToArray().getLength(); i++) {
+                    jsonauthors.add(authors.convertToArray().get(i).toString());
                 }
-                builder.add("authors", authors);
+                builder.add("authors", jsonauthors);
+            } else if ("@homepage".equals(dt.getName())) {
+                builder.add("homepage", this.getVar(vars, "@homepage"));
             } else if("@dependencies".equals(dt.getName())) {
                 JsonObjectBuilder jsondep = Json.createObjectBuilder();
                 JsonArrayBuilder devdeps = Json.createArrayBuilder();
@@ -111,10 +114,6 @@ public final class RubyGemMeta implements GemMeta {
                             }
 
                         }
-                        System.out.println(String.format("9999 Class: %s; Name: %s; Value: %s",
-                            var.getValue().getClass().toString(),
-                            var.getName(),
-                            var.getValue().toString()));
                     };
                 }
                 jsondep.add("development", devdeps);
@@ -122,7 +121,6 @@ public final class RubyGemMeta implements GemMeta {
                 builder.add("dependencies", jsondep);
             }
         }
-        System.out.println(builder.build());
         return fmt.print(builder.build());
     }
 
