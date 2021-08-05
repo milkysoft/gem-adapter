@@ -26,12 +26,20 @@ package com.artipie.gem.ruby;
 
 import com.artipie.gem.GemMeta;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.jruby.Ruby;
+import org.jruby.RubyArray;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.javasupport.JavaObject;
+import org.jruby.runtime.builtin.Variable;
+
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
 
 /**
  * JRuby implementation of GemInfo metadata parser.
@@ -55,19 +63,76 @@ public final class RubyGemMeta implements GemMeta {
     @Override
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
         adapter.eval(this.ruby, "require 'rubygems/package.rb'");
         final RubyObject spec = (RubyObject) adapter.eval(
             this.ruby, String.format(
                 "Gem::Package.new('%s').spec", gem.toString()
             )
         );
-        final Map<String, String> data = spec.getVariableList().stream()
-            .filter(item -> item.getValue() != null).collect(
-                Collectors.toMap(
-                    item -> item.getName().substring(1),
-                    item -> item.getValue().toString()
-                )
-            );
-        return fmt.print(data);
+        List<Variable<Object>> vars = spec.getVariableList();
+        for (Variable<Object> dt : vars) {
+            System.out.println(String.format("Class: %s; Name: %s; Value: %s",
+                dt.getValue().getClass().toString(),
+                dt.getName(),
+                dt.getValue().toString()));
+            if ("@name".equals(dt.getName())) {
+                builder.add("name", this.getVar(vars, "@name"));
+            } else if ("@authors".equals(dt.getName())) {
+                JsonArrayBuilder authors = Json.createArrayBuilder();
+                for (int i =0; i< ((RubyObject) dt).convertToArray().getLength(); i++) {
+                    authors.add(((RubyObject) dt).convertToArray().get(i).toString());
+                }
+                builder.add("authors", authors);
+            } else if("@dependencies".equals(dt.getName())) {
+                JsonObjectBuilder jsondep = Json.createObjectBuilder();
+                JsonArrayBuilder devdeps = Json.createArrayBuilder();
+                JsonArrayBuilder runtimedeps = Json.createArrayBuilder();
+                final RubyObject deps = (RubyObject) adapter.eval(
+                    this.ruby, String.format(
+                        "Gem::Package.new('%s').spec.dependencies", gem
+                    )
+                );
+                for (int i =0; i<deps.convertToArray().getLength(); i++) {
+                    RubyObject o = (RubyObject) deps.convertToArray().get(i);
+                    List<Variable<Object>> varos = o.getVariableList();
+                    for (Variable<Object> var : varos) {
+                        if ("@type".equals(var.getName())) {
+                            if("development".equals(var.getValue().toString())) {
+                                JsonObjectBuilder devdep = Json.createObjectBuilder();
+                                devdep.add("name", this.getVar(varos, "@name"));
+                                devdep.add("requirements", this.getVar(varos, "@requirement"));
+                                devdeps.add(devdep);
+                            } else if("runtime".equals(var.getValue().toString())) {
+                                JsonObjectBuilder runtimedep = Json.createObjectBuilder();
+                                runtimedep.add("name", this.getVar(varos, "@name"));
+                                runtimedep.add("requirements", this.getVar(varos, "@requirement"));
+                                runtimedeps.add(runtimedep);
+                            }
+
+                        }
+                        System.out.println(String.format("9999 Class: %s; Name: %s; Value: %s",
+                            var.getValue().getClass().toString(),
+                            var.getName(),
+                            var.getValue().toString()));
+                    };
+                }
+                jsondep.add("development", devdeps);
+                jsondep.add("runtime", runtimedeps);
+                builder.add("dependencies", jsondep);
+            }
+        }
+        System.out.println(builder.build());
+        return fmt.print(builder.build());
+    }
+
+    private String getVar (List<Variable<Object>> varos, String name) {
+        String res = "";
+        for (Variable<Object> var : varos) {
+            if (name.equals(var.getName())) {
+                res = var.getValue().toString();
+            }
+        };
+        return res;
     }
 }
