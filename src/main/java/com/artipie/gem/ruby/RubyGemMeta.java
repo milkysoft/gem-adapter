@@ -79,13 +79,13 @@ public final class RubyGemMeta implements GemMeta {
         final List<Variable<Object>> vars = spec.getVariableList();
         for (final Variable<Object> thevar : vars) {
             if (RubyGemMeta.ATNAME.equals(thevar.getName())) {
-                builder.add(RubyGemMeta.SNAME, this.getVar(vars, RubyGemMeta.ATNAME));
+                builder.add(RubyGemMeta.SNAME, RubyGemMeta.getVar(vars, RubyGemMeta.ATNAME));
             } else if ("@authors".equals(thevar.getName())) {
                 final JsonArrayBuilder jsonauthors = Json.createArrayBuilder();
                 this.getAuthors(adapter, gem, jsonauthors);
                 builder.add("authors", jsonauthors);
             } else if (hstr.equals(thevar.getName())) {
-                builder.add("homepage", this.getVar(vars, hstr));
+                builder.add("homepage", RubyGemMeta.getVar(vars, hstr));
             } else if ("@dependencies".equals(thevar.getName())) {
                 final JsonObjectBuilder jsondep = Json.createObjectBuilder();
                 this.getDependencies(adapter, gem, jsondep);
