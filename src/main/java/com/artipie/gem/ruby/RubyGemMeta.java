@@ -27,25 +27,30 @@ package com.artipie.gem.ruby;
 import com.artipie.gem.GemMeta;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.jruby.Ruby;
-import org.jruby.RubyArray;
-import org.jruby.RubyObject;
-import org.jruby.RubyRuntimeAdapter;
-import org.jruby.javasupport.JavaEmbedUtils;
-import org.jruby.javasupport.JavaObject;
-import org.jruby.runtime.builtin.Variable;
-
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
+import org.jruby.Ruby;
+import org.jruby.RubyObject;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.runtime.builtin.Variable;
 
 /**
  * JRuby implementation of GemInfo metadata parser.
  * @since 1.0
  */
 public final class RubyGemMeta implements GemMeta {
+
+    /**
+     * At Name string.
+     */
+    private static final String ATNAME = "@name";
+
+    /**
+     * Name string.
+     */
+    private static final String SNAME = "name";
 
     /**
      * Ruby runtime.
@@ -62,6 +67,7 @@ public final class RubyGemMeta implements GemMeta {
 
     @Override
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
+        final String hstr = "@homepage";
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
         final JsonObjectBuilder builder = Json.createObjectBuilder();
         adapter.eval(this.ruby, "require 'rubygems/package.rb'");
@@ -70,67 +76,111 @@ public final class RubyGemMeta implements GemMeta {
                 "Gem::Package.new('%s').spec", gem.toString()
             )
         );
-        List<Variable<Object>> vars = spec.getVariableList();
-        for (Variable<Object> dt : vars) {
-            if ("@name".equals(dt.getName())) {
-                builder.add("name", this.getVar(vars, "@name"));
-            } else if ("@authors".equals(dt.getName())) {
-                JsonArrayBuilder jsonauthors = Json.createArrayBuilder();
-                final RubyObject authors = (RubyObject) adapter.eval(
-                    this.ruby, String.format(
-                        "Gem::Package.new('%s').spec.authors", gem
-                    )
-                );
-                for (int i =0; i< authors.convertToArray().getLength(); i++) {
-                    jsonauthors.add(authors.convertToArray().get(i).toString());
-                }
+        final List<Variable<Object>> vars = spec.getVariableList();
+        for (final Variable<Object> thevar : vars) {
+            if (RubyGemMeta.ATNAME.equals(thevar.getName())) {
+                builder.add(RubyGemMeta.SNAME, this.getVar(vars, RubyGemMeta.ATNAME));
+            } else if ("@authors".equals(thevar.getName())) {
+                final JsonArrayBuilder jsonauthors = Json.createArrayBuilder();
+                this.getAuthors(adapter, gem, jsonauthors);
                 builder.add("authors", jsonauthors);
-            } else if ("@homepage".equals(dt.getName())) {
-                builder.add("homepage", this.getVar(vars, "@homepage"));
-            } else if("@dependencies".equals(dt.getName())) {
-                JsonObjectBuilder jsondep = Json.createObjectBuilder();
-                JsonArrayBuilder devdeps = Json.createArrayBuilder();
-                JsonArrayBuilder runtimedeps = Json.createArrayBuilder();
-                final RubyObject deps = (RubyObject) adapter.eval(
-                    this.ruby, String.format(
-                        "Gem::Package.new('%s').spec.dependencies", gem
-                    )
-                );
-                for (int i =0; i<deps.convertToArray().getLength(); i++) {
-                    RubyObject o = (RubyObject) deps.convertToArray().get(i);
-                    List<Variable<Object>> varos = o.getVariableList();
-                    for (Variable<Object> var : varos) {
-                        if ("@type".equals(var.getName())) {
-                            if("development".equals(var.getValue().toString())) {
-                                JsonObjectBuilder devdep = Json.createObjectBuilder();
-                                devdep.add("name", this.getVar(varos, "@name"));
-                                devdep.add("requirements", this.getVar(varos, "@requirement"));
-                                devdeps.add(devdep);
-                            } else if("runtime".equals(var.getValue().toString())) {
-                                JsonObjectBuilder runtimedep = Json.createObjectBuilder();
-                                runtimedep.add("name", this.getVar(varos, "@name"));
-                                runtimedep.add("requirements", this.getVar(varos, "@requirement"));
-                                runtimedeps.add(runtimedep);
-                            }
-
-                        }
-                    };
-                }
-                jsondep.add("development", devdeps);
-                jsondep.add("runtime", runtimedeps);
+            } else if (hstr.equals(thevar.getName())) {
+                builder.add("homepage", this.getVar(vars, hstr));
+            } else if ("@dependencies".equals(thevar.getName())) {
+                final JsonObjectBuilder jsondep = Json.createObjectBuilder();
+                this.getDependencies(adapter, gem, jsondep);
                 builder.add("dependencies", jsondep);
             }
         }
         return fmt.print(builder.build());
     }
 
-    private String getVar (List<Variable<Object>> varos, String name) {
+    /**
+     * Ruby runtime.
+     * @param varos For variables
+     * @param name For variable name
+     * @return String variable value
+     */
+    private static String getVar(final List<Variable<Object>> varos, final String name) {
         String res = "";
-        for (Variable<Object> var : varos) {
+        for (final Variable<Object> var : varos) {
             if (name.equals(var.getName())) {
                 res = var.getValue().toString();
             }
-        };
+        }
         return res;
+    }
+
+    /**
+     * Ruby runtime.
+     * @param adapter Ruby adapter
+     * @param gem Path to gem
+     * @param jsondep Dependencies
+     */
+    private void getDependencies(final RubyRuntimeAdapter adapter, final Path gem,
+        final JsonObjectBuilder jsondep) {
+        final String rtstr = "runtime";
+        final String dstr = "development";
+        final JsonArrayBuilder devdeps = Json.createArrayBuilder();
+        final JsonArrayBuilder runtimedeps = Json.createArrayBuilder();
+        final RubyObject deps = (RubyObject) adapter.eval(
+            this.ruby, String.format(
+                "Gem::Package.new('%s').spec.dependencies", gem
+            )
+        );
+        int vari = 0;
+        while (vari < deps.convertToArray().getLength()) {
+            final RubyObject theobj = (RubyObject) deps.convertToArray().get(vari);
+            final List<Variable<Object>> varos = theobj.getVariableList();
+            for (final Variable<Object> var : varos) {
+                if ("@type".equals(var.getName())) {
+                    if (dstr.equals(var.getValue().toString())) {
+                        devdeps.add(RubyGemMeta.addDep(varos));
+                    } else if (rtstr.equals(var.getValue().toString())) {
+                        runtimedeps.add(RubyGemMeta.addDep(varos));
+                    }
+                }
+            }
+            vari = vari + 1;
+        }
+        jsondep.add(dstr, devdeps);
+        jsondep.add(rtstr, runtimedeps);
+    }
+
+    /**
+     * Ruby runtime.
+     * @param varos Variables
+     * @return JsonObject containing dependencies info
+     */
+    private static JsonObjectBuilder addDep(final List<Variable<Object>> varos) {
+        final String reqstr = "@requirement";
+        final String rstr = "requirements";
+        final JsonObjectBuilder dep = Json.createObjectBuilder();
+        dep.add(
+            RubyGemMeta.SNAME,
+            RubyGemMeta.getVar(varos, RubyGemMeta.ATNAME)
+        );
+        dep.add(rstr, RubyGemMeta.getVar(varos, reqstr));
+        return dep;
+    }
+
+    /**
+     * Ruby runtime.
+     * @param adapter Ruby adapter
+     * @param gem Path to gem
+     * @param jsonauthors Gem authors
+     */
+    private void getAuthors(final RubyRuntimeAdapter adapter, final Path gem,
+        final JsonArrayBuilder jsonauthors) {
+        final RubyObject authors = (RubyObject) adapter.eval(
+            this.ruby, String.format(
+                "Gem::Package.new('%s').spec.authors", gem
+            )
+        );
+        int vari = 0;
+        while (vari < authors.convertToArray().getLength()) {
+            jsonauthors.add(authors.convertToArray().get(vari).toString());
+            vari = vari + 1;
+        }
     }
 }
