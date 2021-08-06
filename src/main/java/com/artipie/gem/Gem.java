@@ -103,7 +103,9 @@ public final class Gem {
                 .thenApply(
                     meta -> meta.info(
                         Paths.get(tmp.toString(), gem.string()),
-                        spec -> String.format("%s-%s.gem", spec.get("name"), spec.get("version"))
+                        spec -> String.format(
+                            "%s-%s.gem", spec.getString("name"), spec.getString("version")
+                        )
                     )
                 ).thenAccept(
                     new UncheckedConsumer<>(

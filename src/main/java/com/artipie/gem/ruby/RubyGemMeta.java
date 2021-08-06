@@ -68,6 +68,7 @@ public final class RubyGemMeta implements GemMeta {
     @Override
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
         final String hstr = "@homepage";
+        final String vstr = "@version";
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
         final JsonObjectBuilder builder = Json.createObjectBuilder();
         adapter.eval(this.ruby, "require 'rubygems/package.rb'");
@@ -86,6 +87,8 @@ public final class RubyGemMeta implements GemMeta {
                 builder.add("authors", jsonauthors);
             } else if (hstr.equals(thevar.getName())) {
                 builder.add("homepage", RubyGemMeta.getVar(vars, hstr));
+            } else if (vstr.equals(thevar.getName())) {
+                builder.add("version", RubyGemMeta.getVar(vars, vstr));
             } else if ("@dependencies".equals(thevar.getName())) {
                 final JsonObjectBuilder jsondep = Json.createObjectBuilder();
                 this.getDependencies(adapter, gem, jsondep);
