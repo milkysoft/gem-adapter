@@ -54,6 +54,7 @@ final class ApiGetSliceTest {
     @Test
     public void queryResultsInOkResponse(@TempDir final Path tmp) throws IOException {
         final Path target = tmp.resolve("gviz-0.3.5.gem");
+        final String shastr = "66636b839f96dccffb9f51ae06252e19836bb7ceb20dcf8f18918ae77e94b135";
         try (InputStream is = this.getClass().getResourceAsStream("/gviz-0.3.5.gem");
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
@@ -67,6 +68,14 @@ final class ApiGetSliceTest {
                             new JsonHas(
                                 "homepage",
                                 new JsonValueIs("https://github.com/melborne/Gviz")
+                            )
+                        )
+                    ),
+                    new RsHasBody(
+                        new IsJson(
+                            new JsonHas(
+                                "sha",
+                                new JsonValueIs(shastr)
                             )
                         )
                     )

@@ -24,8 +24,16 @@
 
 package com.artipie.gem.ruby;
 
+import com.artipie.ArtipieException;
 import com.artipie.gem.GemMeta;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -38,6 +46,7 @@ import org.jruby.runtime.builtin.Variable;
 
 /**
  * JRuby implementation of GemInfo metadata parser.
+ *
  * @since 1.0
  */
 public final class RubyGemMeta implements GemMeta {
@@ -59,6 +68,7 @@ public final class RubyGemMeta implements GemMeta {
 
     /**
      * Ctor.
+     *
      * @param ruby Runtime
      */
     public RubyGemMeta(final Ruby ruby) {
@@ -95,11 +105,13 @@ public final class RubyGemMeta implements GemMeta {
                 builder.add("dependencies", jsondep);
             }
         }
+        builder.add("sha", RubyGemMeta.getSha(gem));
         return fmt.print(builder.build());
     }
 
     /**
      * Ruby runtime.
+     *
      * @param varos For variables
      * @param name For variable name
      * @return String variable value
@@ -116,6 +128,7 @@ public final class RubyGemMeta implements GemMeta {
 
     /**
      * Ruby runtime.
+     *
      * @param adapter Ruby adapter
      * @param gem Path to gem
      * @param jsondep Dependencies
@@ -152,6 +165,7 @@ public final class RubyGemMeta implements GemMeta {
 
     /**
      * Ruby runtime.
+     *
      * @param varos Variables
      * @return JsonObject containing dependencies info
      */
@@ -169,6 +183,7 @@ public final class RubyGemMeta implements GemMeta {
 
     /**
      * Ruby runtime.
+     *
      * @param adapter Ruby adapter
      * @param gem Path to gem
      * @param jsonauthors Gem authors
@@ -185,5 +200,53 @@ public final class RubyGemMeta implements GemMeta {
             jsonauthors.add(authors.convertToArray().get(vari).toString());
             vari = vari + 1;
         }
+    }
+
+    /**
+     * Calculate File checksum.
+     *
+     * @param gem Path to gem
+     * @return String checksum
+     */
+    private static String getSha(final Path gem) {
+        String res = "";
+        try {
+            final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            res = getFileChecksum(digest, gem.toFile());
+        } catch (final IOException | NoSuchAlgorithmException err) {
+            throw new ArtipieException(err);
+        }
+        return res;
+    }
+
+    /**
+     * Calculate File checksum.
+     *
+     * @param digest Digest
+     * @param file File to calculate
+     * @return String checksum
+     * @throws IOException exception
+     */
+    private static String getFileChecksum(final MessageDigest digest, final File file)
+        throws IOException {
+        final InputStream fis = Files.newInputStream(Paths.get(file.getAbsolutePath()));
+        final byte[] bytearray = new byte[(int) Files.size(file.toPath())];
+        final int sixteen = 16;
+        final int hundred = 0x100;
+        final int twofifty = 0xff;
+        int bytescount = fis.read(bytearray);
+        while (bytescount != -1) {
+            digest.update(bytearray, 0, bytescount);
+            bytescount = fis.read(bytearray);
+        }
+        fis.close();
+        final byte[] bytes = digest.digest();
+        final StringBuilder sbld = new StringBuilder();
+        int icnt = 0;
+        while (icnt < bytes.length) {
+            sbld.append(Integer.toString((bytes[icnt] & twofifty) + hundred, sixteen).substring(1));
+            icnt = icnt + 1;
+        }
+        return sbld.toString();
     }
 }
