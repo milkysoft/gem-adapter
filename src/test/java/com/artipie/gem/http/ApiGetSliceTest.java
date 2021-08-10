@@ -66,7 +66,7 @@ final class ApiGetSliceTest {
                     new RsHasBody(
                         new IsJson(
                             new JsonHas(
-                                "homepage",
+                                "homepage_uri",
                                 new JsonValueIs("https://github.com/melborne/Gviz")
                             )
                         )

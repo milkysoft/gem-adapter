@@ -67,6 +67,16 @@ public final class RubyGemMeta implements GemMeta {
     private final Ruby ruby;
 
     /**
+     * Ruby adapter.
+     */
+    private RubyRuntimeAdapter adapter;
+
+    /**
+     * Gem variables.
+     */
+    private List<Variable<Object>> vars;
+
+    /**
      * Ctor.
      *
      * @param ruby Runtime
@@ -77,36 +87,59 @@ public final class RubyGemMeta implements GemMeta {
 
     @Override
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
-        final String hstr = "@homepage";
-        final String vstr = "@version";
-        final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
+        this.adapter = JavaEmbedUtils.newRuntimeAdapter();
         final JsonObjectBuilder builder = Json.createObjectBuilder();
-        adapter.eval(this.ruby, "require 'rubygems/package.rb'");
-        final RubyObject spec = (RubyObject) adapter.eval(
+        this.adapter.eval(this.ruby, "require 'rubygems/package.rb'");
+        final RubyObject spec = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
                 "Gem::Package.new('%s').spec", gem.toString()
             )
         );
-        final List<Variable<Object>> vars = spec.getVariableList();
-        for (final Variable<Object> thevar : vars) {
-            if (RubyGemMeta.ATNAME.equals(thevar.getName())) {
-                builder.add(RubyGemMeta.SNAME, RubyGemMeta.getVar(vars, RubyGemMeta.ATNAME));
-            } else if ("@authors".equals(thevar.getName())) {
-                final JsonArrayBuilder jsonauthors = Json.createArrayBuilder();
-                this.getAuthors(adapter, gem, jsonauthors);
-                builder.add("authors", jsonauthors);
-            } else if (hstr.equals(thevar.getName())) {
-                builder.add("homepage", RubyGemMeta.getVar(vars, hstr));
-            } else if (vstr.equals(thevar.getName())) {
-                builder.add("version", RubyGemMeta.getVar(vars, vstr));
-            } else if ("@dependencies".equals(thevar.getName())) {
-                final JsonObjectBuilder jsondep = Json.createObjectBuilder();
-                this.getDependencies(adapter, gem, jsondep);
-                builder.add("dependencies", jsondep);
-            }
+        this.vars = spec.getVariableList();
+        for (final Variable<Object> thevar : this.vars) {
+            this.addVar(builder, thevar, gem);
         }
         builder.add("sha", RubyGemMeta.getSha(gem));
         return fmt.print(builder.build());
+    }
+
+    /**
+     * Add variable.
+     *
+     * @param builder Json Builder
+     * @param thevar Variable to add
+     * @param gem Path to gem
+     */
+    private void addVar(final JsonObjectBuilder builder,
+        final Variable<Object> thevar, final Path gem) {
+        final String plstr = "@platform";
+        final String hstr = "@homepage";
+        final String vstr = "@version";
+        final String authstr = "authors";
+        final String licstr = "licenses";
+        if (RubyGemMeta.ATNAME.equals(thevar.getName())) {
+            builder.add(
+                RubyGemMeta.SNAME, RubyGemMeta.getVar(this.vars, RubyGemMeta.ATNAME)
+            );
+        } else if ("@authors".equals(thevar.getName())) {
+            final JsonArrayBuilder jsonauthors = Json.createArrayBuilder();
+            this.getArray(gem, jsonauthors, authstr);
+            builder.add(authstr, jsonauthors);
+        } else if ("@licenses".equals(thevar.getName())) {
+            final JsonArrayBuilder jsonlicenses = Json.createArrayBuilder();
+            this.getArray(gem, jsonlicenses, licstr);
+            builder.add(licstr, jsonlicenses);
+        } else if (hstr.equals(thevar.getName())) {
+            builder.add("homepage_uri", RubyGemMeta.getVar(this.vars, hstr));
+        } else if (plstr.equals(thevar.getName())) {
+            builder.add("platform", RubyGemMeta.getVar(this.vars, plstr));
+        } else if (vstr.equals(thevar.getName())) {
+            builder.add("version", RubyGemMeta.getVar(this.vars, vstr));
+        } else if ("@dependencies".equals(thevar.getName())) {
+            final JsonObjectBuilder jsondep = Json.createObjectBuilder();
+            this.getDependencies(gem, jsondep);
+            builder.add("dependencies", jsondep);
+        }
     }
 
     /**
@@ -129,17 +162,15 @@ public final class RubyGemMeta implements GemMeta {
     /**
      * Ruby runtime.
      *
-     * @param adapter Ruby adapter
      * @param gem Path to gem
      * @param jsondep Dependencies
      */
-    private void getDependencies(final RubyRuntimeAdapter adapter, final Path gem,
-        final JsonObjectBuilder jsondep) {
+    private void getDependencies(final Path gem, final JsonObjectBuilder jsondep) {
         final String rtstr = "runtime";
         final String dstr = "development";
         final JsonArrayBuilder devdeps = Json.createArrayBuilder();
         final JsonArrayBuilder runtimedeps = Json.createArrayBuilder();
-        final RubyObject deps = (RubyObject) adapter.eval(
+        final RubyObject deps = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
                 "Gem::Package.new('%s').spec.dependencies", gem
             )
@@ -184,20 +215,20 @@ public final class RubyGemMeta implements GemMeta {
     /**
      * Ruby runtime.
      *
-     * @param adapter Ruby adapter
      * @param gem Path to gem
-     * @param jsonauthors Gem authors
+     * @param jsonarray Strings array
+     * @param property Property to parse
      */
-    private void getAuthors(final RubyRuntimeAdapter adapter, final Path gem,
-        final JsonArrayBuilder jsonauthors) {
-        final RubyObject authors = (RubyObject) adapter.eval(
+    private void getArray(final Path gem,
+        final JsonArrayBuilder jsonarray, final String property) {
+        final RubyObject elements = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
-                "Gem::Package.new('%s').spec.authors", gem
+                "Gem::Package.new('%s').spec.".concat(property), gem
             )
         );
         int vari = 0;
-        while (vari < authors.convertToArray().getLength()) {
-            jsonauthors.add(authors.convertToArray().get(vari).toString());
+        while (vari < elements.convertToArray().getLength()) {
+            jsonarray.add(elements.convertToArray().get(vari).toString());
             vari = vari + 1;
         }
     }
