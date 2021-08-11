@@ -73,7 +73,8 @@ public final class SubmitGemSlice implements Slice {
             this.storage.save(
                 key, new ContentWithSize(body, headers)
             ).thenCompose(none -> this.gem.update(key))
-                .thenApply(none -> new RsWithStatus(RsStatus.CREATED))
+            .thenCompose(none -> this.storage.delete(key))
+            .thenApply(none -> new RsWithStatus(RsStatus.CREATED))
         );
     }
 }

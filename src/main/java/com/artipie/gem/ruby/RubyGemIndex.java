@@ -58,7 +58,7 @@ public final class RubyGemIndex implements GemIndex {
             this.ruby,
             String.format(
                 "Gem::Indexer.new('%s', {build_modern:true}).generate_index",
-                path.toAbsolutePath().toString()
+                path.toAbsolutePath()
             )
         );
     }
