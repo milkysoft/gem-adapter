@@ -24,8 +24,12 @@
 
 package com.artipie.gem.ruby;
 
+import com.artipie.ArtipieException;
 import com.artipie.gem.GemIndex;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
@@ -53,12 +57,28 @@ public final class RubyGemIndex implements GemIndex {
     @Override
     public void update(final Path path) {
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
+        try {
+            final String script = IOUtils.toString(
+                RubyGemIndex.class.getResourceAsStream(String.format("/metarunner.rb")),
+                StandardCharsets.UTF_8
+            );
+            adapter.eval(this.ruby, script);
+            JavaEmbedUtils.invokeMethod(
+                this.ruby,
+                adapter.eval(this.ruby, "MetaRunner"),
+                "new",
+                new Object[]{path.toString()},
+                Object.class
+            );
+        } catch (final IOException err) {
+            throw new ArtipieException(err);
+        }
         adapter.eval(this.ruby, "require 'rubygems/indexer.rb'");
         adapter.eval(
             this.ruby,
             String.format(
                 "Gem::Indexer.new('%s', {build_modern:true}).generate_index",
-                path.toAbsolutePath().toString()
+                path.getParent().getParent().toAbsolutePath()
             )
         );
     }
