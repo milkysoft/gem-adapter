@@ -28,7 +28,6 @@ import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.asto.misc.UncheckedConsumer;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
@@ -112,7 +111,7 @@ public final class Gem {
                         try {
                             Files.move(path, target);
                         } catch (final IOException err) {
-                            throw new ArtipieException(err);
+                            throw new ArtipieIOException(err);
                         }
                         return target;
                     }
