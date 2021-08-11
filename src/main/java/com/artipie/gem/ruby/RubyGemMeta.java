@@ -34,7 +34,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
@@ -62,6 +66,28 @@ public final class RubyGemMeta implements GemMeta {
     private static final String SNAME = "name";
 
     /**
+     * Gem info String variables.
+     */
+    private static final Map<String, String> STRINGVARS = Collections.unmodifiableMap(
+        Stream.of(
+            new RPair("@version", "version"),
+            new RPair("@homepage", "homepage_uri"),
+            new RPair("@platform", "platform"),
+            new RPair(RubyGemMeta.ATNAME, RubyGemMeta.SNAME)
+        ).collect(Collectors.toMap(p -> p.left, p -> p.right))
+    );
+
+    /**
+     * Gem info Array variables.
+     */
+    private static final Map<String, String> ARRAYVARS = Collections.unmodifiableMap(
+        Stream.of(
+            new RPair("@authors", "authors"),
+            new RPair("@licenses", "licenses")
+        ).collect(Collectors.toMap(p -> p.left, p -> p.right))
+    );
+
+    /**
      * Ruby runtime.
      */
     private final Ruby ruby;
@@ -70,11 +96,6 @@ public final class RubyGemMeta implements GemMeta {
      * Ruby adapter.
      */
     private RubyRuntimeAdapter adapter;
-
-    /**
-     * Gem variables.
-     */
-    private List<Variable<Object>> vars;
 
     /**
      * Ctor.
@@ -95,51 +116,20 @@ public final class RubyGemMeta implements GemMeta {
                 "Gem::Package.new('%s').spec", gem.toString()
             )
         );
-        this.vars = spec.getVariableList();
-        for (final Variable<Object> thevar : this.vars) {
-            this.addVar(builder, thevar, gem);
+        final List<Variable<Object>> vars = spec.getVariableList();
+        for (final Map.Entry<String, String> entry : RubyGemMeta.STRINGVARS.entrySet()) {
+            builder.add(entry.getValue(), RubyGemMeta.getVar(vars, entry.getKey()));
         }
+        for (final Map.Entry<String, String> entry : RubyGemMeta.ARRAYVARS.entrySet()) {
+            final JsonArrayBuilder jsonarray = Json.createArrayBuilder();
+            this.getArray(gem, jsonarray, entry.getValue());
+            builder.add(entry.getKey(), jsonarray);
+        }
+        final JsonObjectBuilder jsondep = Json.createObjectBuilder();
+        this.getDependencies(gem, jsondep);
+        builder.add("dependencies", jsondep);
         builder.add("sha", RubyGemMeta.getSha(gem));
         return fmt.print(builder.build());
-    }
-
-    /**
-     * Add variable.
-     *
-     * @param builder Json Builder
-     * @param thevar Variable to add
-     * @param gem Path to gem
-     */
-    private void addVar(final JsonObjectBuilder builder,
-        final Variable<Object> thevar, final Path gem) {
-        final String plstr = "@platform";
-        final String hstr = "@homepage";
-        final String vstr = "@version";
-        final String authstr = "authors";
-        final String licstr = "licenses";
-        if (RubyGemMeta.ATNAME.equals(thevar.getName())) {
-            builder.add(
-                RubyGemMeta.SNAME, RubyGemMeta.getVar(this.vars, RubyGemMeta.ATNAME)
-            );
-        } else if ("@authors".equals(thevar.getName())) {
-            final JsonArrayBuilder jsonauthors = Json.createArrayBuilder();
-            this.getArray(gem, jsonauthors, authstr);
-            builder.add(authstr, jsonauthors);
-        } else if ("@licenses".equals(thevar.getName())) {
-            final JsonArrayBuilder jsonlicenses = Json.createArrayBuilder();
-            this.getArray(gem, jsonlicenses, licstr);
-            builder.add(licstr, jsonlicenses);
-        } else if (hstr.equals(thevar.getName())) {
-            builder.add("homepage_uri", RubyGemMeta.getVar(this.vars, hstr));
-        } else if (plstr.equals(thevar.getName())) {
-            builder.add("platform", RubyGemMeta.getVar(this.vars, plstr));
-        } else if (vstr.equals(thevar.getName())) {
-            builder.add("version", RubyGemMeta.getVar(this.vars, vstr));
-        } else if ("@dependencies".equals(thevar.getName())) {
-            final JsonObjectBuilder jsondep = Json.createObjectBuilder();
-            this.getDependencies(gem, jsondep);
-            builder.add("dependencies", jsondep);
-        }
     }
 
     /**
@@ -279,5 +269,33 @@ public final class RubyGemMeta implements GemMeta {
             icnt = icnt + 1;
         }
         return sbld.toString();
+    }
+
+    /**
+     * Pairs as parameters.
+     *
+     * @since 1.0
+     */
+    static class RPair {
+        /**
+         * Left String variable.
+         */
+        private final String left;
+
+        /**
+         * Right String variable.
+         */
+        private final String right;
+
+        /**
+         * Pairs parameter constructor.
+         *
+         * @param left Left String
+         * @param right Right String
+         */
+        RPair(final String left, final String right) {
+            this.left = left;
+            this.right = right;
+        }
     }
 }
