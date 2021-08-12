@@ -21,12 +21,10 @@ class Ex
                 metas.each do |item|
                     if item[0] == spec.name && item[1].version == spec.version.version
                         found = true
-                        puts 'Found specification in latest'
                     end
                 end
             end
             if found == false
-                puts 'Did not found specification in latest'
                 metas.push([spec.name, Gem::Version.create(spec.version.version), "ruby"])
                 data = Marshal.dump(metas)
                 File.write(f, data)
@@ -44,12 +42,10 @@ class Ex
                 metas.each do |item|
                     if item[0] == spec.name && item[1].version == spec.version.version
                         found = true
-                        puts 'Found specification in specs'
                     end
                 end
             end
             if found == false
-                puts 'Did not found specification in specs'
                 metas.push([spec.name, Gem::Version.create(spec.version.version), "ruby"])
                 data = Marshal.dump(metas)
                 File.write(f, data)
