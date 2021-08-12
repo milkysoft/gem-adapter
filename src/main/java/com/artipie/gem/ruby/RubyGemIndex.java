@@ -73,13 +73,5 @@ public final class RubyGemIndex implements GemIndex {
         } catch (final IOException err) {
             throw new ArtipieException(err);
         }
-        adapter.eval(this.ruby, "require 'rubygems/indexer.rb'");
-        adapter.eval(
-            this.ruby,
-            String.format(
-                "Gem::Indexer.new('%s', {build_modern:true}).generate_index",
-                path.getParent().getParent().toAbsolutePath()
-            )
-        );
     }
 }
