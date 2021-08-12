@@ -28,7 +28,14 @@ import com.artipie.ArtipieException;
 import com.artipie.gem.GemIndex;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyRuntimeAdapter;
@@ -40,6 +47,16 @@ import org.jruby.javasupport.JavaEmbedUtils;
  * @since 1.0
  */
 public final class RubyGemIndex implements GemIndex {
+
+    /**
+     * Read only set of metadata item names.
+     */
+    private static final Set<String> META_NAMES = Collections.unmodifiableSet(
+        Stream.of(
+            "latest_specs.4.8", "latest_specs.4.8.gz",
+            "specs.4.8", "specs.4.8.gz"
+        ).collect(Collectors.toSet())
+    );
 
     /**
      * Ruby runtime.
@@ -70,6 +87,13 @@ public final class RubyGemIndex implements GemIndex {
                 new Object[]{path.toString()},
                 Object.class
             );
+            for (final String file : RubyGemIndex.META_NAMES) {
+                final Path source = Paths.get(Paths.get("").toAbsolutePath().toString(), file);
+                final Path target = Paths.get(
+                    path.getParent().getParent().toAbsolutePath().toString(), file
+                );
+                Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (final IOException err) {
             throw new ArtipieException(err);
         }
