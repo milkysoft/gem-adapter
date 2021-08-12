@@ -28,7 +28,6 @@ import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.asto.misc.UncheckedConsumer;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
@@ -105,19 +104,27 @@ public final class Gem {
                         Paths.get(tmp.toString(), gem.string()),
                         spec -> String.format("%s-%s.gem", spec.get("name"), spec.get("version"))
                     )
-                ).thenAccept(
-                    new UncheckedConsumer<>(
-                        name -> {
-                            final Path path = Paths.get(tmp.toString(), gem.string());
-                            Files.move(path, path.getParent().resolve(name));
+                ).thenApply(
+                    name -> {
+                        final Path path = Paths.get(tmp.toString(), gem.string());
+                        final Path target = path.getParent().resolve(name);
+                        try {
+                            Files.move(path, target);
+                        } catch (final IOException err) {
+                            throw new ArtipieIOException(err);
                         }
-                    )
-                ).thenApply(none -> tmp)
+                        return target;
+                    }
+                )
         ).thenCompose(
             tmp -> this.shared.apply(RubyGemIndex::new)
                 .thenAccept(index -> index.update(tmp))
-                .thenCompose(none -> new Copy(new FileStorage(tmp)).copy(this.storage))
-                .handle(removeTempDir(tmp))
+                .thenCompose(
+                    none -> new Copy(
+                        new FileStorage(tmp.getParent().getParent())
+                    ).copy(this.storage)
+                )
+                .handle(removeTempDir(tmp.getParent().getParent()))
         );
     }
 
