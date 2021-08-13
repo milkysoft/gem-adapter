@@ -116,14 +116,14 @@ public final class Gem {
                     )
                 )
         ).thenCompose(
-            tmp -> this.shared.apply(RubyGemIndex::new)
-                .thenAccept(index -> index.update(tmp))
+            fullpath -> this.shared.apply(RubyGemIndex::new)
+                .thenAccept(index -> index.update(fullpath))
                 .thenCompose(
                     none -> new Copy(
-                        new FileStorage(tmp.getParent().getParent())
+                        new FileStorage(fullpath.getParent().getParent())
                     ).copy(this.storage)
                 )
-                .handle(removeTempDir(tmp.getParent().getParent()))
+                .handle(removeTempDir(fullpath.getParent().getParent()))
         );
     }
 
