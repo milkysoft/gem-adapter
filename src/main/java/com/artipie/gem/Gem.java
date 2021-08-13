@@ -28,6 +28,7 @@ import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
+import com.artipie.asto.misc.UncheckedIOFunc;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
@@ -105,16 +106,14 @@ public final class Gem {
                         spec -> String.format("%s-%s.gem", spec.get("name"), spec.get("version"))
                     )
                 ).thenApply(
-                    name -> {
-                        final Path path = Paths.get(tmp.toString(), gem.string());
-                        final Path target = path.getParent().resolve(name);
-                        try {
+                    new UncheckedIOFunc<>(
+                        name -> {
+                            final Path path = Paths.get(tmp.toString(), gem.string());
+                            final Path target = path.getParent().resolve(name.toString());
                             Files.move(path, target);
-                        } catch (final IOException err) {
-                            throw new ArtipieIOException(err);
+                            return target;
                         }
-                        return target;
-                    }
+                    )
                 )
         ).thenCompose(
             tmp -> this.shared.apply(RubyGemIndex::new)
