@@ -92,7 +92,7 @@ public final class RubyGemIndex implements GemIndex {
                 final Path target = Paths.get(
                     path.getParent().getParent().toAbsolutePath().toString(), file
                 );
-                Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (final IOException err) {
             throw new ArtipieException(err);
