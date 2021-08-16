@@ -89,9 +89,7 @@ public final class RubyGemIndex implements GemIndex {
             );
             for (final String file : RubyGemIndex.META_NAMES) {
                 final Path source = path.resolve(file);
-                final Path target = Paths.get(
-                    path.getParent().getParent().toAbsolutePath().toString(), file
-                );
+                final Path target = path.getParent().getParent();
                 Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (final IOException err) {

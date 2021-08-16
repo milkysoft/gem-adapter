@@ -109,7 +109,7 @@ public final class Gem {
                     new UncheckedIOFunc<>(
                         name -> {
                             final Path path = Paths.get(tmp.toString(), gem.string());
-                            final Path target = path.getParent().resolve(name.toString());
+                            final Path target = path.getParent().resolve(name);
                             Files.move(path, target);
                             return target;
                         }
