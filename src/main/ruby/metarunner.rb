@@ -40,6 +40,7 @@ class MetaRunner
             File.write(fullpath, data)
             Zlib::GzipWriter.open(fullpath + '.gz') do |gz|
                 gz.write data
+            end
             ind = ind + 1
         end
     end
