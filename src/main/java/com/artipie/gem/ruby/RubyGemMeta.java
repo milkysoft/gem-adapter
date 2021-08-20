@@ -42,6 +42,9 @@ import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
+
+import com.artipie.gem.TreeNode;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
@@ -110,6 +113,8 @@ public final class RubyGemMeta implements GemMeta {
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
         this.adapter = JavaEmbedUtils.newRuntimeAdapter();
         final JsonObjectBuilder builder = Json.createObjectBuilder();
+        TreeNode<ImmutablePair<String, String>> root =
+            new TreeNode<>(new ImmutablePair<>("root", "root"));
         this.adapter.eval(this.ruby, "require 'rubygems/package.rb'");
         final RubyObject spec = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
@@ -118,18 +123,17 @@ public final class RubyGemMeta implements GemMeta {
         );
         final List<Variable<Object>> vars = spec.getVariableList();
         for (final Map.Entry<String, String> entry : RubyGemMeta.STRINGVARS.entrySet()) {
-            builder.add(entry.getValue(), RubyGemMeta.getVar(vars, entry.getKey()));
+            root.addChild(new ImmutablePair<>(entry.getValue(), RubyGemMeta.getVar(vars, entry.getKey())));
         }
         for (final Map.Entry<String, String> entry : RubyGemMeta.ARRAYVARS.entrySet()) {
             final JsonArrayBuilder jsonarray = Json.createArrayBuilder();
             this.getArray(gem, jsonarray, entry.getValue());
-            builder.add(entry.getKey(), jsonarray);
         }
         final JsonObjectBuilder jsondep = Json.createObjectBuilder();
         this.getDependencies(gem, jsondep);
         builder.add("dependencies", jsondep);
-        builder.add("sha", RubyGemMeta.getSha(gem));
-        return fmt.print(builder.build());
+        root.addChild(new ImmutablePair<>("sha", RubyGemMeta.getSha(gem)));
+        return fmt.print(root);
     }
 
     /**

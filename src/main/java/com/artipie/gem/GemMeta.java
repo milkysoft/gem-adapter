@@ -24,8 +24,12 @@
 
 package com.artipie.gem;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import java.nio.file.Path;
+import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 /**
  * Gem metadata parser.
@@ -36,7 +40,21 @@ public interface GemMeta {
     /**
      * Json Gem info format.
      */
-    InfoFormat<JsonObject> FMT_JSON = data -> data;
+    InfoFormat<JsonObject> FMT_JSON = data -> buildTree(data).build();
+
+    static JsonObjectBuilder buildTree(TreeNode<ImmutablePair<String, String>> data) {
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        for (TreeNode<ImmutablePair<String, String>> node : data) {
+            if (node.isRoot()) {
+                continue;
+            } else if(node.isLeaf()) {
+                builder.add(node.data.getLeft(), node.data.getRight());
+            } else {
+                builder.add(node.data.getLeft(), buildTree(node).build());
+            }
+        }
+        return builder;
+    }
 
     /**
      * Extract Gem info.
@@ -60,6 +78,6 @@ public interface GemMeta {
          * @param data Gem info data
          * @return Formatted info
          */
-        T print(JsonObject data);
+        T print(TreeNode<ImmutablePair<String, String>> data);
     }
 }

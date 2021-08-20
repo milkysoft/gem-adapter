@@ -47,6 +47,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 /**
  * An SDK, which servers gem packages.
@@ -103,9 +104,21 @@ public final class Gem {
                 .thenApply(
                     meta -> meta.info(
                         Paths.get(tmp.toString(), gem.string()),
-                        spec -> String.format(
-                            "%s-%s.gem", spec.getString("name"), spec.getString("version")
-                        )
+                        spec -> {
+                            String name = "";
+                            String version = "";
+                            for (final TreeNode<ImmutablePair<String, String>> node : spec) {
+                                if(node.isLeaf() && "name".equals(node.data.getLeft())) {
+                                    name = node.data.getRight();
+                                }
+                            }
+                            for (final TreeNode<ImmutablePair<String, String>> node : spec) {
+                                if(node.isLeaf() && "version".equals(node.data.getLeft())) {
+                                    version = node.data.getRight();
+                                }
+                            }
+                            return String.format("%s-%s.gem", name, version);
+                        }
                     )
                 ).thenAccept(
                     new UncheckedConsumer<>(
