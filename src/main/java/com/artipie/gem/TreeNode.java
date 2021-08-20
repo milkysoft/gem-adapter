@@ -30,24 +30,59 @@ import java.util.List;
 
 /**
  * Gem metadata parser.
+ * @param <T> Format type
  * @since 1.0
+ * @checkstyle DiamondOperatorCheck (500 lines)
  */
-public class TreeNode<T> implements Iterable<TreeNode<T>> {
+@SuppressWarnings("PMD.ConstructorOnlyInitializesOrCallOtherConstructors")
+public final class TreeNode<T> implements Iterable<TreeNode<T>> {
 
     /**
      * Json Gem info format.
      */
-    public T data;
+    private final List<TreeNode<T>> elementsind;
 
     /**
      * Json Gem info format.
      */
-    public TreeNode<T> parent;
+    private final T data;
 
     /**
      * Json Gem info format.
      */
-    public List<TreeNode<T>> children;
+    private TreeNode<T> parent;
+
+    /**
+     * Json Gem info format.
+     */
+    private final List<TreeNode<T>> children;
+
+    /**
+     * Extract Gem info.
+     * @param data Is data
+     */
+    public TreeNode(final T data) {
+        this.data = data;
+        this.children = new LinkedList<TreeNode<T>>();
+        this.elementsind = new LinkedList<TreeNode<T>>();
+        this.elementsind.add(this);
+    }
+
+    /**
+     * Extract Gem info.
+     * @return Boolean object
+     */
+    public List<TreeNode<T>> getchildren() {
+        return this.children;
+    }
+
+    /**
+     * Extract Gem info.
+     * @return Boolean object
+     */
+    public T getdata() {
+        return this.data;
+    }
 
     /**
      * Extract Gem info.
@@ -66,32 +101,16 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
     }
 
     /**
-     * Json Gem info format.
-     */
-    private final List<TreeNode<T>> elementsIndex;
-
-    /**
-     * Extract Gem info.
-     * @param data Is data
-     */
-    public TreeNode(final T data) {
-        this.data = data;
-        this.children = new LinkedList<TreeNode<T>>();
-        this.elementsIndex = new LinkedList<TreeNode<T>>();
-        this.elementsIndex.add(this);
-    }
-
-    /**
      * Extract Gem info.
      * @param child Is child
      * @return TreeNoode object
      */
     public TreeNode<T> addChild(final T child) {
-        final TreeNode<T> childNode = new TreeNode<T>(child);
-        childNode.parent = this;
-        this.children.add(childNode);
-        this.registerChildForSearch(childNode);
-        return childNode;
+        final TreeNode<T> childnode = new TreeNode<T>(child);
+        childnode.parent = this;
+        this.children.add(childnode);
+        this.registerChildForSearch(childnode);
+        return childnode;
     }
 
     /**
@@ -99,18 +118,13 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
      * @return Int object
      */
     public int getLevel() {
-        return this.isRoot() ? 0 : this.parent.getLevel() + 1;
-    }
-
-    /**
-     * Extract Gem info.
-     * @param node Is child
-     */
-    private void registerChildForSearch(final TreeNode<T> node) {
-        elementsIndex.add(node);
-        if (this.parent != null) {
-            this.parent.registerChildForSearch(node);
+        final int res;
+        if (this.isRoot()) {
+            res = 0;
+        } else {
+            res = this.parent.getLevel() + 1;
         }
+        return res;
     }
 
     /**
@@ -120,9 +134,9 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
      */
     public TreeNode<T> findTreeNode(final Comparable<T> cmp) {
         TreeNode<T> res = null;
-        for (final TreeNode<T> element : this.elementsIndex) {
-            final T elData = element.data;
-            if (cmp.compareTo(elData) == 0) {
+        for (final TreeNode<T> element : this.elementsind) {
+            final T eldata = element.data;
+            if (cmp.compareTo(eldata) == 0) {
                 res = element;
                 break;
             }
@@ -132,12 +146,29 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
 
     @Override
     public String toString() {
-        return this.data == null ? "[data null]" : this.data.toString();
+        final String res;
+        if (this.data == null) {
+            res = "[data null]";
+        } else {
+            res = this.data.toString();
+        }
+        return res;
     }
 
     @Override
     public Iterator<TreeNode<T>> iterator() {
         return new TreeNodeIter<T>(this);
+    }
+
+    /**
+     * Extract Gem info.
+     * @param node Is child
+     */
+    private void registerChildForSearch(final TreeNode<T> node) {
+        this.elementsind.add(node);
+        if (this.parent != null) {
+            this.parent.registerChildForSearch(node);
+        }
     }
 }
 

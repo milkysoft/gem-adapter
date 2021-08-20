@@ -26,6 +26,7 @@ package com.artipie.gem.ruby;
 
 import com.artipie.ArtipieException;
 import com.artipie.gem.GemMeta;
+import com.artipie.gem.TreeNode;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,8 +43,6 @@ import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
-
-import com.artipie.gem.TreeNode;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
@@ -124,7 +123,11 @@ public final class RubyGemMeta implements GemMeta {
         );
         final List<Variable<Object>> vars = spec.getVariableList();
         for (final Map.Entry<String, String> entry : RubyGemMeta.STRINGVARS.entrySet()) {
-            root.addChild(new ImmutablePair<>(entry.getValue(), RubyGemMeta.getVar(vars, entry.getKey())));
+            root.addChild(
+                new ImmutablePair<>(
+                    entry.getValue(), RubyGemMeta.getVar(vars, entry.getKey())
+                )
+            );
         }
         for (final Map.Entry<String, String> entry : RubyGemMeta.ARRAYVARS.entrySet()) {
             final JsonArrayBuilder jsonarray = Json.createArrayBuilder();

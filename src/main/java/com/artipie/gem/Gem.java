@@ -108,13 +108,13 @@ public final class Gem {
                             String name = "";
                             String version = "";
                             for (final TreeNode<ImmutablePair<String, String>> node : spec) {
-                                if(node.isLeaf() && "name".equals(node.data.getLeft())) {
-                                    name = node.data.getRight();
+                                if (node.isLeaf() && "name".equals(node.getdata().getLeft())) {
+                                    name = node.getdata().getRight();
                                 }
                             }
                             for (final TreeNode<ImmutablePair<String, String>> node : spec) {
-                                if(node.isLeaf() && "version".equals(node.data.getLeft())) {
-                                    version = node.data.getRight();
+                                if (node.isLeaf() && "version".equals(node.getdata().getLeft())) {
+                                    version = node.getdata().getRight();
                                 }
                             }
                             return String.format("%s-%s.gem", name, version);

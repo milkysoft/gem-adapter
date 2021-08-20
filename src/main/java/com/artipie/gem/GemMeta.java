@@ -24,17 +24,17 @@
 
 package com.artipie.gem;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
 import java.nio.file.Path;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 /**
  * Gem metadata parser.
  * @since 1.0
  */
+@SuppressWarnings("PMD.ProhibitPublicStaticMethods")
 public interface GemMeta {
 
     /**
@@ -42,15 +42,20 @@ public interface GemMeta {
      */
     InfoFormat<JsonObject> FMT_JSON = data -> buildTree(data).build();
 
+    /**
+     * Json Gem info format.
+     * @param data Is data
+     * @return Json Object
+     */
     static JsonObjectBuilder buildTree(TreeNode<ImmutablePair<String, String>> data) {
         final JsonObjectBuilder builder = Json.createObjectBuilder();
-        for (TreeNode<ImmutablePair<String, String>> node : data) {
+        for (final TreeNode<ImmutablePair<String, String>> node : data) {
             if (node.isRoot()) {
                 continue;
-            } else if(node.isLeaf()) {
-                builder.add(node.data.getLeft(), node.data.getRight());
+            } else if (node.isLeaf()) {
+                builder.add(node.getdata().getLeft(), node.getdata().getRight());
             } else {
-                builder.add(node.data.getLeft(), buildTree(node).build());
+                builder.add(node.getdata().getLeft(), buildTree(node).build());
             }
         }
         return builder;
