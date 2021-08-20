@@ -36,7 +36,7 @@ public class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
      * Json Gem info format.
      */
     enum ProcessStages {
-        ProcessParent, ProcessChildCurNode, ProcessChildSubNode
+        PROCESSPARENT, PROCESSCHILDCURNODE, PROCESSCHILDSUBNODE
     }
 
     /**
@@ -48,10 +48,10 @@ public class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
      * Json Gem info format.
      * @param treeNode Is node
      */
-    public TreeNodeIter(TreeNode<T> treeNode) {
+    public TreeNodeIter(final TreeNode<T> treeNode) {
         this.treeNode = treeNode;
-        this.donext = ProcessStages.ProcessParent;
-        this.childrenCurNodeIter = treeNode.children.iterator();
+        this.donext = ProcessStages.PROCESSPARENT;
+        this.cCurNodeIter = treeNode.children.iterator();
     }
 
     /**
@@ -67,39 +67,39 @@ public class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
     /**
      * Json Gem info format.
      */
-    private Iterator<TreeNode<T>> childrenCurNodeIter;
+    private final Iterator<TreeNode<T>> cCurNodeIter;
 
     /**
      * Json Gem info format.
      */
-    private Iterator<TreeNode<T>> childrenSubNodeIter;
+    private Iterator<TreeNode<T>> cSubNodeIter;
 
     @Override
     public boolean hasNext() {
         boolean result = false;
-        if (this.donext == ProcessStages.ProcessParent) {
+        if (this.donext == ProcessStages.PROCESSPARENT) {
             this.thenext = this.treeNode;
-            this.donext = ProcessStages.ProcessChildCurNode;
+            this.donext = ProcessStages.PROCESSCHILDCURNODE;
             result = true;
-        } else if (this.donext == ProcessStages.ProcessChildCurNode) {
-            if (this.childrenCurNodeIter.hasNext()) {
-                final TreeNode<T> childdirect = this.childrenCurNodeIter.next();
-                childrenSubNodeIter = childdirect.iterator();
-                this.donext = ProcessStages.ProcessChildSubNode;
+        } else if (this.donext == ProcessStages.PROCESSCHILDCURNODE) {
+            if (this.cCurNodeIter.hasNext()) {
+                final TreeNode<T> childdirect = this.cCurNodeIter.next();
+                cSubNodeIter = childdirect.iterator();
+                this.donext = ProcessStages.PROCESSCHILDSUBNODE;
                 result = hasNext();
             }
             else {
                 this.donext = null;
                 result = false;
             }
-        } else if (this.donext == ProcessStages.ProcessChildSubNode) {
-            if (this.childrenSubNodeIter.hasNext()) {
-                this.thenext = this.childrenSubNodeIter.next();
+        } else if (this.donext == ProcessStages.PROCESSCHILDSUBNODE) {
+            if (this.cSubNodeIter.hasNext()) {
+                this.thenext = this.cSubNodeIter.next();
                 result = true;
             }
             else {
                 this.thenext = null;
-                this.donext = ProcessStages.ProcessChildCurNode;
+                this.donext = ProcessStages.PROCESSCHILDCURNODE;
                 result = hasNext();
             }
         }

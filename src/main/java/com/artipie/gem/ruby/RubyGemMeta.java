@@ -112,9 +112,10 @@ public final class RubyGemMeta implements GemMeta {
     @Override
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
         this.adapter = JavaEmbedUtils.newRuntimeAdapter();
+        final String sroot = "root";
         final JsonObjectBuilder builder = Json.createObjectBuilder();
-        TreeNode<ImmutablePair<String, String>> root =
-            new TreeNode<>(new ImmutablePair<>("root", "root"));
+        final TreeNode<ImmutablePair<String, String>> root =
+            new TreeNode<>(new ImmutablePair<>(sroot, sroot));
         this.adapter.eval(this.ruby, "require 'rubygems/package.rb'");
         final RubyObject spec = (RubyObject) this.adapter.eval(
             this.ruby, String.format(

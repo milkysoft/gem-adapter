@@ -68,13 +68,13 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
     /**
      * Json Gem info format.
      */
-    private List<TreeNode<T>> elementsIndex;
+    private final List<TreeNode<T>> elementsIndex;
 
     /**
      * Extract Gem info.
      * @param data Is data
      */
-    public TreeNode(T data) {
+    public TreeNode(final T data) {
         this.data = data;
         this.children = new LinkedList<TreeNode<T>>();
         this.elementsIndex = new LinkedList<TreeNode<T>>();
@@ -86,8 +86,8 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
      * @param child Is child
      * @return TreeNoode object
      */
-    public TreeNode<T> addChild(T child) {
-        TreeNode<T> childNode = new TreeNode<T>(child);
+    public TreeNode<T> addChild(final T child) {
+        final TreeNode<T> childNode = new TreeNode<T>(child);
         childNode.parent = this;
         this.children.add(childNode);
         this.registerChildForSearch(childNode);
@@ -99,18 +99,14 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
      * @return Int object
      */
     public int getLevel() {
-        if (this.isRoot()) {
-            return 0;
-        } else {
-            return this.parent.getLevel() + 1;
-        }
+        return this.isRoot() ? 0 : this.parent.getLevel() + 1;
     }
 
     /**
      * Extract Gem info.
      * @param node Is child
      */
-    private void registerChildForSearch(TreeNode<T> node) {
+    private void registerChildForSearch(final TreeNode<T> node) {
         elementsIndex.add(node);
         if (this.parent != null) {
             this.parent.registerChildForSearch(node);
@@ -122,26 +118,26 @@ public class TreeNode<T> implements Iterable<TreeNode<T>> {
      * @param cmp Is child
      * @return TreeNoode object
      */
-    public TreeNode<T> findTreeNode(Comparable<T> cmp) {
-        for (TreeNode<T> element : this.elementsIndex) {
-            T elData = element.data;
+    public TreeNode<T> findTreeNode(final Comparable<T> cmp) {
+        TreeNode<T> res = null;
+        for (final TreeNode<T> element : this.elementsIndex) {
+            final T elData = element.data;
             if (cmp.compareTo(elData) == 0) {
-                return element;
+                res = element;
+                break;
             }
         }
-
-        return null;
+        return res;
     }
 
     @Override
     public String toString() {
-        return this.data != null ? this.data.toString() : "[data null]";
+        return this.data == null ? "[data null]" : this.data.toString();
     }
 
     @Override
     public Iterator<TreeNode<T>> iterator() {
-        TreeNodeIter<T> iter = new TreeNodeIter<T>(this);
-        return iter;
+        return new TreeNodeIter<T>(this);
     }
 }
 
