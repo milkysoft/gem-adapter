@@ -4,8 +4,8 @@ require 'rubygems/indexer.rb'
 class MetaRunner
 
     def initialize(val)
-        dir1 = File.dirname(val)
-        dir2 = File.expand_path("..", dir1)
+        gemdir = File.dirname(val)
+        tmpdir = File.expand_path("..", gemdir)
         spec = Gem::Package.new(val).spec()
         metas = []
         metafiles = ['latest_specs.4.8', 'specs.4.8']
@@ -13,7 +13,7 @@ class MetaRunner
         metafiles.each do |f|
             metas = []
             found = false
-            fullpath = dir2 + '/' + f
+            fullpath = tmpdir + '/' + f
             content = ''
             if File.file?(fullpath)
                 content = File.open(fullpath).read
@@ -33,10 +33,10 @@ class MetaRunner
             end
         end
 
-        Gem::Indexer.new(dir2, {build_modern:true}).generate_index
+        Gem::Indexer.new(tmpdir, {build_modern:true}).generate_index
         ind = 0
         metadata.each do |data|
-            fullpath = dir2 + '/' + metafiles[ind]
+            fullpath = tmpdir + '/' + metafiles[ind]
             File.write(fullpath, data)
             Zlib::GzipWriter.open(fullpath + '.gz') do |gz|
                 gz.write data
