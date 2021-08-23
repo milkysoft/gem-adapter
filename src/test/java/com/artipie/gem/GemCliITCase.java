@@ -62,6 +62,7 @@ public class GemCliITCase {
         throws IOException, InterruptedException {
         final String key = new Base64Encoded("usr:pwd").asString();
         final Vertx vertx = Vertx.vertx();
+        final int latestsize = 105;
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new GemSlice(new FileStorage(temp))
@@ -118,7 +119,7 @@ public class GemCliITCase {
                 ruby,
                 String.format("var=$(stat -c%%s latest_specs.4.8); (exit $var)")
             ),
-            Matchers.equalTo(105)
+            Matchers.equalTo(latestsize)
         );
         ruby.stop();
         ruby.close();
