@@ -112,6 +112,14 @@ public class GemCliITCase {
             ),
             Matchers.equalTo(0)
         );
+        MatcherAssert.assertThat(
+            String.format("file size is wrong"),
+            this.bash(
+                ruby,
+                String.format("var=$(stat -c%%s latest_specs.4.8); (exit $var)")
+            ),
+            Matchers.equalTo(105)
+        );
         ruby.stop();
         ruby.close();
         server.close();
