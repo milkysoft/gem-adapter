@@ -32,7 +32,6 @@ import java.util.List;
  * Gem metadata parser.
  * @param <T> Format type
  * @since 1.0
- * @checkstyle DiamondOperatorCheck (500 lines)
  */
 public final class TreeNode<T> implements Iterable<TreeNode<T>> {
 
@@ -111,7 +110,8 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
      * @return TreeNode object
      */
     public TreeNode<T> addChild(final T child) {
-        final TreeNode<T> childnode = new TreeNode<T>(child);
+        final TreeNode<T> childnode = new TreeNode<>(child);
+        childnode.init();
         childnode.parent = this;
         this.children.add(childnode);
         this.registerChildForSearch(childnode);
