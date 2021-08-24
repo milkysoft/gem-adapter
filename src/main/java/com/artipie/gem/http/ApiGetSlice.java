@@ -25,7 +25,7 @@ package com.artipie.gem.http;
 
 import com.artipie.asto.Storage;
 import com.artipie.gem.Gem;
-import com.artipie.gem.GemMeta;
+import com.artipie.gem.TreeNode;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
@@ -35,6 +35,9 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.reactivestreams.Publisher;
 
 /**
@@ -77,7 +80,27 @@ public final class ApiGetSlice implements Slice {
             throw new IllegalStateException("Invalid routing schema");
         }
         return new AsyncResponse(
-            this.sdk.info(matcher.group(1), GemMeta.FMT_JSON).thenApply(json -> new RsJson(json))
+            this.sdk.info(matcher.group(1), data -> ApiGetSlice.buildTree(data).build())
+                .thenApply(json -> new RsJson(json))
         );
+    }
+
+    /**
+     * Json Gem info format.
+     * @param data Is data
+     * @return Json Object
+     */
+    private static JsonObjectBuilder buildTree(final TreeNode<ImmutablePair<String, String>> data) {
+        final JsonObjectBuilder builder = Json.createObjectBuilder();
+        for (final TreeNode<ImmutablePair<String, String>> node : data) {
+            if (node.isRoot()) {
+                continue;
+            } else if (node.isLeaf()) {
+                builder.add(node.getdata().getLeft(), node.getdata().getRight());
+            } else {
+                builder.add(node.getdata().getLeft(), buildTree(node).build());
+            }
+        }
+        return builder;
     }
 }
