@@ -34,7 +34,6 @@ import java.util.List;
  * @since 1.0
  * @checkstyle DiamondOperatorCheck (500 lines)
  */
-@SuppressWarnings("PMD.ConstructorOnlyInitializesOrCallOtherConstructors")
 public final class TreeNode<T> implements Iterable<TreeNode<T>> {
 
     /**
@@ -63,8 +62,14 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
      */
     public TreeNode(final T data) {
         this.data = data;
-        this.children = new LinkedList<TreeNode<T>>();
-        this.elementsind = new LinkedList<TreeNode<T>>();
+        this.children = new LinkedList<>();
+        this.elementsind = new LinkedList<>();
+    }
+
+    /**
+     * Extract Gem info.
+     */
+    public void init() {
         this.elementsind.add(this);
     }
 
@@ -103,7 +108,7 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
     /**
      * Extract Gem info.
      * @param child Is child
-     * @return TreeNoode object
+     * @return TreeNode object
      */
     public TreeNode<T> addChild(final T child) {
         final TreeNode<T> childnode = new TreeNode<T>(child);

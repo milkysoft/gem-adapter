@@ -115,6 +115,7 @@ public final class RubyGemMeta implements GemMeta {
         final JsonObjectBuilder builder = Json.createObjectBuilder();
         final TreeNode<ImmutablePair<String, String>> root =
             new TreeNode<>(new ImmutablePair<>(sroot, sroot));
+        root.init();
         this.adapter.eval(this.ruby, "require 'rubygems/package.rb'");
         final RubyObject spec = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
