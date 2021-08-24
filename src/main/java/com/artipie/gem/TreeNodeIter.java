@@ -25,13 +25,13 @@
 package com.artipie.gem;
 
 import java.util.Iterator;
+import java.util.Optional;
 
 /**
  * Gem metadata parser.
  * @param <T> Format type
  * @since 1.0
  */
-@SuppressWarnings("PMD.NullAssignment")
 public final class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
 
     /**
@@ -67,7 +67,7 @@ public final class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
     /**
      * Json Gem info format.
      */
-    private TreeNode<T> thenext;
+    private Optional<TreeNode<T>> thenext;
 
     /**
      * Json Gem info format.
@@ -98,7 +98,7 @@ public final class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
     public boolean hasNext() {
         boolean result = false;
         if (this.donext == ProcessStages.PROCESSPARENT) {
-            this.thenext = this.thetreenode;
+            this.thenext = Optional.of(this.thetreenode);
             this.donext = ProcessStages.PROCESSCHILDCURNODE;
             result = true;
         } else if (this.donext == ProcessStages.PROCESSCHILDCURNODE) {
@@ -113,10 +113,10 @@ public final class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
             }
         } else if (this.donext == ProcessStages.PROCESSCHILDSUBNODE) {
             if (this.csubnodeiter.hasNext()) {
-                this.thenext = this.csubnodeiter.next();
+                this.thenext = Optional.of(this.csubnodeiter.next());
                 result = true;
             } else {
-                this.thenext = null;
+                this.thenext = Optional.empty();
                 this.donext = ProcessStages.PROCESSCHILDCURNODE;
                 result = this.hasNext();
             }
@@ -126,7 +126,11 @@ public final class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
 
     @Override
     public TreeNode<T> next() {
-        return this.thenext;
+        TreeNode<T> res = null;
+        if (this.thenext.isPresent()) {
+            res = this.thenext.get();
+        }
+        return res;
     }
 
     @Override
