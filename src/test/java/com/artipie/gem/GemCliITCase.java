@@ -62,7 +62,6 @@ public class GemCliITCase {
         throws IOException, InterruptedException {
         final String key = new Base64Encoded("usr:pwd").asString();
         final Vertx vertx = Vertx.vertx();
-        final int latestsize = 105;
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new GemSlice(new FileStorage(temp))
@@ -93,6 +92,8 @@ public class GemCliITCase {
                 Matchers.equalTo(0)
             );
             Files.delete(target);
+        }
+        for (final String gem : gems) {
             MatcherAssert.assertThat(
                 String.format("'gem fetch %s failed with non-zero code", host, gem),
                 this.bash(
@@ -112,14 +113,6 @@ public class GemCliITCase {
                 String.format("gem sources -r https://rubygems.org/", host)
             ),
             Matchers.equalTo(0)
-        );
-        MatcherAssert.assertThat(
-            String.format("file size is wrong"),
-            this.bash(
-                ruby,
-                String.format("var=$(stat -c%%s latest_specs.4.8); (exit $var)")
-            ),
-            Matchers.equalTo(latestsize)
         );
         ruby.stop();
         ruby.close();
