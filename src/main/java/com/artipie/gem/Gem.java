@@ -28,7 +28,7 @@ import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.asto.misc.UncheckedConsumer;
+import com.artipie.asto.misc.UncheckedIOFunc;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -94,10 +95,14 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<Void> update(final Key gem) {
+        final AtomicReference<Path> dir = new AtomicReference<>();
         return newTempDir().thenCompose(
-            tmp -> new Copy(this.storage, key -> META_NAMES.contains(key) || key.equals(gem))
+            tmp -> {
+                dir.set(tmp);
+                return new Copy(this.storage, key -> META_NAMES.contains(key) || key.equals(gem))
                 .copy(new FileStorage(tmp))
-                .thenApply(ignore -> tmp)
+                .thenApply(ignore -> tmp);
+            }
         ).thenCompose(
             tmp -> this.shared.apply(RubyGemMeta::new)
                 .thenApply(
@@ -105,19 +110,25 @@ public final class Gem {
                         Paths.get(tmp.toString(), gem.string()),
                         spec -> String.format("%s-%s.gem", spec.get("name"), spec.get("version"))
                     )
-                ).thenAccept(
-                    new UncheckedConsumer<>(
+                ).thenApply(
+                    new UncheckedIOFunc<>(
                         name -> {
                             final Path path = Paths.get(tmp.toString(), gem.string());
-                            Files.move(path, path.getParent().resolve(name));
+                            final Path target = path.getParent().resolve(name);
+                            Files.move(path, target);
+                            return target;
                         }
                     )
-                ).thenApply(none -> tmp)
+                )
         ).thenCompose(
-            tmp -> this.shared.apply(RubyGemIndex::new)
-                .thenAccept(index -> index.update(tmp))
-                .thenCompose(none -> new Copy(new FileStorage(tmp)).copy(this.storage))
-                .handle(removeTempDir(tmp))
+            fullpath -> this.shared.apply(RubyGemIndex::new)
+                .thenAccept(index -> index.update(fullpath))
+                .thenCompose(
+                    none -> new Copy(
+                        new FileStorage(dir.get())
+                    ).copy(this.storage)
+                )
+                .handle(removeTempDir(dir.get()))
         );
     }
 
