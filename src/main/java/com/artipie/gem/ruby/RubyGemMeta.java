@@ -40,8 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
@@ -129,8 +127,11 @@ public final class RubyGemMeta implements GemMeta {
             );
         }
         for (final Map.Entry<String, String> entry : RubyGemMeta.ARRAYVARS.entrySet()) {
-            final JsonArrayBuilder jsonarray = Json.createArrayBuilder();
-            this.getArray(gem, jsonarray, entry.getValue());
+            root.addChild(
+                new ImmutablePair<>(
+                    entry.getValue(), this.getArray(gem, entry.getValue())
+                )
+            );
         }
         final String depstr = "dependencies";
         final TreeNode<ImmutablePair<String, String>> deps =
@@ -219,21 +220,25 @@ public final class RubyGemMeta implements GemMeta {
      * Ruby runtime.
      *
      * @param gem Path to gem
-     * @param jsonarray Strings array
      * @param property Property to parse
+     * @return Parsed string
      */
-    private void getArray(final Path gem,
-        final JsonArrayBuilder jsonarray, final String property) {
+    private String getArray(final Path gem, final String property) {
         final RubyObject elements = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
                 "Gem::Package.new('%s').spec.".concat(property), gem
             )
         );
         int vari = 0;
+        String res = "|";
         while (vari < elements.convertToArray().getLength()) {
-            jsonarray.add(elements.convertToArray().get(vari).toString());
+            if (vari > 0) {
+                res = res.concat("|");
+            }
+            res = res.concat(elements.convertToArray().get(vari).toString());
             vari = vari + 1;
         }
+        return res;
     }
 
     /**

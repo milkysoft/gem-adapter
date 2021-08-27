@@ -32,10 +32,12 @@ import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.common.RsJson;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.reactivestreams.Publisher;
@@ -96,7 +98,18 @@ public final class ApiGetSlice implements Slice {
             if (node.isRoot()) {
                 continue;
             } else if (node.isLeaf()) {
-                builder.add(node.getdata().getLeft(), node.getdata().getRight());
+                if (node.getdata().getRight().contains("|")) {
+                    final String[] elements = Arrays.stream(
+                        node.getdata().getRight().split("[|]")
+                    ).filter(res -> !res.trim().isEmpty()).toArray(String[]::new);
+                    final JsonArrayBuilder jsonarray = Json.createArrayBuilder();
+                    for (final String element : elements) {
+                        jsonarray.add(element);
+                    }
+                    builder.add(node.getdata().getLeft(), jsonarray);
+                } else {
+                    builder.add(node.getdata().getLeft(), node.getdata().getRight());
+                }
             } else {
                 builder.add(node.getdata().getLeft(), buildTree(node).build());
             }
