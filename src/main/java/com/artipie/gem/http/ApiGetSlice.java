@@ -92,7 +92,7 @@ public final class ApiGetSlice implements Slice {
      */
     private static JsonObjectBuilder buildTree(final TreeNode<ImmutablePair<String, String>> data) {
         final JsonObjectBuilder builder = Json.createObjectBuilder();
-        for (final TreeNode<ImmutablePair<String, String>> node : data) {
+        for (final TreeNode<ImmutablePair<String, String>> node : data.getchildren()) {
             if (node.isRoot()) {
                 continue;
             } else if (node.isLeaf()) {

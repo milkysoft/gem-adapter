@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
@@ -112,7 +111,6 @@ public final class RubyGemMeta implements GemMeta {
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
         this.adapter = JavaEmbedUtils.newRuntimeAdapter();
         final String sroot = "root";
-        final JsonObjectBuilder builder = Json.createObjectBuilder();
         final TreeNode<ImmutablePair<String, String>> root =
             new TreeNode<>(new ImmutablePair<>(sroot, sroot));
         root.init();
@@ -134,9 +132,10 @@ public final class RubyGemMeta implements GemMeta {
             final JsonArrayBuilder jsonarray = Json.createArrayBuilder();
             this.getArray(gem, jsonarray, entry.getValue());
         }
-        final JsonObjectBuilder jsondep = Json.createObjectBuilder();
-        this.getDependencies(gem, jsondep);
-        builder.add("dependencies", jsondep);
+        final String depstr = "dependencies";
+        final TreeNode<ImmutablePair<String, String>> deps =
+            root.addChild(new ImmutablePair<>(depstr, depstr));
+        this.getDependencies(gem, deps);
         root.addChild(new ImmutablePair<>("sha", RubyGemMeta.getSha(gem)));
         return fmt.print(root);
     }
@@ -164,11 +163,16 @@ public final class RubyGemMeta implements GemMeta {
      * @param gem Path to gem
      * @param jsondep Dependencies
      */
-    private void getDependencies(final Path gem, final JsonObjectBuilder jsondep) {
+    private void getDependencies(
+        final Path gem,
+        final TreeNode<ImmutablePair<String, String>> jsondep
+    ) {
         final String rtstr = "runtime";
         final String dstr = "development";
-        final JsonArrayBuilder devdeps = Json.createArrayBuilder();
-        final JsonArrayBuilder runtimedeps = Json.createArrayBuilder();
+        final TreeNode<ImmutablePair<String, String>> devdeps =
+            jsondep.addChild(new ImmutablePair<>(dstr, dstr));
+        final TreeNode<ImmutablePair<String, String>> runtimedeps =
+            jsondep.addChild(new ImmutablePair<>(rtstr, rtstr));
         final RubyObject deps = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
                 "Gem::Package.new('%s').spec.dependencies", gem
@@ -181,34 +185,34 @@ public final class RubyGemMeta implements GemMeta {
             for (final Variable<Object> var : varos) {
                 if ("@type".equals(var.getName())) {
                     if (dstr.equals(var.getValue().toString())) {
-                        devdeps.add(RubyGemMeta.addDep(varos));
+                        RubyGemMeta.addDep(varos, devdeps);
                     } else if (rtstr.equals(var.getValue().toString())) {
-                        runtimedeps.add(RubyGemMeta.addDep(varos));
+                        RubyGemMeta.addDep(varos, runtimedeps);
                     }
                 }
             }
             vari = vari + 1;
         }
-        jsondep.add(dstr, devdeps);
-        jsondep.add(rtstr, runtimedeps);
     }
 
     /**
      * Ruby runtime.
      *
      * @param varos Variables
-     * @return JsonObject containing dependencies info
+     * @param node Node to add
      */
-    private static JsonObjectBuilder addDep(final List<Variable<Object>> varos) {
+    private static void addDep(
+        final List<Variable<Object>> varos,
+        final TreeNode<ImmutablePair<String, String>> node
+    ) {
         final String reqstr = "@requirement";
         final String rstr = "requirements";
-        final JsonObjectBuilder dep = Json.createObjectBuilder();
-        dep.add(
-            RubyGemMeta.SNAME,
-            RubyGemMeta.getVar(varos, RubyGemMeta.ATNAME)
+        node.addChild(
+            new ImmutablePair<>(
+                RubyGemMeta.SNAME, RubyGemMeta.getVar(varos, RubyGemMeta.ATNAME)
+            )
         );
-        dep.add(rstr, RubyGemMeta.getVar(varos, reqstr));
-        return dep;
+        node.addChild(new ImmutablePair<>(rstr, RubyGemMeta.getVar(varos, reqstr)));
     }
 
     /**
