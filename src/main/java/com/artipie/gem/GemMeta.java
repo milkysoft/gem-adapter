@@ -25,7 +25,7 @@
 package com.artipie.gem;
 
 import java.nio.file.Path;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Gem metadata parser.
@@ -55,6 +55,6 @@ public interface GemMeta {
          * @param data Gem info data
          * @return Formatted info
          */
-        T print(TreeNode<ImmutablePair<String, String>> data);
+        T print(TreeNode<Pair<String, String>> data);
     }
 }

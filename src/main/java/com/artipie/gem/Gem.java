@@ -47,7 +47,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * An SDK, which servers gem packages.
@@ -107,12 +107,12 @@ public final class Gem {
                         spec -> {
                             String name = "";
                             String version = "";
-                            for (final TreeNode<ImmutablePair<String, String>> node : spec) {
+                            for (final TreeNode<Pair<String, String>> node : spec) {
                                 if (node.isLeaf() && "name".equals(node.getdata().getLeft())) {
                                     name = node.getdata().getRight();
                                 }
                             }
-                            for (final TreeNode<ImmutablePair<String, String>> node : spec) {
+                            for (final TreeNode<Pair<String, String>> node : spec) {
                                 if (node.isLeaf() && "version".equals(node.getdata().getLeft())) {
                                     version = node.getdata().getRight();
                                 }

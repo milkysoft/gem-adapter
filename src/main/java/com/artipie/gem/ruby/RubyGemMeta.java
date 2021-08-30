@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
@@ -109,7 +110,7 @@ public final class RubyGemMeta implements GemMeta {
     public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
         this.adapter = JavaEmbedUtils.newRuntimeAdapter();
         final String sroot = "root";
-        final TreeNode<ImmutablePair<String, String>> root =
+        final TreeNode<Pair<String, String>> root =
             new TreeNode<>(new ImmutablePair<>(sroot, sroot));
         root.init();
         this.adapter.eval(this.ruby, "require 'rubygems/package.rb'");
@@ -134,7 +135,7 @@ public final class RubyGemMeta implements GemMeta {
             );
         }
         final String depstr = "dependencies";
-        final TreeNode<ImmutablePair<String, String>> deps =
+        final TreeNode<Pair<String, String>> deps =
             root.addChild(new ImmutablePair<>(depstr, depstr));
         this.getDependencies(gem, deps);
         root.addChild(new ImmutablePair<>("sha", RubyGemMeta.getSha(gem)));
@@ -166,13 +167,13 @@ public final class RubyGemMeta implements GemMeta {
      */
     private void getDependencies(
         final Path gem,
-        final TreeNode<ImmutablePair<String, String>> jsondep
+        final TreeNode<Pair<String, String>> jsondep
     ) {
         final String rtstr = "runtime";
         final String dstr = "development";
-        final TreeNode<ImmutablePair<String, String>> devdeps =
+        final TreeNode<Pair<String, String>> devdeps =
             jsondep.addChild(new ImmutablePair<>(dstr, dstr));
-        final TreeNode<ImmutablePair<String, String>> runtimedeps =
+        final TreeNode<Pair<String, String>> runtimedeps =
             jsondep.addChild(new ImmutablePair<>(rtstr, rtstr));
         final RubyObject deps = (RubyObject) this.adapter.eval(
             this.ruby, String.format(
@@ -204,7 +205,7 @@ public final class RubyGemMeta implements GemMeta {
      */
     private static void addDep(
         final List<Variable<Object>> varos,
-        final TreeNode<ImmutablePair<String, String>> node
+        final TreeNode<Pair<String, String>> node
     ) {
         final String reqstr = "@requirement";
         final String rstr = "requirements";

@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.reactivestreams.Publisher;
 
 /**
@@ -92,9 +92,9 @@ public final class ApiGetSlice implements Slice {
      * @param data Is data
      * @return Json Object
      */
-    private static JsonObjectBuilder buildTree(final TreeNode<ImmutablePair<String, String>> data) {
+    private static JsonObjectBuilder buildTree(final TreeNode<Pair<String, String>> data) {
         final JsonObjectBuilder builder = Json.createObjectBuilder();
-        for (final TreeNode<ImmutablePair<String, String>> node : data.getchildren()) {
+        for (final TreeNode<Pair<String, String>> node : data.getchildren()) {
             if (node.isRoot()) {
                 continue;
             } else if (node.isLeaf()) {
