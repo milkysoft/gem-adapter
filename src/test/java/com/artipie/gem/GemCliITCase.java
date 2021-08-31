@@ -92,6 +92,8 @@ public class GemCliITCase {
                 Matchers.equalTo(0)
             );
             Files.delete(target);
+        }
+        for (final String gem : gems) {
             MatcherAssert.assertThat(
                 String.format("'gem fetch %s failed with non-zero code", host, gem),
                 this.bash(
