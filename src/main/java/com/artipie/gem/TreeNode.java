@@ -29,34 +29,34 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Gem metadata parser.
+ * Gem metadata tree.
  * @param <T> Format type
  * @since 1.0
  */
 public final class TreeNode<T> implements Iterable<TreeNode<T>> {
 
     /**
-     * Json Gem info format.
+     * Elements ind.
      */
     private final List<TreeNode<T>> elementsind;
 
     /**
-     * Json Gem info format.
+     * Data for current node.
      */
     private final T data;
 
     /**
-     * Json Gem info format.
+     * Parent for current node.
      */
     private TreeNode<T> parent;
 
     /**
-     * Json Gem info format.
+     * Children for current node.
      */
     private final List<TreeNode<T>> children;
 
     /**
-     * Extract Gem info.
+     * Constructs Node.
      * @param data Is data
      */
     public TreeNode(final T data) {
@@ -66,30 +66,30 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
     }
 
     /**
-     * Extract Gem info.
+     * Initialize node.
      */
     public void init() {
         this.elementsind.add(this);
     }
 
     /**
-     * Extract Gem info.
-     * @return Boolean object
+     * Get children for current node.
+     * @return List of Children
      */
     public List<TreeNode<T>> getchildren() {
         return this.children;
     }
 
     /**
-     * Extract Gem info.
-     * @return Boolean object
+     * Get current node data.
+     * @return Data for current node
      */
     public T getdata() {
         return this.data;
     }
 
     /**
-     * Extract Gem info.
+     * Check whether node is root.
      * @return Boolean object
      */
     public boolean isRoot() {
@@ -97,7 +97,7 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
     }
 
     /**
-     * Extract Gem info.
+     * Check if current node is leaf.
      * @return Boolean object
      */
     public boolean isLeaf() {
@@ -105,7 +105,7 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
     }
 
     /**
-     * Extract Gem info.
+     * Add child node.
      * @param child Is child
      * @return TreeNode object
      */
@@ -119,7 +119,7 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
     }
 
     /**
-     * Extract Gem info.
+     * Get current node level from root.
      * @return Int object
      */
     public int getLevel() {
@@ -133,9 +133,9 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
     }
 
     /**
-     * Extract Gem info.
-     * @param cmp Is child
-     * @return TreeNoode object
+     * Search for node.
+     * @param cmp Is comparator
+     * @return TreeNode object
      */
     public TreeNode<T> findTreeNode(final Comparable<T> cmp) {
         TreeNode<T> res = null;
@@ -166,7 +166,7 @@ public final class TreeNode<T> implements Iterable<TreeNode<T>> {
     }
 
     /**
-     * Extract Gem info.
+     * Add search child node.
      * @param node Is child
      */
     private void registerChildForSearch(final TreeNode<T> node) {

@@ -28,14 +28,14 @@ import java.util.Iterator;
 import java.util.Optional;
 
 /**
- * Gem metadata parser.
- * @param <T> Format type
+ * Tree node iterator.
+ * @param <T> Node type
  * @since 1.0
  */
 public final class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
 
     /**
-     * Json Gem info format.
+     * Type for processes.
      */
     enum ProcessStages {
         /**
@@ -60,32 +60,32 @@ public final class TreeNodeIter<T> implements Iterator<TreeNode<T>> {
     }
 
     /**
-     * Json Gem info format.
+     * Tree node.
      */
     private final TreeNode<T> thetreenode;
 
     /**
-     * Json Gem info format.
+     * Next node.
      */
     private Optional<TreeNode<T>> thenext;
 
     /**
-     * Json Gem info format.
+     * Current node.
      */
     private final Iterator<TreeNode<T>> ccurnodeiter;
 
     /**
-     * Json Gem info format.
+     * Subordinated node iterator.
      */
     private Iterator<TreeNode<T>> csubnodeiter;
 
     /**
-     * Json Gem info format.
+     * Do next.
      */
     private ProcessStages donext;
 
     /**
-     * Json Gem info format.
+     * Constructs Tree Node Iterator.
      * @param thetreenode Is node
      */
     public TreeNodeIter(final TreeNode<T> thetreenode) {
