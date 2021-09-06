@@ -30,6 +30,7 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.misc.UncheckedIOFunc;
 import com.artipie.gem.ruby.Dependencies;
+import com.artipie.gem.GemMeta.MetaInfo;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
 import com.artipie.gem.ruby.SharedRuntime;
@@ -227,10 +228,11 @@ public final class Gem {
         ).thenCompose(
             tmp -> this.shared.apply(RubyGemMeta::new)
                 .thenApply(
-                    meta -> meta.info(
-                        Paths.get(tmp.toString(), gem.string()),
-                        spec -> String.format("%s-%s.gem", spec.get("name"), spec.get("version"))
-                    )
+                    meta -> {
+                        final RevisionFormat fmt = new RevisionFormat();
+                        meta.info(Paths.get(tmp.toString(), gem.string())).print(fmt);
+                        return fmt.toString();
+                    }
                 ).thenApply(
                     new UncheckedIOFunc<>(
                         name -> {
@@ -256,11 +258,9 @@ public final class Gem {
     /**
      * Gem info data.
      * @param gem Gem name
-     * @param fmt Info format
-     * @param <T> Format type
      * @return Future
      */
-    public <T> CompletionStage<T> info(final String gem, final GemMeta.InfoFormat<T> fmt) {
+    public CompletionStage<GemMeta.MetaInfo> info(final String gem) {
         return newTempDir().thenCompose(
             tmp -> new Copy(this.storage, new IsGemKey(gem))
                 .copy(new FileStorage(tmp))
@@ -271,7 +271,7 @@ public final class Gem {
                     info -> new FileStorage(tmp).list(Key.ROOT).thenApply(
                         items -> items.stream().findFirst()
                             .map(first -> Paths.get(tmp.toString(), first.string()))
-                            .map(path -> info.info(path, fmt))
+                            .map(path -> info.info(path))
                             .orElseThrow(() -> new ArtipieIOException("gem not found"))
                     )
                 ).handle(removeTempDir(tmp))
@@ -344,6 +344,43 @@ public final class Gem {
                 }
             }
             return matches;
+        }
+    }
+
+    /**
+     * Revision Gem meta format.
+     * @since 1.0
+     */
+    private static final class RevisionFormat implements GemMeta.MetaFormat {
+
+        /**
+         * Gem name.
+         */
+        private String name;
+
+        /**
+         * Gem value.
+         */
+        private String version;
+
+        @Override
+        public void print(final String nme, final String value) {
+            if (nme.equals("name")) {
+                this.name = value;
+            }
+            if (nme.equals("version")) {
+                this.version = value;
+            }
+        }
+
+        @Override
+        public void print(final String nme, final MetaInfo value) {
+            // do nothing
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s-%s.gem", this.name, this.version);
         }
     }
 }
