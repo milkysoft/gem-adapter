@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -49,7 +48,6 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import org.apache.commons.io.FileUtils;
@@ -162,25 +160,15 @@ public final class Gem {
                     .thenApply(ignore -> tmp);
             }
         ).thenCompose(
-            tmpdir -> this.shared.apply(Dependencies::new)
-                .thenApply(
-                    rubyjson -> {
-                        final byte[] obj;
-                        try {
-                            final List<Path> paths = new ArrayList<>(gems.size());
-                            for (final Key gem : gems) {
-                                final Key thekey = this.getGemFile(gem, false, null).toCompletableFuture().get();
-                                final Path path = Paths.get(tmpdir.toString(), thekey.string());
-                                paths.add(path);
-                            }
-                            obj = rubyjson.getDependencies(paths);
-                            removeTempDir(tmpdir);
-                        } catch (final InterruptedException | ExecutionException exc) {
-                            throw new ArtipieIOException(exc);
-                        }
-                        return obj;
-                    }
-                )
+            tmp -> this.shared.apply(RubyGemMeta::new)
+                .thenCompose(
+                    info -> new FileStorage(tmp).list(Key.ROOT).thenApply(
+                        items -> items.stream().findFirst()
+                            .map(first -> Paths.get(tmp.toString(), first.string()))
+                            .map(path -> info.dependencies(path))
+                            .orElseThrow(() -> new ArtipieIOException("gem did not found"))
+                    )
+                ).handle(removeTempDir(tmp))
         );
     }
 

@@ -24,6 +24,7 @@
 package com.artipie.gem.http;
 
 import com.artipie.asto.Storage;
+import com.artipie.gem.Gem;
 import com.artipie.gem.GemApiKeyAuth;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;
@@ -94,6 +95,48 @@ public final class GemSlice extends Slice.Wrap {
                         new RtRule.ByPath("/api/v1/api_key")
                     ),
                     new ApiKeySlice(auth)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/latest_specs.4.8.gz")
+                    ),
+                    new ApiGetSlice(storage)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/specs.4.8.gz")
+                    ),
+                    new ApiGetSlice(storage)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/quick/Marshal.4.8/.*")
+                    ),
+                    new ApiGetSlice(storage)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/versions")
+                    ),
+                    new ApiGetSlice(storage)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/api/v1/dependencies")
+                    ),
+                    new ApiGetSlice(storage)
+                ),
+                new RtRulePath(
+                    new RtRule.All(
+                        new ByMethodsRule(RqMethod.GET),
+                        new RtRule.ByPath("/gems/.*")
+                    ),
+                    new ApiGetSlice(storage)
                 ),
                 new RtRulePath(
                     new RtRule.All(

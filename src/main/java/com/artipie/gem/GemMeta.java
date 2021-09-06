@@ -61,6 +61,13 @@ public interface GemMeta {
     }
 
     /**
+     * Extract Gem dependencies.
+     * @param gempath Path to gem
+     * @return Bytes object
+     */
+    byte[] dependencies(Path gempath);
+
+    /**
      * Metadata info.
      * @since 1.0
      */

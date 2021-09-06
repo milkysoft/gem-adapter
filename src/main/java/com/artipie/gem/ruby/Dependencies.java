@@ -35,7 +35,7 @@ public class Dependencies {
      */
     public Dependencies(final Ruby ruby) {
         this.ruby = ruby;
-        this.runtime = null;
+        this.runtime = JavaEmbedUtils.newRuntimeAdapter();
     }
 
     /**

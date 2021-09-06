@@ -24,8 +24,14 @@
 
 package com.artipie.gem.ruby;
 
+import com.artipie.ArtipieException;
 import com.artipie.gem.GemMeta;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+
+import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
@@ -60,6 +66,30 @@ public final class RubyGemMeta implements GemMeta {
             )
         );
         return new RubyMetaInfo(spec);
+    }
+
+    @Override
+    public byte[] dependencies(Path gempath) {
+        final String paths = gempath.toString();
+        final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
+        final String script;
+        try {
+            script = IOUtils.toString(
+                RubyGemMeta.class.getResourceAsStream("/dependencies.rb"),
+                StandardCharsets.UTF_8
+            );
+            adapter.eval(this.ruby, script);
+            final IDependencies deps = (IDependencies) JavaEmbedUtils.invokeMethod(
+                this.ruby,
+                adapter.eval(this.ruby, "Dependencies"),
+                "new",
+                new Object[]{paths},
+                IDependencies.class
+            );
+            return deps.dependencies().getBytes();
+        } catch (final IOException exc) {
+            throw new ArtipieException(exc);
+        }
     }
 
     /**
