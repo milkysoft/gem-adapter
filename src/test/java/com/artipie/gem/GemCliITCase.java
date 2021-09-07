@@ -220,7 +220,7 @@ public class GemCliITCase {
         final String content = "# frozen_string_literal: true\n\n"
             .concat(String.format("source \"%s\"\n\n", host))
             .concat("git_source(:github) {|repo_name| \"https://github.com/#{repo_name}\" }\n\n")
-            .concat("gem 'gviz', '0.3.5'\n");
+            .concat("gem 'thor', '1.1.0'\n");
         final Path jpath = Paths.get(temp.toString(), "yyy");
         final byte[] strtobytes = content.getBytes();
         Files.write(jpath, strtobytes);
