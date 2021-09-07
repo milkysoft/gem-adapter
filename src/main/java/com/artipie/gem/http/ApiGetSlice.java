@@ -60,6 +60,7 @@ import org.reactivestreams.Publisher;
  * </p>
  *
  * @since 0.2
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class ApiGetSlice implements Slice {
     /**
