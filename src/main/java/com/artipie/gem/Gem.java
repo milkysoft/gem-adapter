@@ -115,7 +115,7 @@ public final class Gem {
             }
         ).thenApply(
             tmpdir -> {
-                final byte[] filecontent;
+                byte[] filecontent;
                 try {
                     final CompletionStage<Key> stage = this.getGemFile(
                         filename, true, new Key.From("thor-1.0.1.gemspec.rz")
@@ -174,8 +174,8 @@ public final class Gem {
             tmp -> {
                 dir.set(tmp);
                 return new Copy(this.storage, key -> META_NAMES.contains(key) || key.equals(gem))
-                .copy(new FileStorage(tmp))
-                .thenApply(ignore -> tmp);
+                    .copy(new FileStorage(tmp))
+                    .thenApply(ignore -> tmp);
             }
         ).thenCompose(
             tmp -> this.shared.apply(RubyGemMeta::new)
@@ -238,25 +238,24 @@ public final class Gem {
      * @return String full path to gem file
      */
     private CompletionStage<Key> getGemFile(final Key gem, final boolean exact,
-        final Key fallout) {
+                                            final Key fallout) {
         final CompletableFuture<Key> future = new CompletableFuture<>();
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
-                list -> {
-                    final  List<Key> result;
-                    final Stream<Key> res = list.stream().filter(
-                        key -> key.string().contains(gem.string()) && key.string().endsWith(".gem")
-                    );
-                    if (res.count() > 0) {
-                        result = res.limit(1).collect(Collectors.toList());
-                    } else {
-                        result = list.stream().filter(
-                            key -> !exact && key.string().contains(gem.string())
-                                || fallout != null && key.string().equals(fallout.string())
-                        ).limit(1).collect(Collectors.toList());
-                    }
-                    return result;
-                }
+                list -> list.stream().filter(
+                    key -> !exact
+                        && key.string().contains(gem.string()) && key.string().endsWith(".gem")
+                        || exact && key.string().equals(gem.string())
+                ).count() > 0
+                    ? list.stream().filter(
+                    key -> !exact
+                        && key.string().contains(gem.string()) && key.string().endsWith(".gem")
+                        || exact && key.string().equals(gem.string())
+                ).limit(1).collect(Collectors.toList())
+                    : list.stream().filter(
+                    key -> !exact && key.string().contains(gem.string())
+                        || fallout != null && key.string().equals(fallout.string())
+                ).limit(1).collect(Collectors.toList())
             )
             .flatMapObservable(Observable::fromIterable).forEach(future::complete);
         return future;

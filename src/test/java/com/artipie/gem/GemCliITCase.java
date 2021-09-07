@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.io.IOUtils;
@@ -57,6 +58,41 @@ import org.testcontainers.containers.GenericContainer;
 @DisabledIfSystemProperty(named = "os.name", matches = "Windows.*")
 public class GemCliITCase {
 
+    /**
+     * Endpoint path pattern.
+     */
+    private static String homes = "/home/";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String homep = "/home";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String devnull = "/dev/null";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String tails = "tail";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String testg = "/test/gems/";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String tests = "/test/";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String containers = "http://host.testcontainers.internal:%d";
+
     @Test
     public void gemPushAndInstallWorks(@TempDir final Path temp, @TempDir final Path mount)
         throws IOException, InterruptedException {
@@ -67,12 +103,12 @@ public class GemCliITCase {
             new GemSlice(new FileStorage(temp))
         );
         final int port = server.start();
-        final String host = String.format("http://host.testcontainers.internal:%d", port);
+        final String host = String.format(GemCliITCase.containers, port);
         Testcontainers.exposeHostPorts(port);
         final RubyContainer ruby = new RubyContainer()
-            .withCommand("tail", "-f", "/dev/null")
-            .withWorkingDirectory("/home/")
-            .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
+            .withCommand(GemCliITCase.tails, "-f", GemCliITCase.devnull)
+            .withWorkingDirectory(GemCliITCase.homes)
+            .withFileSystemBind(mount.toAbsolutePath().toString(), GemCliITCase.homep);
         ruby.start();
         final Set<String> gems = new HashSet<>();
         gems.add("builder-3.2.4.gem");
@@ -116,6 +152,90 @@ public class GemCliITCase {
         );
         ruby.stop();
         ruby.close();
+        server.close();
+        vertx.close();
+    }
+
+    @Test
+    public void gemBundleInstall(@TempDir final Path temp, @TempDir final Path mount)
+        throws IOException, InterruptedException {
+        final Vertx vertx = Vertx.vertx();
+        final VertxSliceServer server = new VertxSliceServer(
+            vertx,
+            new GemSlice(new FileStorage(temp))
+        );
+        final int port = server.start();
+        final String host = String.format(GemCliITCase.containers, port);
+        Testcontainers.exposeHostPorts(port);
+        final RubyContainer ruby = new RubyContainer()
+            .withCommand(GemCliITCase.tails, "-f", GemCliITCase.devnull)
+            .withWorkingDirectory(GemCliITCase.homes)
+            .withFileSystemBind(mount.toAbsolutePath().toString(), GemCliITCase.homep);
+        ruby.start();
+        String filea = "specs.4.8.gz";
+        Path target = mount.resolve(filea);
+        try (
+            InputStream is = this.getClass().getResourceAsStream(
+                GemCliITCase.tests.concat(filea)
+            );
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        filea = "prerelease_specs.4.8.gz";
+        target = mount.resolve(filea);
+        try (
+            InputStream is = this.getClass().getResourceAsStream(
+                GemCliITCase.tests.concat(filea)
+            );
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        filea = "latest_specs.4.8.gz";
+        target = mount.resolve(filea);
+        try (
+            InputStream is = this.getClass().getResourceAsStream(
+                GemCliITCase.tests.concat(filea)
+            );
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        filea = "thor-1.1.0.gem";
+        target = mount.resolve(filea);
+        try (
+            InputStream is = this.getClass().getResourceAsStream(
+                GemCliITCase.testg.concat(filea)
+            );
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        filea = "gviz-0.3.5.gem";
+        target = mount.resolve(filea);
+        try (
+            InputStream is = this.getClass().getResourceAsStream(
+                GemCliITCase.testg.concat(filea)
+            );
+            OutputStream os = Files.newOutputStream(target)) {
+            IOUtils.copy(is, os);
+        }
+        final String content = "# frozen_string_literal: true\n\n"
+            .concat(String.format("source \"%s\"\n\n", host))
+            .concat("git_source(:github) {|repo_name| \"https://github.com/#{repo_name}\" }\n\n")
+            .concat("gem 'gviz', '0.3.5'\n");
+        final Path jpath = Paths.get(temp.toString(), "yyy");
+        final byte[] strtobytes = content.getBytes();
+        Files.write(jpath, strtobytes);
+        MatcherAssert.assertThat(
+            String.format("'gem versions %s ", host),
+            this.bash(
+                ruby,
+                String.format(
+                    "gem sources -r https://rubygems.org/; gem sources -a %s;"
+                    .concat(" bundle init; mv yyy Gemfile; bundle install"), host
+                )
+            ),
+            Matchers.equalTo(0)
+        );
+        ruby.stop();
         server.close();
         vertx.close();
     }
