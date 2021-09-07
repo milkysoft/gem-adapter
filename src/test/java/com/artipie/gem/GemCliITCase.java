@@ -160,6 +160,7 @@ public class GemCliITCase {
     public void gemBundleInstall(@TempDir final Path temp, @TempDir final Path mount)
         throws IOException, InterruptedException {
         final Vertx vertx = Vertx.vertx();
+        final String key = new Base64Encoded("usr:pwd").asString();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new GemSlice(new FileStorage(temp))
@@ -207,6 +208,14 @@ public class GemCliITCase {
             );
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
+            MatcherAssert.assertThat(
+                String.format("'gem push %s failed with non-zero code", host),
+                this.bash(
+                    ruby,
+                    String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, filea, host)
+                ),
+                Matchers.equalTo(0)
+            );
         }
         filea = "gviz-0.3.5.gem";
         target = mount.resolve(filea);
@@ -220,18 +229,26 @@ public class GemCliITCase {
         final String content = "# frozen_string_literal: true\n\n"
             .concat(String.format("source \"%s\"\n\n", host))
             .concat("git_source(:github) {|repo_name| \"https://github.com/#{repo_name}\" }\n\n")
-            .concat("gem 'thor', '1.1.0'\n");
+            .concat("gem 'gviz', '0.3.5'\n");
         final Path jpath = Paths.get(temp.toString(), "yyy");
         final byte[] strtobytes = content.getBytes();
         Files.write(jpath, strtobytes);
         MatcherAssert.assertThat(
-            String.format("'gem versions %s ", host),
+            String.format("'install thor gem %s", host),
             this.bash(
                 ruby,
                 String.format(
                     "gem sources -r https://rubygems.org/; gem sources -a %s;"
-                    .concat(" bundle init; mv yyy Gemfile; bundle install"), host
+                        .concat(" gem install thor -v 1.1.0"), host
                 )
+            ),
+            Matchers.equalTo(0)
+        );
+        MatcherAssert.assertThat(
+            String.format("'gem versions %s ", host),
+            this.bash(
+                ruby,
+                "bundle init; mv yyy Gemfile; bundle install"
             ),
             Matchers.equalTo(0)
         );
