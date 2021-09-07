@@ -23,13 +23,13 @@
  */
 package com.artipie.gem;
 
+import com.artipie.ArtipieException;
 import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.misc.UncheckedIOFunc;
-import com.artipie.gem.ruby.Dependencies;
 import com.artipie.gem.GemMeta.MetaInfo;
 import com.artipie.gem.ruby.RubyGemIndex;
 import com.artipie.gem.ruby.RubyGemMeta;
@@ -42,7 +42,12 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -98,7 +103,6 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<byte[]> getRubyFile(final Key filename) {
-        System.out.println(String.format("In getRubyFile for %s", filename.string()));
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
@@ -107,40 +111,27 @@ public final class Gem {
                     throw new ArtipieIOException(exc);
                 }
             }
-        ).thenCompose(
-            tmpdir -> this.shared.apply(Dependencies::new)
-                .thenApply(
-                    rubyjson -> {
-                        try {
-                            System.out.println(String.format("Getting %s", filename.string()));
-                            CompletionStage<Key> st = this.getGemFile(filename, true, new Key.From("thor-1.0.1.gemspec.rz"));
-                            System.out.println("stage");
-                            CompletableFuture<Key> ft = st.toCompletableFuture();
-                            System.out.println("future");
-                            final Key thekey = ft.get(10, TimeUnit.MILLISECONDS);
-                            if(thekey == null) {
-                                System.out.println("88888888");
-                            } else {
-                                System.out.println(String.format("7777777: %s", thekey.string()));
-                            }
-                            final Path path = Paths.get(tmpdir.toString(), thekey.string());
-                            System.out.println(String.format("Reading %s", path));
-                            File file = new File(path.toString());
-                            try {
-                                byte[] fileContent = Files.readAllBytes(file.toPath());
-                                return fileContent;
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        } catch (final TimeoutException | InterruptedException | ExecutionException exc) {
-                            System.out.println("ERRRRRRRRRRR!!!!!");
-                        } finally {
-                            System.out.println("remove tmp dir");
-                            removeTempDir(tmpdir);
-                        }
-                        return null;
-                    }
-                )
+        ).thenApply(
+            tmpdir -> {
+                byte[] filecontent = null;
+                try {
+                    final CompletionStage<Key> stage = this.getGemFile(
+                        filename, true, new Key.From("thor-1.0.1.gemspec.rz")
+                    );
+                    final CompletableFuture<Key> feature = stage.toCompletableFuture();
+                    final Key thekey = feature.get(10, TimeUnit.MILLISECONDS);
+                    final Path path = Paths.get(tmpdir.toString(), thekey.string());
+                    final File file = new File(path.toString());
+                    filecontent = Files.readAllBytes(file.toPath());
+                    return filecontent;
+                } catch (final IOException | TimeoutException | InterruptedException
+                    | ExecutionException exc) {
+                    throw new ArtipieException(exc);
+                } finally {
+                    removeTempDir(tmpdir);
+                    return filecontent;
+                }
+            }
         );
     }
 
@@ -155,7 +146,7 @@ public final class Gem {
         return newTempDir().thenCompose(
             tmp -> {
                 dir.set(tmp);
-                return new Copy(this.storage, key -> META_NAMES.contains(key) || key.equals(gems.get(0)))
+                return new Copy(this.storage, key -> key.string().contains(gems.get(0).string()))
                     .copy(new FileStorage(tmp))
                     .thenApply(ignore -> tmp);
             }
@@ -170,32 +161,6 @@ public final class Gem {
                     )
                 ).handle(removeTempDir(tmp))
         );
-    }
-
-    /**
-     * Find gem in a given path.
-     * @param gem Gem name to get info
-     * @return String full path to gem file
-     */
-    private CompletionStage<Key> getGemFile(final Key gem, final boolean exact, final Key fallout) {
-        final CompletableFuture<Key> future = new CompletableFuture<>();
-        Single.fromFuture(this.storage.list(Key.ROOT))
-            .map(
-                list -> list.stream().filter(
-                    key -> (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
-                        (exact && (key.string().equals(gem.string())))
-                ).count() > 0 ?
-                    list.stream().filter(
-                        key -> (!exact && key.string().contains(gem.string()) && key.string().endsWith(".gem")) ||
-                            (exact && (key.string().equals(gem.string())))
-                    ).limit(1).collect(Collectors.toList()) :
-                    list.stream().filter(
-                        key -> (!exact && key.string().contains(gem.string())) || (exact && (key.string().equals(gem.string())
-                            || (fallout != null && (key.string().equals(fallout.string())))))
-                    ).limit(1).collect(Collectors.toList())
-            )
-            .flatMapObservable(Observable::fromIterable).forEach(future::complete);
-        return future;
     }
 
     /**
@@ -264,6 +229,37 @@ public final class Gem {
                     )
                 ).handle(removeTempDir(tmp))
         );
+    }
+
+    /**
+     * Find gem in a given path.
+     * @param gem Gem name to get info
+     * @param exact Is exact
+     * @param fallout Is fallout
+     * @return String full path to gem file
+     */
+    private CompletionStage<Key> getGemFile(final Key gem, final boolean exact,
+        final Key fallout) {
+        final CompletableFuture<Key> future = new CompletableFuture<>();
+        Single.fromFuture(this.storage.list(Key.ROOT))
+            .map(
+                list -> list.stream().filter(
+                    key -> !exact
+                        && key.string().contains(gem.string()) && key.string().endsWith(".gem")
+                        || exact && key.string().equals(gem.string())
+                ).count() > 0
+                    ? list.stream().filter(
+                        key -> !exact
+                            && key.string().contains(gem.string()) && key.string().endsWith(".gem")
+                            || exact && key.string().equals(gem.string())
+                    ).limit(1).collect(Collectors.toList())
+                    : list.stream().filter(
+                        key -> !exact && key.string().contains(gem.string())
+                            || fallout != null && key.string().equals(fallout.string())
+                    ).limit(1).collect(Collectors.toList())
+            )
+            .flatMapObservable(Observable::fromIterable).forEach(future::complete);
+        return future;
     }
 
     /**

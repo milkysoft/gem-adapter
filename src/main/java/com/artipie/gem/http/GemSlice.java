@@ -24,7 +24,6 @@
 package com.artipie.gem.http;
 
 import com.artipie.asto.Storage;
-import com.artipie.gem.Gem;
 import com.artipie.gem.GemApiKeyAuth;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;

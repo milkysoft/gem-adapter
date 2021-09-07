@@ -40,6 +40,13 @@ public interface GemMeta {
     MetaInfo info(Path gem);
 
     /**
+     * Extract Gem dependencies.
+     * @param gempath Path to gem
+     * @return Bytes object
+     */
+    byte[] dependencies(Path gempath);
+
+    /**
      * Gem info metadata format.
      * @since 1.0
      */
@@ -59,13 +66,6 @@ public interface GemMeta {
          */
         void print(String name, MetaInfo value);
     }
-
-    /**
-     * Extract Gem dependencies.
-     * @param gempath Path to gem
-     * @return Bytes object
-     */
-    byte[] dependencies(Path gempath);
 
     /**
      * Metadata info.

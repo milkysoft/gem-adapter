@@ -27,7 +27,6 @@ import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.gem.Gem;
-import com.artipie.gem.GemMeta;
 import com.artipie.gem.JsonMetaFormat;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
@@ -47,10 +46,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.reactivestreams.Publisher;
-
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import org.reactivestreams.Publisher;
 
 /**
  * Returns some basic information about the given gem.
@@ -65,14 +63,14 @@ import javax.json.JsonObjectBuilder;
  */
 public final class ApiGetSlice implements Slice {
     /**
-     * HTTP var.
-     */
-    private static final String HTTP = "HTTP";
-
-    /**
      * Endpoint path pattern.
      */
     public static final Pattern PATH_PATTERN = Pattern.compile("/api/v1/gems/([\\w]+).(json|yml)");
+
+    /**
+     * HTTP var.
+     */
+    private static final String HTTP = "HTTP";
 
     /**
      * Gem SDK.
@@ -148,7 +146,7 @@ public final class ApiGetSlice implements Slice {
      * @return AsyncResponse
      */
     AsyncResponse processdeproute(final String line, final String deproute,
-                                  final int offset) {
+        final int offset) {
         final int indexs = line.indexOf(deproute) + offset;
         final int indexe = line.indexOf(ApiGetSlice.HTTP) - 1;
         final List<Key> gemkeys = new ArrayList<>(0);
