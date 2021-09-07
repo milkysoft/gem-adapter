@@ -225,6 +225,14 @@ public class GemCliITCase {
             );
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
+            MatcherAssert.assertThat(
+                String.format("'gem push %s failed with non-zero code", host),
+                this.bash(
+                    ruby,
+                    String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, filea, host)
+                ),
+                Matchers.equalTo(0)
+            );
         }
         final String content = "# frozen_string_literal: true\n\n"
             .concat(String.format("source \"%s\"\n\n", host))
@@ -239,8 +247,16 @@ public class GemCliITCase {
                 ruby,
                 String.format(
                     "gem sources -r https://rubygems.org/; gem sources -a %s;"
-                        .concat(" gem install thor -v 1.1.0"), host
+                        .concat(" gem install thor -v '1.1.0'"), host
                 )
+            ),
+            Matchers.equalTo(0)
+        );
+        MatcherAssert.assertThat(
+            String.format("'install thor gem %s", host),
+            this.bash(
+                ruby,
+                "gem install gviz -v '0.3.5'"
             ),
             Matchers.equalTo(0)
         );
