@@ -54,6 +54,7 @@ import org.testcontainers.containers.GenericContainer;
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  */
 @SuppressWarnings("PMD.SystemPrintln")
+@DisabledIfSystemProperty(named = "os.name", matches = "Windows.*")
 public class GemCliITCase {
 
     @Test
@@ -113,73 +114,6 @@ public class GemCliITCase {
             ),
             Matchers.equalTo(0)
         );
-        ruby.stop();
-        ruby.close();
-        server.close();
-        vertx.close();
-    }
-
-    @Test
-    public void gemDependenciesWorks(@TempDir final Path temp, @TempDir final Path mount)
-        throws IOException, InterruptedException {
-        final String key = new Base64Encoded("usr:pwd").asString();
-        final Vertx vertx = Vertx.vertx();
-        final VertxSliceServer server = new VertxSliceServer(
-            vertx,
-            new GemSlice(new FileStorage(temp))
-        );
-        final int port = server.start();
-        final String host = String.format("http://host.testcontainers.internal:%d", port);
-        Testcontainers.exposeHostPorts(port);
-        final RubyContainer ruby = new RubyContainer()
-            .withCommand("tail", "-f", "/dev/null")
-            .withWorkingDirectory("/home/")
-            .withFileSystemBind(mount.toAbsolutePath().toString(), "/home");
-        ruby.start();
-        final Set<String> gems = new HashSet<>();
-        gems.add("builder-3.2.4.gem");
-        gems.add("rails-6.0.2.2.gem");
-        for (final String gem : gems) {
-            final Path target = mount.resolve(gem);
-            try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
-                 OutputStream os = Files.newOutputStream(target)) {
-                IOUtils.copy(is, os);
-            }
-//            MatcherAssert.assertThat(
-//                String.format("'gem push %s failed with non-zero code", host, gem),
-//                this.bash(
-//                    ruby,
-//                    String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, gem, host)
-//                ),
-//                Matchers.equalTo(0)
-//            );
-//            Files.delete(target);
-        }
-        System.out.println(String.format("HOST = %s, API_KEY=%s", host, key));
-        Thread.sleep(9999999);
-        for (final String gem : gems) {
-            MatcherAssert.assertThat(
-                String.format("'gem fetch %s failed with non-zero code", host, gem),
-                this.bash(
-                    ruby,
-                    String.format(
-                        "GEM_HOST_API_KEY=%s gem fetch -V %s --source %s",
-                        key, gem.substring(0, gem.indexOf('-')), host
-                    )
-                ),
-                Matchers.equalTo(0)
-            );
-        }
-        MatcherAssert.assertThat(
-            String.format("Unable to remove https://rubygems.org from the list of sources", host),
-            this.bash(
-                ruby,
-                String.format("gem sources -r https://rubygems.org/", host)
-            ),
-            Matchers.equalTo(0)
-        );
-        System.out.println(String.format("HOST = %s, API_KEY=%s", host, key));
-        Thread.sleep(9999999);
         ruby.stop();
         ruby.close();
         server.close();

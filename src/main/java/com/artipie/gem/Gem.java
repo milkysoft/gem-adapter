@@ -103,17 +103,19 @@ public final class Gem {
      * @return Completable action
      */
     public CompletionStage<byte[]> getRubyFile(final Key filename) {
+        final AtomicReference<Path> dir = new AtomicReference<>();
         return CompletableFuture.supplyAsync(
             () -> {
                 try {
-                    return Files.createTempDirectory("statics");
+                    dir.set(Files.createTempDirectory("statics"));
+                    return dir.get();
                 } catch (final IOException exc) {
                     throw new ArtipieIOException(exc);
                 }
             }
         ).thenApply(
             tmpdir -> {
-                byte[] filecontent = null;
+                final byte[] filecontent;
                 try {
                     final CompletionStage<Key> stage = this.getGemFile(
                         filename, true, new Key.From("thor-1.0.1.gemspec.rz")
@@ -123,16 +125,13 @@ public final class Gem {
                     final Path path = Paths.get(tmpdir.toString(), thekey.string());
                     final File file = new File(path.toString());
                     filecontent = Files.readAllBytes(file.toPath());
-                    return filecontent;
                 } catch (final IOException | TimeoutException | InterruptedException
                     | ExecutionException exc) {
                     throw new ArtipieException(exc);
-                } finally {
-                    removeTempDir(tmpdir);
-                    return filecontent;
                 }
+                return filecontent;
             }
-        );
+        ).handle(removeTempDir(dir.get()));
     }
 
     /**
@@ -243,20 +242,21 @@ public final class Gem {
         final CompletableFuture<Key> future = new CompletableFuture<>();
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
-                list -> list.stream().filter(
-                    key -> !exact
-                        && key.string().contains(gem.string()) && key.string().endsWith(".gem")
-                        || exact && key.string().equals(gem.string())
-                ).count() > 0
-                    ? list.stream().filter(
-                        key -> !exact
-                            && key.string().contains(gem.string()) && key.string().endsWith(".gem")
-                            || exact && key.string().equals(gem.string())
-                    ).limit(1).collect(Collectors.toList())
-                    : list.stream().filter(
-                        key -> !exact && key.string().contains(gem.string())
-                            || fallout != null && key.string().equals(fallout.string())
-                    ).limit(1).collect(Collectors.toList())
+                list -> {
+                    final  List<Key> result;
+                    final Stream<Key> res = list.stream().filter(
+                        key -> key.string().contains(gem.string()) && key.string().endsWith(".gem")
+                    );
+                    if (res.count() > 0) {
+                        result = res.limit(1).collect(Collectors.toList());
+                    } else {
+                        result = list.stream().filter(
+                            key -> !exact && key.string().contains(gem.string())
+                                || fallout != null && key.string().equals(fallout.string())
+                        ).limit(1).collect(Collectors.toList());
+                    }
+                    return result;
+                }
             )
             .flatMapObservable(Observable::fromIterable).forEach(future::complete);
         return future;
