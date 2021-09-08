@@ -21,54 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.artipie.gem;
 
-import java.nio.file.Path;
+import com.artipie.gem.GemMeta.MetaFormat;
+import com.artipie.gem.GemMeta.MetaInfo;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 
 /**
- * Gem metadata parser.
+ * New JSON format for Gem meta info.
  * @since 1.0
+ * @todo #122:30min Add tests for this class.
+ *  Check if it can add plain string values to JSON,
+ *  and check it can support nested tree structures formatting.
  */
-public interface GemMeta {
+public final class JsonMetaFormat implements MetaFormat {
 
     /**
-     * Extract Gem info.
-     * @param gem Path to gem
-     * @return JSON object
+     * JSON builder.
      */
-    MetaInfo info(Path gem);
+    private final JsonObjectBuilder builder;
 
     /**
-     * Gem info metadata format.
-     * @since 1.0
+     * New JSON format.
+     * @param builder JSON builder
      */
-    interface MetaFormat {
-
-        /**
-         * Print info string.
-         * @param name Key
-         * @param value String
-         */
-        void print(String name, String value);
-
-        /**
-         * Print info child.
-         * @param name Key
-         * @param value Node
-         */
-        void print(String name, MetaInfo value);
+    public JsonMetaFormat(final JsonObjectBuilder builder) {
+        this.builder = builder;
     }
 
-    /**
-     * Metadata info.
-     * @since 1.0
-     */
-    interface MetaInfo {
-        /**
-         * Print meta info using format.
-         * @param fmt Meta format
-         */
-        void print(MetaFormat fmt);
+    @Override
+    public void print(final String name, final String value) {
+        this.builder.add(name, value);
+    }
+
+    @Override
+    public void print(final String name, final MetaInfo value) {
+        final JsonObjectBuilder child = Json.createObjectBuilder();
+        value.print(new JsonMetaFormat(child));
+        this.builder.add(name, child);
     }
 }

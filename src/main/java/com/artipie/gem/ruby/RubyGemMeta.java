@@ -26,8 +26,6 @@ package com.artipie.gem.ruby;
 
 import com.artipie.gem.GemMeta;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
@@ -53,7 +51,7 @@ public final class RubyGemMeta implements GemMeta {
     }
 
     @Override
-    public <T> T info(final Path gem, final GemMeta.InfoFormat<T> fmt) {
+    public GemMeta.MetaInfo info(final Path gem) {
         final RubyRuntimeAdapter adapter = JavaEmbedUtils.newRuntimeAdapter();
         adapter.eval(this.ruby, "require 'rubygems/package.rb'");
         final RubyObject spec = (RubyObject) adapter.eval(
@@ -61,13 +59,37 @@ public final class RubyGemMeta implements GemMeta {
                 "Gem::Package.new('%s').spec", gem.toString()
             )
         );
-        final Map<String, String> data = spec.getVariableList().stream()
-            .filter(item -> item.getValue() != null).collect(
-                Collectors.toMap(
-                    item -> item.getName().substring(1),
-                    item -> item.getValue().toString()
-                )
+        return new RubyMetaInfo(spec);
+    }
+
+    /**
+     * Meta info implementation for Ruby spec object.
+     * @since 1.0
+     */
+    private static final class RubyMetaInfo implements GemMeta.MetaInfo {
+
+        /**
+         * Ruby meta spec object.
+         */
+        private final RubyObject spec;
+
+        /**
+         * New meta info.
+         * @param spec Spec object
+         */
+        RubyMetaInfo(final RubyObject spec) {
+            this.spec = spec;
+        }
+
+        @Override
+        public void print(final MetaFormat fmt) {
+            this.spec.getVariableList().stream()
+                .filter(item -> item.getValue() != null).forEach(
+                    node -> fmt.print(
+                        node.getName().substring(1),
+                        node.getValue().toString()
+                    )
             );
-        return fmt.print(data);
+        }
     }
 }

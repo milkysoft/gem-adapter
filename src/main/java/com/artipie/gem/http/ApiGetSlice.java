@@ -25,7 +25,7 @@ package com.artipie.gem.http;
 
 import com.artipie.asto.Storage;
 import com.artipie.gem.Gem;
-import com.artipie.gem.GemMeta;
+import com.artipie.gem.JsonMetaFormat;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
@@ -35,6 +35,8 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 import org.reactivestreams.Publisher;
 
 /**
@@ -78,7 +80,13 @@ public final class ApiGetSlice implements Slice {
             throw new IllegalStateException("Invalid routing schema");
         }
         return new AsyncResponse(
-            this.sdk.info(matcher.group(1), GemMeta.FMT_JSON).thenApply(json -> new RsJson(json))
+            this.sdk.info(matcher.group(1)).thenApply(
+                info -> {
+                    final JsonObjectBuilder json = Json.createObjectBuilder();
+                    info.print(new JsonMetaFormat(json));
+                    return json.build();
+                }
+            ).thenApply(json -> new RsJson(json))
         );
     }
 }
