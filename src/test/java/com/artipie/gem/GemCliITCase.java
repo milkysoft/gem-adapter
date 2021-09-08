@@ -54,9 +54,23 @@ import org.testcontainers.containers.GenericContainer;
  * @checkstyle StringLiteralsConcatenationCheck (500 lines)
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  */
-@SuppressWarnings("PMD.SystemPrintln")
+@SuppressWarnings({"PMD.SystemPrintln", "PMD.ExcessiveMethodLength"})
 @DisabledIfSystemProperty(named = "os.name", matches = "Windows.*")
 public class GemCliITCase {
+    /**
+     * Endpoint path pattern.
+     */
+    private static String cred = "usr:pwd";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String pusherrstr = "'gem push %s failed with non-zero code";
+
+    /**
+     * Endpoint path pattern.
+     */
+    private static String pushstr = "GEM_HOST_API_KEY=%s gem push %s --host %s";
 
     /**
      * Endpoint path pattern.
@@ -96,7 +110,7 @@ public class GemCliITCase {
     @Test
     public void gemPushAndInstallWorks(@TempDir final Path temp, @TempDir final Path mount)
         throws IOException, InterruptedException {
-        final String key = new Base64Encoded("usr:pwd").asString();
+        final String key = new Base64Encoded(GemCliITCase.cred).asString();
         final Vertx vertx = Vertx.vertx();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
@@ -120,10 +134,10 @@ public class GemCliITCase {
                 IOUtils.copy(is, os);
             }
             MatcherAssert.assertThat(
-                String.format("'gem push %s failed with non-zero code", host, gem),
+                String.format(GemCliITCase.pusherrstr, host, gem),
                 this.bash(
                     ruby,
-                    String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, gem, host)
+                    String.format(GemCliITCase.pushstr, key, gem, host)
                 ),
                 Matchers.equalTo(0)
             );
@@ -160,7 +174,7 @@ public class GemCliITCase {
     public void gemBundleInstall(@TempDir final Path temp, @TempDir final Path mount)
         throws IOException, InterruptedException {
         final Vertx vertx = Vertx.vertx();
-        final String key = new Base64Encoded("usr:pwd").asString();
+        final String key = new Base64Encoded(GemCliITCase.cred).asString();
         final VertxSliceServer server = new VertxSliceServer(
             vertx,
             new GemSlice(new FileStorage(temp))
@@ -209,10 +223,10 @@ public class GemCliITCase {
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
             MatcherAssert.assertThat(
-                String.format("'gem push %s failed with non-zero code", host),
+                String.format(GemCliITCase.pusherrstr, host),
                 this.bash(
                     ruby,
-                    String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, filea, host)
+                    String.format(GemCliITCase.pushstr, key, filea, host)
                 ),
                 Matchers.equalTo(0)
             );
@@ -226,10 +240,10 @@ public class GemCliITCase {
             OutputStream os = Files.newOutputStream(target)) {
             IOUtils.copy(is, os);
             MatcherAssert.assertThat(
-                String.format("'gem push %s failed with non-zero code", host),
+                String.format(GemCliITCase.pusherrstr, host),
                 this.bash(
                     ruby,
-                    String.format("GEM_HOST_API_KEY=%s gem push %s --host %s", key, filea, host)
+                    String.format(GemCliITCase.pushstr, key, filea, host)
                 ),
                 Matchers.equalTo(0)
             );
@@ -253,7 +267,7 @@ public class GemCliITCase {
             Matchers.equalTo(0)
         );
         MatcherAssert.assertThat(
-            String.format("'install thor gem %s", host),
+            String.format("'install gviz gem %s", host),
             this.bash(
                 ruby,
                 "gem install gviz -v '0.3.5'"

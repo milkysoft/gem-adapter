@@ -113,10 +113,10 @@ public final class RubyGemMeta implements GemMeta {
         public void print(final MetaFormat fmt) {
             this.spec.getVariableList().stream()
                 .filter(item -> item.getValue() != null).forEach(
-                node -> fmt.print(
-                    node.getName().substring(1),
-                    node.getValue().toString()
-                )
+                    node -> fmt.print(
+                        node.getName().substring(1),
+                        node.getValue().toString()
+                    )
             );
         }
     }
