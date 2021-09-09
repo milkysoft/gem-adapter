@@ -127,6 +127,7 @@ public class GemCliITCase {
         final Set<String> gems = new HashSet<>();
         gems.add("builder-3.2.4.gem");
         gems.add("rails-6.0.2.2.gem");
+        gems.add("file-tail-1.2.0.gem");
         for (final String gem : gems) {
             final Path target = mount.resolve(gem);
             try (InputStream is = this.getClass().getResourceAsStream("/".concat(gem));
@@ -150,7 +151,7 @@ public class GemCliITCase {
                     ruby,
                     String.format(
                         "GEM_HOST_API_KEY=%s gem fetch -V %s --source %s",
-                        key, gem.substring(0, gem.indexOf('-')), host
+                        key, gem.substring(0, gem.lastIndexOf('-')), host
                     )
                 ),
                 Matchers.equalTo(0)
