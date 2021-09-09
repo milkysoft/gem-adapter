@@ -55,7 +55,8 @@ public final class ApiGetSlice implements Slice {
     /**
      * Endpoint path pattern.
      */
-    public static final Pattern PATH_PATTERN = Pattern.compile("/api/v1/gems/([\\w]+).(json|yml)");
+    public static final Pattern PATH_PATTERN = Pattern
+        .compile("/api/v1/gems/([\\w\\d-]+).(json|yml)");
 
     /**
      * Gem SDK.
