@@ -104,16 +104,15 @@ public final class Gem {
      */
     public CompletionStage<byte[]> getRubyFile(final Key filename) {
         final AtomicReference<Path> dir = new AtomicReference<>();
-        return CompletableFuture.supplyAsync(
-            () -> {
-                try {
-                    dir.set(Files.createTempDirectory("statics"));
-                    return dir.get();
-                } catch (final IOException exc) {
-                    throw new ArtipieIOException(exc);
-                }
+        return newTempDir().thenCompose(
+            tmp -> {
+                dir.set(tmp);
+                return new Copy(this.storage, key -> key.string().contains(filename.string()))
+                    .copy(new FileStorage(tmp))
+                    .thenApply(ignore -> tmp);
             }
-        ).thenApply(
+        )
+        .thenApply(
             tmpdir -> {
                 final byte[] filecontent;
                 try {
@@ -239,16 +238,20 @@ public final class Gem {
      */
     private CompletionStage<Key> getGemFile(final Key gem, final boolean exact,
         final Key fallout) {
+        final String gemstr = ".gem";
         final CompletableFuture<Key> future = new CompletableFuture<>();
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
                 list -> {
                     final List<Key> result;
                     final Stream<Key> res = list.stream().filter(
-                        key -> key.string().contains(gem.string()) && key.string().endsWith(".gem")
+                        key -> key.string().contains(gem.string()) && key.string().endsWith(gemstr)
                     );
                     if (res.count() > 0) {
-                        result = res.limit(1).collect(Collectors.toList());
+                        result = list.stream().filter(
+                            key -> key.string().contains(gem.string())
+                                && key.string().endsWith(gemstr)
+                        ).limit(1).collect(Collectors.toList());
                     } else {
                         result = list.stream().filter(
                             key -> !exact && key.string().contains(gem.string())
