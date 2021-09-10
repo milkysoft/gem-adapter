@@ -257,29 +257,13 @@ public class GemCliITCase {
         final byte[] strtobytes = content.getBytes();
         Files.write(jpath, strtobytes);
         MatcherAssert.assertThat(
-            String.format("'install thor gem %s", host),
+            String.format("'bundle install %s ", host),
             this.bash(
                 ruby,
                 String.format(
                     "gem sources -r https://rubygems.org/; gem sources -a %s;"
-                        .concat(" gem install thor -v '1.1.0'"), host
+                        .concat("bundle init; mv yyy Gemfile; bundle install"), host
                 )
-            ),
-            Matchers.equalTo(0)
-        );
-        MatcherAssert.assertThat(
-            String.format("'install gviz gem %s", host),
-            this.bash(
-                ruby,
-                "gem install gviz -v '0.3.5'"
-            ),
-            Matchers.equalTo(0)
-        );
-        MatcherAssert.assertThat(
-            String.format("'gem versions %s ", host),
-            this.bash(
-                ruby,
-                "bundle init; mv yyy Gemfile; bundle install"
             ),
             Matchers.equalTo(0)
         );
