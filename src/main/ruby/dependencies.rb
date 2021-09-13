@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 require 'rubygems/package'
+require 'java'
 
 class Dependencies
+    include com.artipie.gem.ruby.IDependencies
 
     def initialize(val)
+        @val = val
+    end
+
+    def dependencies()
         resgems = []
-        val.split.each do |gem|
+        @val.split.each do |gem|
             resdep = []
             spec = Gem::Package.new(gem).spec
             deps = spec.dependencies
