@@ -100,42 +100,42 @@ public final class GemSlice extends Slice.Wrap {
                         new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/latest_specs.4.8.gz")
                     ),
-                    new ApiGetSlice(storage)
+                    new DepsSlice(storage)
                 ),
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/specs.4.8.gz")
                     ),
-                    new ApiGetSlice(storage)
+                    new DepsSlice(storage)
                 ),
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/quick/Marshal.4.8/.*")
                     ),
-                    new ApiGetSlice(storage)
+                    new DepsSlice(storage)
                 ),
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/versions")
                     ),
-                    new ApiGetSlice(storage)
+                    new DepsSlice(storage)
                 ),
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/api/v1/dependencies")
                     ),
-                    new ApiGetSlice(storage)
+                    new DepsSlice(storage)
                 ),
                 new RtRulePath(
                     new RtRule.All(
                         new ByMethodsRule(RqMethod.GET),
                         new RtRule.ByPath("/gems/.*")
                     ),
-                    new ApiGetSlice(storage)
+                    new DepsSlice(storage)
                 ),
                 new RtRulePath(
                     new RtRule.All(

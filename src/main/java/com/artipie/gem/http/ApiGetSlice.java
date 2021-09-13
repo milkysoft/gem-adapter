@@ -23,27 +23,16 @@
  */
 package com.artipie.gem.http;
 
-import com.artipie.asto.ArtipieIOException;
-import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.gem.Gem;
 import com.artipie.gem.JsonMetaFormat;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
-import com.artipie.http.headers.Header;
 import com.artipie.http.rq.RequestLineFrom;
-import com.artipie.http.rs.RsStatus;
-import com.artipie.http.rs.RsWithBody;
-import com.artipie.http.rs.RsWithHeaders;
-import com.artipie.http.rs.RsWithStatus;
 import com.artipie.http.rs.common.RsJson;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.json.Json;
@@ -60,7 +49,6 @@ import org.reactivestreams.Publisher;
  * </p>
  *
  * @since 0.2
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class ApiGetSlice implements Slice {
     /**
@@ -68,11 +56,6 @@ public final class ApiGetSlice implements Slice {
      */
     public static final Pattern PATH_PATTERN = Pattern
         .compile("/api/v1/gems/([\\w\\d-]+).(json|yml)");
-
-    /**
-     * HTTP var.
-     */
-    private static final String HTTP = "HTTP";
 
     /**
      * Gem SDK.
@@ -91,32 +74,9 @@ public final class ApiGetSlice implements Slice {
     public Response response(final String line,
         final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
-        final String deproute = "/api/v1/dependencies";
         final AsyncResponse res;
-        final int offset = 26;
         final Matcher matcher = PATH_PATTERN.matcher(new RequestLineFrom(line).uri().toString());
-        if (line.contains(deproute)) {
-            res = this.processdeproute(line, deproute, offset);
-        } else if (line.contains("/specs.4.8.gz")) {
-            res = new AsyncResponse(
-                this.sdk.getRubyFile(new Key.From("specs.4.8.gz"))
-                    .thenApply(out -> new RsWithBody(ByteBuffer.wrap(out)))
-            );
-        } else if (line.contains("/versions")) {
-            res = new AsyncResponse(
-                CompletableFuture.completedFuture(
-                    new RsWithHeaders(
-                        new RsWithStatus(RsStatus.FOUND),
-                        new Header("Location", "https://index.rubygems.org/versions"),
-                        new Header("Content-Type", "text/html;charset=utf-8"),
-                        new Header("X-XSS-Protection", "1; mode=block"),
-                        new Header("X-Content-Type-Options", "nosniff"),
-                        new Header("X-Frame-Options", "SAMEORIGIN"),
-                        new Header("Content-Length", "0")
-                    )
-                )
-            );
-        } else if (matcher.find()) {
+        if (matcher.find()) {
             res = new AsyncResponse(
                 this.sdk.info(matcher.group(1)).thenApply(
                     info -> {
@@ -126,46 +86,9 @@ public final class ApiGetSlice implements Slice {
                     }
                 ).thenApply(json -> new RsJson(json))
             );
-        } else if (line.contains("/gems/")) {
-            final int indexe = line.indexOf(ApiGetSlice.HTTP) - 1;
-            final int arc = line.substring(0, indexe - 1).lastIndexOf('/') + 1;
-            final String spec = line.substring(arc, indexe);
-            res = new AsyncResponse(
-                this.sdk.getRubyFile(new Key.From(spec))
-                    .thenApply(out -> new RsWithBody(ByteBuffer.wrap(out)))
-            );
         } else {
             throw new IllegalStateException("Invalid routing schema");
         }
         return res;
-    }
-
-    /**
-     * Process dependency route.
-     * @param line Line
-     * @param deproute Route
-     * @param offset Int
-     * @return AsyncResponse
-     */
-    AsyncResponse processdeproute(final String line, final String deproute,
-        final int offset) {
-        final int indexs = line.indexOf(deproute) + offset;
-        final int indexe = line.indexOf(ApiGetSlice.HTTP) - 1;
-        final List<Key> gemkeys = new ArrayList<>(0);
-        for (final String gemname : line.substring(indexs, indexe).split(",")) {
-            gemkeys.add(new Key.From(gemname));
-        }
-        final byte[] obj;
-        try {
-            obj = this.sdk.getDependencies(gemkeys)
-                .toCompletableFuture().get();
-        } catch (final InterruptedException | ExecutionException exc) {
-            throw new ArtipieIOException(exc);
-        }
-        return new AsyncResponse(
-            CompletableFuture.completedFuture(
-                new RsWithBody(ByteBuffer.wrap(obj))
-            )
-        );
     }
 }
