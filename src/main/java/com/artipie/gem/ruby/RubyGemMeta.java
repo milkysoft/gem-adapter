@@ -77,14 +77,14 @@ public final class RubyGemMeta implements GemMeta {
                 StandardCharsets.UTF_8
             );
             adapter.eval(this.ruby, script);
-            final IDependencies deps = (IDependencies) JavaEmbedUtils.invokeMethod(
+            final org.jruby.RubyString deps = (org.jruby.RubyString) JavaEmbedUtils.invokeMethod(
                 this.ruby,
                 adapter.eval(this.ruby, "Dependencies"),
                 "new",
                 new Object[]{paths},
-                IDependencies.class
+                Object.class
             );
-            return deps.dependencies().getBytes();
+            return deps.getBytes();
         } catch (final IOException exc) {
             throw new ArtipieException(exc);
         }

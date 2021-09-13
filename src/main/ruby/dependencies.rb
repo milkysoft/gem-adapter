@@ -6,7 +6,6 @@ require 'tmpdir'
 require 'java'
 
 class Dependencies
-    include com.artipie.gem.ruby.IDependencies
 
     def initialize(val)
         @val = val
