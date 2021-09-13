@@ -232,7 +232,6 @@ public final class Gem {
      */
     private CompletionStage<Key> getGemFile(final Key gem, final boolean exact,
         final Key fallout) {
-        final String gemstr = ".gem";
         final CompletableFuture<Key> future = new CompletableFuture<>();
         Single.fromFuture(this.storage.list(Key.ROOT))
             .map(
