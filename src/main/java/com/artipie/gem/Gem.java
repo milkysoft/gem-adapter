@@ -47,9 +47,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -112,20 +109,17 @@ public final class Gem {
                     .thenApply(ignore -> tmp);
             }
         )
+        .thenCompose(
+            tmp -> {
+                return this.getGemFile(filename, true, new Key.From("thor-1.0.1.gemspec.rz"));
+            }
+        )
         .thenApply(
-            tmpdir -> {
+            key -> {
                 final byte[] filecontent;
                 try {
-                    final CompletionStage<Key> stage = this.getGemFile(
-                        filename, true, new Key.From("thor-1.0.1.gemspec.rz")
-                    );
-                    final CompletableFuture<Key> feature = stage.toCompletableFuture();
-                    final Key thekey = feature.get(10, TimeUnit.MILLISECONDS);
-                    final Path path = Paths.get(tmpdir.toString(), thekey.string());
-                    final File file = new File(path.toString());
-                    filecontent = Files.readAllBytes(file.toPath());
-                } catch (final IOException | TimeoutException | InterruptedException
-                    | ExecutionException exc) {
+                    filecontent = Files.readAllBytes(Paths.get(dir.get().toString(), key.string()));
+                } catch (final IOException exc) {
                     throw new ArtipieException(exc);
                 }
                 return filecontent;

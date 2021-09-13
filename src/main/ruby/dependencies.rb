@@ -15,7 +15,6 @@ class Dependencies
     def dependencies()
         resgems = []
         @val.split.each do |gem|
-            puts(gem)
             resdep = []
             spec = Gem::Package.new(gem).spec
             deps = spec.dependencies
