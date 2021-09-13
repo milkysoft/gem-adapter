@@ -239,12 +239,11 @@ public final class Gem {
                 list -> {
                     final List<Key> result;
                     final Stream<Key> res = list.stream().filter(
-                        key -> key.string().contains(gem.string()) && key.string().endsWith(gemstr)
+                        key -> key.string().contains(gem.string())
                     );
                     if (res.count() > 0) {
                         result = list.stream().filter(
                             key -> key.string().contains(gem.string())
-                                && key.string().endsWith(gemstr)
                         ).limit(1).collect(Collectors.toList());
                     } else {
                         result = list.stream().filter(

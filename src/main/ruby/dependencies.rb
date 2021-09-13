@@ -1,19 +1,11 @@
 # frozen_string_literal: true
-require 'rubygems'
 require 'rubygems/package'
-require 'time'
-require 'tmpdir'
-require 'java'
 
 class Dependencies
 
     def initialize(val)
-        @val = val
-    end
-
-    def dependencies()
         resgems = []
-        @val.split.each do |gem|
+        val.split.each do |gem|
             resdep = []
             spec = Gem::Package.new(gem).spec
             deps = spec.dependencies
