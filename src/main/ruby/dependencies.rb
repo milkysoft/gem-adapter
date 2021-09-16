@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 require 'rubygems/package'
-require 'java'
 
 class Dependencies
-    include com.artipie.gem.ruby.IDependencies
 
     def initialize(val)
         @val = val
@@ -17,10 +15,10 @@ class Dependencies
             deps = spec.dependencies
             deps.each do |item|
                 if item.type == :runtime
-                    resdep.append([item.name, item.requirements_list()[0]])
+                    resdep.push([item.name, item.requirements_list()[0]])
                 end
             end
-            resgems.append({:name => spec.name, :number=>spec.version.version, :platform=>spec.original_platform, :dependencies=>resdep})
+            resgems.push({:name => spec.name, :number=>spec.version.version, :platform=>spec.original_platform, :dependencies=>resdep})
         end
         return Marshal.dump(resgems)
     end

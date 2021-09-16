@@ -33,6 +33,7 @@ import org.apache.commons.io.IOUtils;
 import org.jruby.Ruby;
 import org.jruby.RubyObject;
 import org.jruby.RubyRuntimeAdapter;
+import org.jruby.RubyString;
 import org.jruby.javasupport.JavaEmbedUtils;
 
 /**
@@ -77,14 +78,12 @@ public final class RubyGemMeta implements GemMeta {
                 StandardCharsets.UTF_8
             );
             adapter.eval(this.ruby, script);
-            final IDependencies deps = (IDependencies) JavaEmbedUtils.invokeMethod(
-                this.ruby,
-                adapter.eval(this.ruby, "Dependencies"),
-                "new",
-                new Object[]{paths},
-                IDependencies.class
+            final RubyString deps = (RubyString) adapter.eval(
+                this.ruby, String.format(
+                    "Dependencies.new('%s').dependencies()", paths
+                )
             );
-            return deps.dependencies().getBytes();
+            return deps.getBytes();
         } catch (final IOException exc) {
             throw new ArtipieException(exc);
         }
